@@ -1,0 +1,13 @@
+[project]
+name = "cpp2py"
+version = "0.0.0"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "requires_cxx: needs a C++ compiler"
+]
