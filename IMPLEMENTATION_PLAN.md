@@ -13,7 +13,7 @@
 
 | Phase | Title | Status | Verified on | Evidence (commands run, result) |
 |---|---|---|---|---|
-| P0 | Architecture and repository setup | **IN PROGRESS** — three design documents drafted, awaiting human review; repository scaffolding NOT STARTED | — | — |
+| P0 | Architecture and repository setup | **VERIFIED** | 2026-10-23 | `python -m pytest -q` → 2 passed; `python -c "import cpp2py; print(cpp2py.__version__)"` → 0.0.0; `cpp2py/` contains only `__init__.py`; `git status` clean after commit |
 | P1 | Minimal frontend and translator | NOT STARTED | — | — |
 | P2 | Custom IR, AST→IR, snapshots | NOT STARTED | — | — |
 | P3 | Control flow, functions, I/O syntax | NOT STARTED | — | — |
@@ -93,10 +93,10 @@ git status --short
 **10. Failure modes.** Tests not found (wrong `testpaths`, missing `tests/` or running from another directory); `import cpp2py` fails when running from a subdirectory (run from repo root); agent adds extra modules "for later" (AC0.6 catches it).
 
 **11. Checklist.**
-- [ ] Three documents reviewed by a human; Q2, Q3, Q7, Q8 answered
-- [ ] Scaffolding created
-- [ ] AC0.1–AC0.6 checked with real command output
-- [ ] Status table updated (P0 → VERIFIED) with date
+- [x] Three documents reviewed by a human; Q2, Q3, Q7, Q8 answered
+- [x] Scaffolding created
+- [x] AC0.1–AC0.6 checked with real command output
+- [x] Status table updated (P0 → VERIFIED) with date
 
 **12. Antigravity prompt (copy everything in the box).**
 
@@ -953,4 +953,4 @@ Record every justified departure from `ARCHITECTURE.md` here (date, phase, what 
 
 ## Open questions carried from ARCH §K.4
 
-Q1 compiler/OS (blocks Phase 6) · Q2 I/O syntax (blocks Phase 1) · Q3 trailing `return 0;` (blocks Phase 1) · Q4 `long long` required? (Phase 5) · Q5 `&&`/`||`/`!` required? (Phase 3) · Q6 `unsigned` required? (Phase 5) · Q7 Python version (Phase 1) · Q8 Antigravity loads `AGENTS.md`? (Phase 1) · Q9 course-mandated thresholds. Record answers here when known.
+Q1 compiler/OS (blocks Phase 6) — unanswered · Q2 I/O syntax (blocks Phase 1) — **answered: `std::cin`, `std::cout`, `std::endl`** · Q3 trailing `return 0;` (blocks Phase 1) — **answered: acceptable as the only return in Phase 1** · Q4 `long long` required? (Phase 5) — unanswered · Q5 `&&`/`||`/`!` required? (Phase 3) — unanswered · Q6 `unsigned` required? (Phase 5) — unanswered · Q7 Python version (Phase 1) — **answered: Python ≥ 3.10 confirmed** · Q8 Antigravity loads `AGENTS.md`? (Phase 1) — **answered: yes, auto-loaded** · Q9 course-mandated thresholds — unanswered.

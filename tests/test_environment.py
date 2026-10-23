@@ -1,5 +1,4 @@
 import sys
-import pytest
 import cpp2py
 
 def test_python_version():
