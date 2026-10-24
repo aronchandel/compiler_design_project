@@ -47,7 +47,7 @@ def test_cli_translate_success(run_cli, repo_root, tmp_path):
 def test_cli_neg_division_warning(run_cli, repo_root, tmp_path):
     src = repo_root / "examples" / "phase1" / "neg_division_warning.cpp"
     out_file = tmp_path / "neg.py"
-    res = run_cli("translate", str(src), "-o", str(out_file))
+    res = run_cli("translate", str(src), "--compat", "naive", "-o", str(out_file))
     assert res.returncode == 0
     assert "W6001" in res.stderr
     assert out_file.exists()

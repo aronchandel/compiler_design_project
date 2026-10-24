@@ -141,7 +141,7 @@ UNSUPPORTED_KEYWORDS: frozenset[TokenKind] = frozenset({
 
 UNSUPPORTED_TYPE_KEYWORDS: frozenset[TokenKind] = frozenset({
     TokenKind.FLOAT, TokenKind.DOUBLE, TokenKind.CHAR, TokenKind.BOOL,
-    TokenKind.LONG, TokenKind.SHORT, TokenKind.UNSIGNED, TokenKind.SIGNED,
+    TokenKind.SHORT, TokenKind.UNSIGNED, TokenKind.SIGNED,
 })
 
 UNSUPPORTED_OPERATORS: frozenset[TokenKind] = frozenset({

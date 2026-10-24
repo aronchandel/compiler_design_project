@@ -146,4 +146,9 @@ def _format_instruction_body(instr: Instruction) -> str:
             return f"{instr.dst} = call {func}({args})"
         return f"call {func}({args})"
 
+    elif opcode == Opcode.CAST:
+        src = instr.operands[0] if instr.operands else ""
+        dst_type = instr.dst.type if hasattr(instr.dst, "type") else "i32"
+        return f"{instr.dst} = cast {src} to {dst_type}"
+
     return f"{opcode.value}"

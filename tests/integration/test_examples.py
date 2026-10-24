@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 import pytest
 from cpp2py.compiler import compile_source
-from cpp2py.config import CompilerConfig
+from cpp2py.config import CompilerConfig, CompatMode
 
 
 def test_phase1_examples(tmp_path, repo_root):
@@ -50,12 +50,16 @@ def test_neg_division_warning_example(tmp_path, repo_root):
     assert cpp_file.exists()
 
     cpp_content = cpp_file.read_text(encoding="utf-8")
-    res = compile_source(cpp_content, str(cpp_file), CompilerConfig())
+    # In naive mode, emits W6001
+    res_naive = compile_source(cpp_content, str(cpp_file), CompilerConfig(compat_mode=CompatMode.NAIVE))
+    assert res_naive.success
+    assert any(w.code == "W6001" for w in res_naive.diagnostics)
+    assert "# WARNING W6001" in res_naive.python_source
 
-    # Asserts exit status 0 / success and presence of W6001
-    assert res.success
-    assert any(w.code == "W6001" for w in res.diagnostics)
-    assert "# WARNING W6001" in res.python_source
+    # In default range_guided mode, negative dividend gets helper
+    res_rg = compile_source(cpp_content, str(cpp_file), CompilerConfig())
+    assert res_rg.success
+    assert "_cpp_div" in res_rg.python_source
 
 
 def test_ac1_10_precedence_execution(tmp_path):

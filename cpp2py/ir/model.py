@@ -132,6 +132,7 @@ class Opcode(Enum):
     CMP = "cmp"
     CALL = "call"
     RETURN = "return"
+    CAST = "cast"
 
     def __str__(self) -> str:
         return self.value

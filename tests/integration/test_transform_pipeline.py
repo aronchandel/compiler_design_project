@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 import pytest
 from cpp2py.compiler import compile_source
-from cpp2py.config import CompilerConfig
+from cpp2py.config import CompilerConfig, CompatMode
 from cpp2py.ir.printer import format_module
 from cpp2py.transforms.log import TransformLog
 
@@ -221,14 +221,14 @@ def test_ac4_9_snapshots_per_pass_and_manifest(tmp_path, repo_root):
 
 
 def test_ac4_10_no_analysis_or_compat_directories():
-    """AC4.10: No analysis/ or compat/ directories; / and % produce W6001 for remaining ops."""
+    """AC4.10: Phase boundary discipline: No testing/ or localisation/ directories; / and % produce W6001 in naive mode."""
     repo_cpp2py = Path("cpp2py")
-    assert not (repo_cpp2py / "analysis").exists()
-    assert not (repo_cpp2py / "compat").exists()
+    assert not (repo_cpp2py / "testing").exists()
+    assert not (repo_cpp2py / "localisation").exists()
 
-    # / and % on non-folded expressions emit W6001
+    # / and % on non-folded expressions emit W6001 in naive mode
     code = "using namespace std; int main() { int a; cin >> a; cout << a / 2 << a % 2 << endl; return 0; }"
-    res = compile_source(code, "test.cpp", CompilerConfig(fold_constants=True))
+    res = compile_source(code, "test.cpp", CompilerConfig(fold_constants=True, compat_mode=CompatMode.NAIVE))
     assert res.success
     w6001_warnings = [d for d in res.diagnostics if d.code == "W6001"]
     assert len(w6001_warnings) >= 2

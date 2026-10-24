@@ -50,6 +50,27 @@ class IRBuilder:
         self._symbol_ir_names: dict[int, str] = {}
         self._name_counters: dict[str, int] = {}
         self._active_scope_symbols: list[set[int]] = []
+        self._current_return_type: IRType = IRType.I32
+
+    def _sym_ir_type(self, sym: Symbol | None) -> IRType:
+        if sym is not None and sym.type is not None:
+            if hasattr(sym.type, "bits") and sym.type.bits == 64:
+                return IRType.I64
+        return IRType.I32
+
+    def _emit_cast_if_needed(self, op: Operand, target_type: IRType, span: SourceSpan | None) -> Operand:
+        op_type = getattr(op, "type", IRType.I32)
+        if op_type == target_type:
+            return op
+        temp = TempRef(self._allocator.next_temp_id(), target_type)
+        self._instructions.append(Instruction(
+            op_id=self._allocator.next_op_id(),
+            opcode=Opcode.CAST,
+            dst=temp,
+            operands=(op,),
+            span=span,
+        ))
+        return temp
 
     def build(self) -> IRModule:
         functions: list[IRFunction] = []
@@ -110,7 +131,16 @@ class IRBuilder:
             sym = self._info.symbols_by_node.get(p.node_id)
             if sym is not None:
                 ir_name = self._register_active_symbol(sym)
-                params.append(VarRef(symbol_id=sym.symbol_id, ir_name=ir_name, type=IRType.I32))
+                p_type = self._sym_ir_type(sym)
+                params.append(VarRef(symbol_id=sym.symbol_id, ir_name=ir_name, type=p_type))
+
+        if func.return_type.name == "int":
+            ret_type = IRType.I32
+        elif func.return_type.name == "long long":
+            ret_type = IRType.I64
+        else:
+            ret_type = IRType.VOID
+        self._current_return_type = ret_type
 
         # Lower body statements
         for stmt in func.body.statements:
@@ -121,8 +151,6 @@ class IRBuilder:
         # Check if function ends with return
         has_return = (len(self._instructions) > 0 and
                       self._instructions[-1].opcode == Opcode.RETURN)
-
-        ret_type = IRType.I32 if func.return_type.name == "int" else IRType.VOID
 
         if not has_return:
             closing_pos = func.body.span.end
@@ -170,7 +198,8 @@ class IRBuilder:
                 sym = self._info.symbols_by_node.get(decl.node_id)
                 symbol_id = sym.symbol_id if sym is not None else 0
                 ir_name = self._register_active_symbol(sym) if sym is not None else decl.name
-                var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
+                var_type = self._sym_ir_type(sym)
+                var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=var_type)
 
                 # 1. declare v : type
                 self._instructions.append(Instruction(
@@ -184,6 +213,7 @@ class IRBuilder:
                 # 2. If initializer present: evaluate and assign
                 if decl.init is not None:
                     init_val = self._lower_expr(decl.init)
+                    init_val = self._emit_cast_if_needed(init_val, var_type, decl.span)
                     self._instructions.append(Instruction(
                         op_id=self._allocator.next_op_id(),
                         opcode=Opcode.ASSIGN,
@@ -196,11 +226,13 @@ class IRBuilder:
             sym = self._info.symbols_by_node.get(stmt.target.node_id)
             symbol_id = sym.symbol_id if sym is not None else 0
             ir_name = self._get_ir_name(sym) if sym is not None else stmt.target.name
-            var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
+            var_type = self._sym_ir_type(sym)
+            var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=var_type)
 
             val_op = self._lower_expr(stmt.value)
 
             if stmt.op == '=':
+                val_op = self._emit_cast_if_needed(val_op, var_type, stmt.span)
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
                     opcode=Opcode.ASSIGN,
@@ -217,19 +249,24 @@ class IRBuilder:
                     '%=': Opcode.MOD,
                 }
                 opcode = op_map[stmt.op]
-                temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
+                rhs_type = getattr(val_op, "type", IRType.I32)
+                common_type = IRType.I64 if (var_type == IRType.I64 or rhs_type == IRType.I64) else IRType.I32
+                lhs_cast = self._emit_cast_if_needed(var_ref, common_type, stmt.span)
+                rhs_cast = self._emit_cast_if_needed(val_op, common_type, stmt.span)
+                temp = TempRef(self._allocator.next_temp_id(), common_type)
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
                     opcode=opcode,
                     dst=temp,
-                    operands=(var_ref, val_op),
+                    operands=(lhs_cast, rhs_cast),
                     span=stmt.span,
                 ))
+                res = self._emit_cast_if_needed(temp, var_type, stmt.span)
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
                     opcode=Opcode.ASSIGN,
                     dst=var_ref,
-                    operands=(temp,),
+                    operands=(res,),
                     span=stmt.span,
                 ))
 
@@ -237,15 +274,16 @@ class IRBuilder:
             sym = self._info.symbols_by_node.get(stmt.target.node_id)
             symbol_id = sym.symbol_id if sym is not None else 0
             ir_name = self._get_ir_name(sym) if sym is not None else stmt.target.name
-            var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
+            var_type = self._sym_ir_type(sym)
+            var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=var_type)
 
             opcode = Opcode.ADD if stmt.op == '++' else Opcode.SUB
-            temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
+            temp = TempRef(self._allocator.next_temp_id(), var_type)
             self._instructions.append(Instruction(
                 op_id=self._allocator.next_op_id(),
                 opcode=opcode,
                 dst=temp,
-                operands=(var_ref, Const(1, IRType.I32)),
+                operands=(var_ref, Const(1, var_type)),
                 span=stmt.span,
             ))
             self._instructions.append(Instruction(
@@ -442,7 +480,8 @@ class IRBuilder:
                 sym = self._info.symbols_by_node.get(target.node_id)
                 symbol_id = sym.symbol_id if sym is not None else 0
                 ir_name = self._get_ir_name(sym) if sym is not None else target.name
-                var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
+                var_type = self._sym_ir_type(sym)
+                var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=var_type)
 
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
@@ -478,6 +517,7 @@ class IRBuilder:
         elif isinstance(stmt, ast.ReturnStmt):
             if stmt.value is not None:
                 val = self._lower_expr(stmt.value)
+                val = self._emit_cast_if_needed(val, self._current_return_type, stmt.span)
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
                     opcode=Opcode.RETURN,
@@ -495,6 +535,12 @@ class IRBuilder:
     def _lower_condition(self, cond: ast.Condition) -> TempRef:
         left_op = self._lower_expr(cond.left)
         right_op = self._lower_expr(cond.right)
+
+        left_type = getattr(left_op, "type", IRType.I32)
+        right_type = getattr(right_op, "type", IRType.I32)
+        common_type = IRType.I64 if (left_type == IRType.I64 or right_type == IRType.I64) else IRType.I32
+        left_op = self._emit_cast_if_needed(left_op, common_type, cond.left.span)
+        right_op = self._emit_cast_if_needed(right_op, common_type, cond.right.span)
 
         cmp_map = {
             '<': 'lt',
@@ -517,20 +563,23 @@ class IRBuilder:
         return temp
 
     def _lower_call(self, expr: ast.CallExpr, is_expr: bool) -> Operand | None:
-        arg_ops: list[Operand] = []
-        for arg in expr.args:
-            arg_ops.append(self._lower_expr(arg))
-
         fn_sym = self._info.functions.get(expr.callee)
-        is_void = fn_sym is not None and isinstance(fn_sym.return_type, ast.VoidType if hasattr(ast, "VoidType") else type(None))
-        # Also check semantic info type_by_node
+        arg_ops: list[Operand] = []
+        for i, arg in enumerate(expr.args):
+            arg_val = self._lower_expr(arg)
+            if fn_sym is not None and i < len(fn_sym.params):
+                param_sym = fn_sym.params[i]
+                param_type = self._sym_ir_type(param_sym)
+                arg_val = self._emit_cast_if_needed(arg_val, param_type, arg.span)
+            arg_ops.append(arg_val)
+
+        from cpp2py.semantics.types import VoidType, IntType
         node_t = self._info.type_by_node.get(expr.node_id)
-        from cpp2py.semantics.types import VoidType
-        if isinstance(node_t, VoidType):
-            is_void = True
+        is_void = isinstance(node_t, VoidType) or (fn_sym is not None and isinstance(fn_sym.return_type, VoidType))
 
         if is_expr and not is_void:
-            dst = TempRef(self._allocator.next_temp_id(), IRType.I32)
+            ret_type = IRType.I64 if (isinstance(node_t, IntType) and node_t.bits == 64) else IRType.I32
+            dst = TempRef(self._allocator.next_temp_id(), ret_type)
             self._instructions.append(Instruction(
                 op_id=self._allocator.next_op_id(),
                 opcode=Opcode.CALL,
@@ -553,20 +602,23 @@ class IRBuilder:
 
     def _lower_expr(self, expr: ast.Expr) -> Operand:
         if isinstance(expr, ast.IntLiteral):
-            return Const(expr.value, IRType.I32)
+            t = IRType.I64 if expr.value > self._config.target.int_max else IRType.I32
+            return Const(expr.value, t)
 
         elif isinstance(expr, ast.NameExpr):
             sym = self._info.symbols_by_node.get(expr.node_id)
             symbol_id = sym.symbol_id if sym is not None else 0
             ir_name = self._get_ir_name(sym) if sym is not None else expr.name
-            return VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
+            var_type = self._sym_ir_type(sym)
+            return VarRef(symbol_id=symbol_id, ir_name=ir_name, type=var_type)
 
         elif isinstance(expr, ast.UnaryExpr):
             if expr.op == '+':
                 return self._lower_expr(expr.operand)
 
             operand_val = self._lower_expr(expr.operand)
-            temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
+            op_type = getattr(operand_val, "type", IRType.I32)
+            temp = TempRef(self._allocator.next_temp_id(), op_type)
             self._instructions.append(Instruction(
                 op_id=self._allocator.next_op_id(),
                 opcode=Opcode.NEG,
@@ -579,6 +631,11 @@ class IRBuilder:
         elif isinstance(expr, ast.BinaryExpr):
             left_val = self._lower_expr(expr.left)
             right_val = self._lower_expr(expr.right)
+            left_type = getattr(left_val, "type", IRType.I32)
+            right_type = getattr(right_val, "type", IRType.I32)
+            common_type = IRType.I64 if (left_type == IRType.I64 or right_type == IRType.I64) else IRType.I32
+            left_val = self._emit_cast_if_needed(left_val, common_type, expr.left.span)
+            right_val = self._emit_cast_if_needed(right_val, common_type, expr.right.span)
 
             op_map = {
                 '+': Opcode.ADD,
@@ -588,7 +645,7 @@ class IRBuilder:
                 '%': Opcode.MOD,
             }
             opcode = op_map.get(expr.op, Opcode.ADD)
-            temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
+            temp = TempRef(self._allocator.next_temp_id(), common_type)
             self._instructions.append(Instruction(
                 op_id=self._allocator.next_op_id(),
                 opcode=opcode,

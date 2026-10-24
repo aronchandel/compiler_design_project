@@ -2,7 +2,7 @@
 
 import pytest
 from cpp2py.compiler import compile_source
-from cpp2py.config import CompilerConfig
+from cpp2py.config import CompilerConfig, CompatMode
 from cpp2py.ir.model import (
     IRModule,
     IRFunction,
@@ -101,7 +101,11 @@ def test_python_gen_do_not_inline_multi_use_temp():
 
 
 def test_python_gen_w6001_warning_on_div_and_mod():
-    res = compile_source("using namespace std; int main() { int a = 10; cout << a / 2 << a % 3; return 0; }", "test.cpp")
+    res = compile_source(
+        "using namespace std; int main() { int a = 10; cout << a / 2 << a % 3; return 0; }",
+        "test.cpp",
+        CompilerConfig(compat_mode=CompatMode.NAIVE),
+    )
     assert res.success
     assert any(w.code == "W6001" for w in res.diagnostics)
     assert "# WARNING W6001" in res.python_source

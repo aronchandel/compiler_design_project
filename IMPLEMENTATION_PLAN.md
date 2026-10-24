@@ -18,7 +18,7 @@
 | P2 | Custom IR, AST→IR, snapshots | **VERIFIED** | 2026-10-24 | 163 passed (pytest -q); 163 collected (>=100); golden IR matches ARCH §D.4 Stage 3 character-for-character; verifier tests pass E5001; IR path equals direct backend stdout; snapshots deterministic & identical across runs; fold_demo prints 48; layering verified |
 | P3 | Control flow, functions, I/O syntax | **VERIFIED** | 2026-10-24 | 243 passed (pytest -q, 84 new tests >= 70); all 14 Phase 3 examples produce byte-identical stdout to .expected; all 11 error programs exit 2 with expected code and no output file; golden while IR equals ARCH §D.4; verifier accepts all examples and rejects 7 hand-built shape violations; ast_to_python.py & --backend removed; while True fallback, shadowing, recursion verified; AC3.1–AC3.10 PASS |
 | P4 | Transform framework, constant folding, logs | **VERIFIED** | 2026-10-24 | 328 passed (pytest -q, 85 new tests >= 60); fold_demo Stage 4 IR & Stage 5 Python reproduced character-for-character, stdout 48; 6 log records verified in order & replay test passes; folding table, div/mod zero & overflow W6004 verified; idempotence & fixed-point verified; E5001 invalid pass verified; AC4.1-AC4.10 PASS; optional idiomatic loops qualified/disqualified verified |
-| P5 | Types, range analysis, compatibility helpers | NOT STARTED | — | — |
+| P5 | Types, range analysis, compatibility helpers | **VERIFIED** | 2026-10-25 | 453 passed (pytest -q, 125 new tests >= 120); brute-force soundness test passes for all transfer functions (>= 10^4 pairs); exhaustive helper tests on [-50, 50]; div_no_helper_needed has 0 helpers, div_needs_helper has helpers in range_guided and always; self-consistency on all Phase 5 examples vs .expected verified; naive reproduces Phase 4; plan.json and ranges.json deterministic; default overflow policy does not wrap; analysis converges; AC5.1-AC5.10 PASS |
 | P6 | Differential testing infrastructure | NOT STARTED | — | — |
 | P7 | Failure localisation, fidelity reports | NOT STARTED | — | — |
 | P8 | Baselines, evaluation, limitations | NOT STARTED | — | — |
@@ -658,10 +658,10 @@ python -m cpp2py translate examples/phase4/fold_demo.cpp --compat naive -o out/f
 **10. Failure modes.** Unsound transfer function (brute-force test); forgotten zero-split in division; widening that never terminates; branch refinement applied to the wrong edge; plan keyed by IDs missing after passes; helper emitted but not embedded; default silently wrapping; `INT_MIN` literal handling; promotion mistakes in `int`/`long long` mixes; `range_guided` choosing NATIVE because an *assumed* range leaked into an un-annotated variable.
 
 **11. Checklist.**
-- [ ] `long long`, `cast`, config, CLI options
-- [ ] Intervals, CFG, range analysis, risk classification
-- [ ] Policy, plan, helpers, generator integration; `ranges.json`/`plan.json`
-- [ ] ≥ 120 new tests; AC5.1–AC5.10 checked; status table updated (P5 → VERIFIED)
+- [x] `long long`, `cast`, config, CLI options
+- [x] Intervals, CFG, range analysis, risk classification
+- [x] Policy, plan, helpers, generator integration; `ranges.json`/`plan.json`
+- [x] ≥ 120 new tests; AC5.1–AC5.10 checked; status table updated (P5 → VERIFIED)
 
 **12. Antigravity prompt.**
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,6 +21,9 @@ from cpp2py.transforms.constant_fold import ConstantFoldPass
 from cpp2py.transforms.dead_temps import DeadTempsPass
 from cpp2py.transforms.manager import run_pipeline
 from cpp2py.transforms.log import TransformLog
+from cpp2py.analysis.range_analysis import analyze_ranges, RangeResult
+from cpp2py.compat.policy import build_plan
+from cpp2py.compat.plan import CompatPlan
 from cpp2py.codegen import python_gen
 
 
@@ -33,6 +37,8 @@ class CompilationResult:
     ir: IRModule | None = None
     artifact_dir: Path | None = None
     transform_log: TransformLog | None = None
+    ranges: RangeResult | None = None
+    plan: CompatPlan | None = None
 
 
 def compile_source(text: str, filename: str,
@@ -49,7 +55,7 @@ def compile_source(text: str, filename: str,
     sink = DiagnosticSink()
 
     # Stage 1: Lex
-    tokens = tokenize(source, sink)
+    tokens = tokenize(source, sink, config.target)
     if sink.has_errors():
         return CompilationResult(False, None, sink.all(), None)
 
@@ -101,13 +107,31 @@ def compile_source(text: str, filename: str,
     if store is not None:
         store.save_final_ir(module)
 
-    # Generate Python from IR
-    python_source = python_gen.generate(module, sink, config)
-    if python_source is None or sink.has_errors():
-        return CompilationResult(False, None, sink.all(), program, ir=module, transform_log=transform_log)
+    # Stage 5: Range analysis on final IR
+    ranges = analyze_ranges(module, config)
 
-    # Save output and manifest if requested
+    # Stage 6: Build compatibility plan
+    plan = build_plan(module, ranges, config, sink)
+
+    # Write explicit output files if requested
+    if config.ranges_out is not None:
+        r_path = Path(config.ranges_out)
+        r_path.parent.mkdir(parents=True, exist_ok=True)
+        r_path.write_text(json.dumps(ranges.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    if config.compat_plan_out is not None:
+        p_path = Path(config.compat_plan_out)
+        p_path.parent.mkdir(parents=True, exist_ok=True)
+        p_path.write_text(json.dumps(plan.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    # Generate Python from IR with plan
+    python_source = python_gen.generate(module, sink, config, plan=plan)
+    if python_source is None or sink.has_errors():
+        return CompilationResult(False, None, sink.all(), program, ir=module, transform_log=transform_log, ranges=ranges, plan=plan)
+
+    # Save output, ranges, plan, and manifest if snapshots requested
     if store is not None:
+        store.save_ranges_and_plan(ranges, plan)
         store.save_output_and_manifest(text, python_source, config, sink.all())
 
     return CompilationResult(
@@ -118,4 +142,6 @@ def compile_source(text: str, filename: str,
         ir=module,
         artifact_dir=Path(config.snapshot_dir) if config.snapshot_dir else None,
         transform_log=transform_log,
+        ranges=ranges,
+        plan=plan,
     )

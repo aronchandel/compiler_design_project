@@ -5,18 +5,20 @@ from __future__ import annotations
 from cpp2py.source import SourceFile, SourceSpan
 from cpp2py.diagnostics import DiagnosticSink
 from cpp2py.frontend.tokens import Token, TokenKind, KEYWORDS
+from cpp2py.config import TargetModel
 
 
-def tokenize(source: SourceFile, sink: DiagnosticSink) -> list[Token]:
+def tokenize(source: SourceFile, sink: DiagnosticSink, target: TargetModel | None = None) -> list[Token]:
     """Tokenize a C++ source file, returning a list of tokens ending with EOF."""
-    lexer = _Lexer(source, sink)
+    lexer = _Lexer(source, sink, target or TargetModel())
     return lexer.run()
 
 
 class _Lexer:
-    def __init__(self, source: SourceFile, sink: DiagnosticSink) -> None:
+    def __init__(self, source: SourceFile, sink: DiagnosticSink, target: TargetModel) -> None:
         self._source = source
         self._sink = sink
+        self._target = target
         self._text = source.text
         self._pos = 0
         self._tokens: list[Token] = []
@@ -218,10 +220,10 @@ class _Lexer:
         text = self._text[start:self._pos]
         span = self._source.span(start, self._pos)
 
-        # Check range: must fit 32-bit signed int
+        # Check range: literals above the long long range -> E1004
         value = int(text)
-        if value > 2147483647:
-            self._sink.error("E1004", f"integer literal {text} does not fit in 32-bit int", span)
+        if value > self._target.long_long_max:
+            self._sink.error("E1004", f"integer literal {text} does not fit in long long", span)
             return
 
         self._tokens.append(Token(TokenKind.INT_LITERAL, text, span))

@@ -1,4 +1,4 @@
-"""Type representation for Phase 1 (int only)."""
+"""Type representation for Phase 5 (int and long long)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ class IntType:
     bits: int = 32
 
     def __str__(self) -> str:
-        return "int"
+        return "long long" if self.bits > 32 else "int"
 
 
 @dataclass(frozen=True, slots=True)

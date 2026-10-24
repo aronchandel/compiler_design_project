@@ -122,8 +122,13 @@ def test_lex_integer_literal_range():
     assert not sink.has_errors()
     assert int(tokens[0].text) == 2147483647
 
-    # 2147483648 is > INT_MAX -> E1004
+    # In Phase 5, 2147483648 fits in long long
     tokens, sink = lex("2147483648")
+    assert not sink.has_errors()
+    assert int(tokens[0].text) == 2147483648
+
+    # 9223372036854775808 is > LLONG_MAX -> E1004
+    tokens, sink = lex("9223372036854775808")
     assert sink.has_errors()
     assert any(e.code == "E1004" for e in sink.errors)
 

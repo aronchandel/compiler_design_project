@@ -60,6 +60,14 @@ class SnapshotStore:
         self._stages.append({"name": stage_name, "changed": False})
         self._stage_idx += 1
 
+    def save_ranges_and_plan(self, ranges: Any, plan: Any) -> None:
+        """Save ranges.json and plan.json."""
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        ranges_file = self.out_dir / "ranges.json"
+        ranges_file.write_text(json.dumps(ranges.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        plan_file = self.out_dir / "plan.json"
+        plan_file.write_text(json.dumps(plan.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
     def save_output_and_manifest(
         self,
         source_text: str,
@@ -78,6 +86,9 @@ class SnapshotStore:
             "source_sha256": sha256,
             "config": {
                 "int_bits": config.target.int_bits,
+                "long_long_bits": config.target.long_long_bits,
+                "overflow_policy": config.target.overflow_policy.value,
+                "compat_mode": config.compat_mode.value,
             },
             "stages": self._stages,
             "diagnostics": [

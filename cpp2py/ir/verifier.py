@@ -197,6 +197,14 @@ class IRVerifier:
                     if func.return_type != IRType.VOID:
                         self._sink.error("E5001", f"non-void function must return a value, got void return", instr.span)
 
+            elif opcode == Opcode.CAST:
+                src = instr.operands[0] if instr.operands else None
+                dst = instr.dst
+                src_type = self._get_type(src, temp_types, var_types)
+                dst_type = self._get_type(dst, temp_types, var_types)
+                if src_type not in (IRType.I32, IRType.I64) or dst_type not in (IRType.I32, IRType.I64):
+                    self._sink.error("E5001", f"cast only supports integer types (i32, i64), got {src_type} to {dst_type}", instr.span)
+
             # 4. Check destination temp definition (single assignment)
             if instr.dst is not None and isinstance(instr.dst, TempRef):
                 temp_id = instr.dst.temp_id

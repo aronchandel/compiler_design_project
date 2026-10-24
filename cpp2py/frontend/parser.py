@@ -55,7 +55,7 @@ class _Parser:
         tok = self._cur()
         if tok.kind in UNSUPPORTED_OPERATORS or tok.kind in UNSUPPORTED_KEYWORDS:
             self._error("E4001", f"unsupported construct '{tok.text}' (not supported in this version)", tok.span)
-        elif tok.kind in UNSUPPORTED_TYPE_KEYWORDS:
+        elif tok.kind in UNSUPPORTED_TYPE_KEYWORDS or tok.kind == TokenKind.LONG:
             self._error("E4002", f"unsupported type '{tok.text}'", tok.span)
         elif kind == TokenKind.SEMI:
             self._error("E2002", f"missing ';'", tok.span)
@@ -74,7 +74,7 @@ class _Parser:
     def _recover(self) -> None:
         """Skip tokens until synchronization point (';', '}', or statement start)."""
         _SYNC_TOKENS = (
-            TokenKind.INT, TokenKind.VOID, TokenKind.RETURN,
+            TokenKind.INT, TokenKind.LONG, TokenKind.VOID, TokenKind.RETURN,
             TokenKind.IF, TokenKind.WHILE, TokenKind.FOR,
             TokenKind.RBRACE, TokenKind.EOF
         )
@@ -117,10 +117,14 @@ class _Parser:
         functions: list[ast.FunctionDef] = []
 
         while not self._at(TokenKind.EOF):
-            if self._at_any(TokenKind.INT, TokenKind.VOID):
+            if self._at_any(TokenKind.INT, TokenKind.VOID) or (self._at(TokenKind.LONG) and self._peek(1).kind == TokenKind.LONG):
                 func = self._parse_function_def()
                 if func is not None:
                     functions.append(func)
+            elif self._at(TokenKind.LONG):
+                t1 = self._advance()
+                self._error("E4002", f"unsupported type '{t1.text}'", t1.span)
+                self._recover()
             elif self._cur().kind in UNSUPPORTED_TYPE_KEYWORDS:
                 self._error("E4002", f"unsupported type '{self._cur().text}'", self._cur().span)
                 self._advance()
@@ -152,10 +156,20 @@ class _Parser:
     def _parse_function_def(self) -> ast.FunctionDef | None:
         start = self._cur().span
 
-        # Return type: 'int' or 'void'
+        # Return type: 'int', 'long long', or 'void'
         if self._at(TokenKind.INT):
             ret_type_tok = self._advance()
             ret_type = ast.TypeSpec('int', ret_type_tok.span)
+        elif self._at(TokenKind.LONG):
+            if self._peek(1).kind == TokenKind.LONG:
+                t1 = self._advance()
+                t2 = self._advance()
+                ret_type = ast.TypeSpec('long long', self._make_span(t1.span, t2.span))
+            else:
+                t1 = self._advance()
+                self._error("E4002", f"unsupported type '{t1.text}'", t1.span)
+                self._recover()
+                return None
         elif self._at(TokenKind.VOID):
             ret_type_tok = self._advance()
             ret_type = ast.TypeSpec('void', ret_type_tok.span)
@@ -184,13 +198,16 @@ class _Parser:
                 if self._at(TokenKind.INT):
                     p_type_tok = self._advance()
                     p_type = ast.TypeSpec('int', p_type_tok.span)
-                    if not self._at(TokenKind.IDENT):
-                        self._error("E2001", f"expected parameter name, got '{self._cur().text}'", self._cur().span)
+                elif self._at(TokenKind.LONG):
+                    if self._peek(1).kind == TokenKind.LONG:
+                        t1 = self._advance()
+                        t2 = self._advance()
+                        p_type = ast.TypeSpec('long long', self._make_span(t1.span, t2.span))
+                    else:
+                        t1 = self._advance()
+                        self._error("E4002", f"unsupported type '{t1.text}'", t1.span)
                         self._recover()
                         return None
-                    p_name_tok = self._advance()
-                    p_span = self._make_span(p_type_tok.span, p_name_tok.span)
-                    params.append(ast.Param(p_type, p_name_tok.text, p_span))
                 elif self._cur().kind in UNSUPPORTED_TYPE_KEYWORDS or self._at(TokenKind.VOID):
                     type_text = self._cur().text
                     self._error("E4002", f"unsupported type '{type_text}'", self._cur().span)
@@ -200,6 +217,14 @@ class _Parser:
                     self._error("E2001", f"expected parameter declaration, got '{self._cur().text}'", self._cur().span)
                     self._recover()
                     return None
+
+                if not self._at(TokenKind.IDENT):
+                    self._error("E2001", f"expected parameter name, got '{self._cur().text}'", self._cur().span)
+                    self._recover()
+                    return None
+                p_name_tok = self._advance()
+                p_span = self._make_span(p_type.span, p_name_tok.span)
+                params.append(ast.Param(p_type, p_name_tok.text, p_span))
 
                 if self._at(TokenKind.COMMA):
                     self._advance()
@@ -302,9 +327,17 @@ class _Parser:
         if tok.kind in (TokenKind.PLUS_PLUS, TokenKind.MINUS_MINUS):
             return self._parse_prefix_incdec_stmt()
 
-        # Declaration: 'int ...'
+        # Declaration: 'int ...' or 'long long ...'
         if tok.kind == TokenKind.INT:
             return self._parse_decl_stmt()
+        if tok.kind == TokenKind.LONG:
+            if self._peek(1).kind == TokenKind.LONG:
+                return self._parse_decl_stmt()
+            else:
+                self._error("E4002", f"unsupported type '{tok.text}'", tok.span)
+                self._advance()
+                self._recover()
+                return None
 
         # Return statement
         if tok.kind == TokenKind.RETURN:
@@ -401,8 +434,13 @@ class _Parser:
 
         # 1. for_init
         init: ast.DeclStmt | ast.AssignStmt | ast.IncDecStmt | None = None
-        if self._at(TokenKind.INT):
+        if self._at(TokenKind.INT) or (self._at(TokenKind.LONG) and self._peek(1).kind == TokenKind.LONG):
             init = self._parse_decl_stmt()
+        elif self._at(TokenKind.LONG):
+            tok = self._advance()
+            self._error("E4002", f"unsupported type '{tok.text}'", tok.span)
+            self._recover()
+            return None
         elif self._at(TokenKind.SEMI):
             self._advance()  # empty init
         elif self._at(TokenKind.IDENT):
@@ -565,8 +603,17 @@ class _Parser:
 
     def _parse_decl_stmt(self) -> ast.DeclStmt | None:
         start = self._cur().span
-        type_tok = self._advance()  # 'int'
-        type_spec = ast.TypeSpec('int', type_tok.span)
+        if self._at(TokenKind.INT):
+            type_tok = self._advance()
+            type_spec = ast.TypeSpec('int', type_tok.span)
+        elif self._at(TokenKind.LONG) and self._peek(1).kind == TokenKind.LONG:
+            t1 = self._advance()
+            t2 = self._advance()
+            type_spec = ast.TypeSpec('long long', self._make_span(t1.span, t2.span))
+        else:
+            self._error("E2001", f"expected type specifier, got '{self._cur().text}'", self._cur().span)
+            self._recover()
+            return None
 
         declarators: list[ast.Declarator] = []
 

@@ -109,9 +109,11 @@ class ConstantFoldPass:
 
                     if res is not None:
                         # Check TargetModel type range
-                        if int_min <= res <= int_max:
-                            type_name = str(instr.dst.type) if (instr.dst and hasattr(instr.dst, "type")) else "i32"
-                            res_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
+                        res_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
+                        t_min = target.long_long_min if res_type == IRType.I64 else target.int_min
+                        t_max = target.long_long_max if res_type == IRType.I64 else target.int_max
+                        if t_min <= res <= t_max:
+                            type_name = str(res_type)
                             reason = f"both operands constant; {a}{op_sym}{b}={res} within {type_name}"
                             new_instr = Instruction(
                                 op_id=instr.op_id,
@@ -134,9 +136,11 @@ class ConstantFoldPass:
                 if len(instr.operands) == 1 and isinstance(instr.operands[0], Const):
                     a = instr.operands[0].value
                     res = -a
-                    if int_min <= res <= int_max:
-                        type_name = str(instr.dst.type) if (instr.dst and hasattr(instr.dst, "type")) else "i32"
-                        res_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
+                    res_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
+                    t_min = target.long_long_min if res_type == IRType.I64 else target.int_min
+                    t_max = target.long_long_max if res_type == IRType.I64 else target.int_max
+                    if t_min <= res <= t_max:
+                        type_name = str(res_type)
                         reason = f"operand constant; -({a})={res} within {type_name}"
                         new_instr = Instruction(
                             op_id=instr.op_id,
@@ -153,6 +157,29 @@ class ConstantFoldPass:
                             f"constant folding skipped: negation of {a} overflows",
                             instr.span,
                         )
+
+            # 3b. Check for constant folding on casts
+            elif instr.opcode == Opcode.CAST:
+                if len(instr.operands) == 1 and isinstance(instr.operands[0], Const):
+                    val = instr.operands[0].value
+                    dst_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
+                    if dst_type == IRType.I64:
+                        res = val
+                        reason = f"cast widening is exact; {val} to i64"
+                    else:
+                        # Modular narrowing per TargetModel
+                        int_bits = target.int_bits
+                        res = ((val + (1 << (int_bits - 1))) % (1 << int_bits)) - (1 << (int_bits - 1))
+                        reason = f"cast narrowing modular; {val} to i32 = {res}"
+                    new_instr = Instruction(
+                        op_id=instr.op_id,
+                        opcode=Opcode.ASSIGN,
+                        dst=instr.dst,
+                        operands=(Const(res, dst_type),),
+                        span=instr.span,
+                    )
+                    rw.replace(func, instr, new_instr, reason=reason)
+                    instr = new_instr
 
             # 4. Record new constant temp assignment
             if (

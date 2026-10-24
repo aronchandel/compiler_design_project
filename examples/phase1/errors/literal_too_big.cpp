@@ -2,6 +2,6 @@
 using namespace std;
 
 int main() {
-    int x = 2147483648;
+    int x = 99999999999999999999;
     return 0;
 }

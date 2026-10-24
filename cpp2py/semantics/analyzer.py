@@ -69,9 +69,12 @@ class _Analyzer:
 
         # Determine return type
         int_bits = self._config.target.int_bits
+        ll_bits = self._config.target.long_long_bits
         ret_type: IntType | VoidType
         if func.return_type.name == "int":
             ret_type = IntType(int_bits)
+        elif func.return_type.name == "long long":
+            ret_type = IntType(ll_bits)
         else:
             ret_type = VoidType()
 
@@ -83,7 +86,8 @@ class _Analyzer:
                 self._sink.error("E3002", f"duplicate parameter name '{p.name}'", p.span)
                 continue
             seen_param_names.add(p.name)
-            sym = Symbol(self._alloc_symbol_id(), p.name, IntType(int_bits),
+            p_bits = ll_bits if p.type_spec.name == "long long" else int_bits
+            sym = Symbol(self._alloc_symbol_id(), p.name, IntType(p_bits),
                          SymbolKind.PARAMETER, p.span)
             param_symbols.append(sym)
             self._info.symbols_by_node[p.node_id] = sym
@@ -158,6 +162,9 @@ class _Analyzer:
             self._analyze_return(stmt)
 
     def _analyze_decl(self, stmt: ast.DeclStmt) -> None:
+        int_bits = self._config.target.int_bits
+        ll_bits = self._config.target.long_long_bits
+        var_bits = ll_bits if stmt.type_spec.name == "long long" else int_bits
         for decl in stmt.declarators:
             name = decl.name
 
@@ -172,7 +179,7 @@ class _Analyzer:
                 self._sink.error("E3002", f"redeclaration of '{name}'", decl.span)
                 continue
 
-            sym = Symbol(self._alloc_symbol_id(), name, IntType(self._config.target.int_bits),
+            sym = Symbol(self._alloc_symbol_id(), name, IntType(var_bits),
                          SymbolKind.VARIABLE, decl.span)
             current_scope[name] = sym
             self._info.symbols_by_node[decl.node_id] = sym
@@ -371,7 +378,10 @@ class _Analyzer:
 
     def _analyze_expr(self, expr: ast.Expr) -> IntType | VoidType | BoolType:
         if isinstance(expr, ast.IntLiteral):
-            t = IntType(self._config.target.int_bits)
+            if expr.value <= self._config.target.int_max:
+                t = IntType(self._config.target.int_bits)
+            else:
+                t = IntType(self._config.target.long_long_bits)
             self._info.type_by_node[expr.node_id] = t
             return t
 
@@ -408,8 +418,10 @@ class _Analyzer:
             return t
 
         elif isinstance(expr, ast.UnaryExpr):
-            self._analyze_expr(expr.operand)
-            t = IntType(self._config.target.int_bits)
+            op_t = self._analyze_expr(expr.operand)
+            if isinstance(op_t, VoidType):
+                self._sink.error("E3004", f"operator '{expr.op}' cannot be applied to void operand", expr.span)
+            t = op_t if isinstance(op_t, IntType) else IntType(self._config.target.int_bits)
             self._info.type_by_node[expr.node_id] = t
             return t
 
@@ -425,7 +437,12 @@ class _Analyzer:
             if isinstance(left_t, VoidType) or isinstance(right_t, VoidType):
                 self._sink.error("E3004", f"operator '{expr.op}' cannot be applied to void operands", expr.span)
 
-            t = IntType(self._config.target.int_bits)
+            # Usual arithmetic promotions: if either is long long, result is long long
+            ll_bits = self._config.target.long_long_bits
+            if (isinstance(left_t, IntType) and left_t.bits == ll_bits) or (isinstance(right_t, IntType) and right_t.bits == ll_bits):
+                t = IntType(ll_bits)
+            else:
+                t = IntType(self._config.target.int_bits)
             self._info.type_by_node[expr.node_id] = t
             return t
 

@@ -71,14 +71,13 @@ def test_str_const_and_label_ref():
     assert str(lbl) == "loop_head_r0"
 
 
-def test_all_arch_opcodes_present_except_cast():
+def test_all_arch_opcodes_present():
     expected_opcodes = {
         "declare", "assign", "add", "sub", "mul", "div", "mod", "neg",
-        "read", "print", "label", "jump", "branch", "cmp", "call", "return"
+        "read", "print", "label", "jump", "branch", "cmp", "call", "return", "cast"
     }
     actual = {op.value for op in Opcode}
     assert actual == expected_opcodes
-    assert "cast" not in actual
 
 
 def test_instruction_creation_and_defaults():
