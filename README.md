@@ -2,7 +2,24 @@
 
 A source‑to‑source translator that converts a restricted subset of C++ into readable Python.
 
-**Status:** pre‑implementation (see IMPLEMENTATION_PLAN.md).
+**Status:** Phase 1 complete (see IMPLEMENTATION_PLAN.md).
+
+## Usage
+
+Translate a C++ source file to Python:
+```bash
+python -m cpp2py translate path/to/input.cpp -o path/to/output.py
+```
+
+Dump the AST without generating Python:
+```bash
+python -m cpp2py translate --dump-ast path/to/input.cpp
+```
+
+Check the version:
+```bash
+python -m cpp2py --version
+```
 
 ## Running the tests
 
@@ -10,7 +27,7 @@ A source‑to‑source translator that converts a restricted subset of C++ into 
 python -m pytest -q
 ```
 
-The test suite checks that the environment is set up correctly and that the package can be imported.
+The test suite contains unit and integration tests verifying the lexer, parser, semantic analyzer, code generator, CLI, and example programs.
 
 ## Project documentation
 

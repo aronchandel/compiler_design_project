@@ -14,7 +14,7 @@
 | Phase | Title | Status | Verified on | Evidence (commands run, result) |
 |---|---|---|---|---|
 | P0 | Architecture and repository setup | **VERIFIED** | 2026-10-23 | `python -m pytest -q` → 2 passed; `python -c "import cpp2py; print(cpp2py.__version__)"` → 0.0.0; `cpp2py/` contains only `__init__.py`; `git status` clean after commit |
-| P1 | Minimal frontend and translator | NOT STARTED | — | — |
+| P1 | Minimal frontend and translator | **VERIFIED** | 2026-10-24 | 104 passed (pytest -q); 104 collected (>=60); all positive examples match .expected byte-identically; 15/15 error programs exit 2 with expected codes and no output file; AST dump, W6001 warning, and layering verified |
 | P2 | Custom IR, AST→IR, snapshots | NOT STARTED | — | — |
 | P3 | Control flow, functions, I/O syntax | NOT STARTED | — | — |
 | P4 | Transform framework, constant folding, logs | NOT STARTED | — | — |
@@ -232,11 +232,11 @@ grep -rn "cpp2py.ir\|cpp2py.transforms\|cpp2py.analysis\|cpp2py.compat\|cpp2py.t
 | Warnings only on stderr, lost in files | AC1.5 header-comment check |
 
 **11. Checklist.**
-- [ ] Source, diagnostics, config, lexer, AST, parser, semantics, codegen, compiler, CLI implemented
-- [ ] ≥ 60 tests, all passing
-- [ ] All examples and error programs behave as specified
-- [ ] AC1.1–AC1.10 checked with real command output
-- [ ] README usage updated; status table updated (P1 → VERIFIED) with date
+- [x] Source, diagnostics, config, lexer, AST, parser, semantics, codegen, compiler, CLI implemented
+- [x] ≥ 60 tests, all passing
+- [x] All examples and error programs behave as specified
+- [x] AC1.1–AC1.10 checked with real command output
+- [x] README usage updated; status table updated (P1 → VERIFIED) with date
 
 **12. Antigravity prompt (copy everything in the box; it does not depend on any earlier conversation).**
 
