@@ -2,7 +2,7 @@
 
 A source‑to‑source translator that converts a restricted subset of C++ into readable Python.
 
-**Status:** Phase 3 complete (see IMPLEMENTATION_PLAN.md).
+**Status:** Phase 4 complete (see IMPLEMENTATION_PLAN.md).
 
 ## Usage
 
