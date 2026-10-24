@@ -15,7 +15,7 @@
 |---|---|---|---|---|
 | P0 | Architecture and repository setup | **VERIFIED** | 2026-10-23 | `python -m pytest -q` → 2 passed; `python -c "import cpp2py; print(cpp2py.__version__)"` → 0.0.0; `cpp2py/` contains only `__init__.py`; `git status` clean after commit |
 | P1 | Minimal frontend and translator | **VERIFIED** | 2026-10-24 | 104 passed (pytest -q); 104 collected (>=60); all positive examples match .expected byte-identically; 15/15 error programs exit 2 with expected codes and no output file; AST dump, W6001 warning, and layering verified |
-| P2 | Custom IR, AST→IR, snapshots | NOT STARTED | — | — |
+| P2 | Custom IR, AST→IR, snapshots | **VERIFIED** | 2026-10-24 | 163 passed (pytest -q); 163 collected (>=100); golden IR matches ARCH §D.4 Stage 3 character-for-character; verifier tests pass E5001; IR path equals direct backend stdout; snapshots deterministic & identical across runs; fold_demo prints 48; layering verified |
 | P3 | Control flow, functions, I/O syntax | NOT STARTED | — | — |
 | P4 | Transform framework, constant folding, logs | NOT STARTED | — | — |
 | P5 | Types, range analysis, compatibility helpers | NOT STARTED | — | — |
@@ -399,10 +399,10 @@ python -m cpp2py translate examples/phase1/precedence.cpp -o out/p_ir.py && pyth
 **10. Failure modes.** Temp numbering instability (golden mismatch); wrong evaluation order; spans pointing at the wrong column (golden spans); inlining a temp across a variable write (add a test with `x = x + 1` patterns); non-deterministic snapshots (dict ordering, timestamps); accidentally importing AST types into `ir.model`.
 
 **11. Checklist.**
-- [ ] IR model, builder, printer, verifier, snapshots implemented
-- [ ] IR-based generator is the default; bootstrap path still selectable
-- [ ] ≥ 40 new tests, all passing; layering test in place
-- [ ] AC2.1–AC2.9 checked with real output; status table updated (P2 → VERIFIED)
+- [x] IR model, builder, printer, verifier, snapshots implemented
+- [x] IR-based generator is the default; bootstrap path still selectable
+- [x] ≥ 40 new tests, all passing; layering test in place
+- [x] AC2.1–AC2.9 checked with real output; status table updated (P2 → VERIFIED)
 
 **12. Antigravity prompt.**
 

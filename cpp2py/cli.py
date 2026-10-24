@@ -12,6 +12,7 @@ from cpp2py.diagnostics import Severity, render
 from cpp2py.config import CompilerConfig
 from cpp2py.compiler import compile_source
 from cpp2py.frontend.ast_printer import dump
+from cpp2py.ir.printer import format_module
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,6 +38,10 @@ def main(argv: list[str] | None = None) -> int:
     translate_parser.add_argument('input', help='Input C++ file')
     translate_parser.add_argument('-o', '--output', help='Output Python file')
     translate_parser.add_argument('--dump-ast', action='store_true', help='Dump AST instead of generating Python')
+    translate_parser.add_argument('--dump-ir', action='store_true', help='Dump IR instead of generating Python')
+    translate_parser.add_argument('--snapshots', metavar='DIR', help='Directory to save compilation snapshots')
+    # Hidden --backend option for Phase 1 vs Phase 2 cross-checking
+    translate_parser.add_argument('--backend', choices=['ir', 'direct'], default='ir', help=argparse.SUPPRESS)
 
     args = parser.parse_args(argv)
 
@@ -65,10 +70,13 @@ def _cmd_translate(args: argparse.Namespace) -> int:
         return 1
 
     source = SourceFile(input_path, text)
-    config = CompilerConfig()
+    config = CompilerConfig(backend=args.backend, snapshot_dir=args.snapshots)
 
     if args.dump_ast:
         return _do_dump_ast(text, source, config)
+
+    if args.dump_ir:
+        return _do_dump_ir(text, source, config)
 
     return _do_translate(text, source, config, args.output)
 
@@ -95,6 +103,44 @@ def _do_dump_ast(text: str, source: SourceFile, config: CompilerConfig) -> int:
         return 2
 
     print(dump(program))
+    return 0
+
+
+def _do_dump_ir(text: str, source: SourceFile, config: CompilerConfig) -> int:
+    """Dump the IR and exit."""
+    from cpp2py.diagnostics import DiagnosticSink
+    from cpp2py.frontend.lexer import tokenize
+    from cpp2py.frontend.parser import parse
+    from cpp2py.frontend.ast_nodes import reset_node_ids
+    from cpp2py.semantics.analyzer import analyze
+    from cpp2py.ir.builder import build_ir
+    from cpp2py.ir.verifier import verify_module
+
+    reset_node_ids()
+    sink = DiagnosticSink()
+    tokens = tokenize(source, sink)
+
+    if sink.has_errors():
+        _print_diagnostics(sink.all(), source)
+        return 2
+
+    program = parse(tokens, sink)
+    if sink.has_errors() or program is None:
+        _print_diagnostics(sink.all(), source)
+        return 2
+
+    info = analyze(program, config, sink)
+    if sink.has_errors() or info is None:
+        _print_diagnostics(sink.all(), source)
+        return 2
+
+    module = build_ir(program, info, config)
+    verify_module(module, sink)
+    if sink.has_errors():
+        _print_diagnostics(sink.all(), source)
+        return 2
+
+    sys.stdout.write(format_module(module))
     return 0
 
 

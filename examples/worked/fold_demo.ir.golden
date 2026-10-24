@@ -1,0 +1,11 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_1   t0 = mul 6, 7                   ; L5:13
+  op_2   a = assign t0                   ; L5:5
+  op_3   declare b : i32                 ; L6:5
+  op_4   t1 = mul 2, 3                   ; L6:17
+  op_5   t2 = add a, t1                  ; L6:13
+  op_6   b = assign t2                   ; L6:5
+  op_7   print b, endl                   ; L7:5
+  op_8   return 0                        ; L8:5
+}

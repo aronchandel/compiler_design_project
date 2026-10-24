@@ -23,3 +23,5 @@ class TargetModel:
 class CompilerConfig:
     """Top-level compiler configuration."""
     target: TargetModel = field(default_factory=TargetModel)
+    backend: str = "ir"  # "ir" (default) or "direct" (bootstrap path)
+    snapshot_dir: str | None = None
