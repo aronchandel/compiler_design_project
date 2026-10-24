@@ -16,7 +16,6 @@ from cpp2py.ir.model import IRModule
 from cpp2py.ir.builder import build_ir
 from cpp2py.ir.verifier import verify_module
 from cpp2py.ir.snapshots import SnapshotStore
-from cpp2py.codegen import ast_to_python
 from cpp2py.codegen import python_gen
 
 
@@ -59,15 +58,7 @@ def compile_source(text: str, filename: str,
     if info is None or sink.has_errors():
         return CompilationResult(False, None, sink.all(), program)
 
-    # Backend selection:
-    if config.backend == "direct":
-        # Phase 1 bootstrap generator: direct AST -> Python
-        python_source = ast_to_python.generate(program, info, sink)
-        if python_source is None or sink.has_errors():
-            return CompilationResult(False, None, sink.all(), program, ir=None)
-        return CompilationResult(True, python_source, sink.all(), program, ir=None)
-
-    # Phase 2 default pipeline: AST -> IR -> verify -> Python
+    # IR pipeline: AST -> IR -> verify -> Python
     module = build_ir(program, info, config)
 
     # Verify IR

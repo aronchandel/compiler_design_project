@@ -1,6 +1,7 @@
-"""AST to IR lowering for Phase 1 / Phase 2 language constructs.
+"""AST to IR lowering for Phase 1 / Phase 2 / Phase 3 language constructs.
 
-Lowers declarations, assignments, I/O, expressions and returns to flat three-address IR.
+Lowers declarations, assignments, compound assignments, inc/dec, I/O, control-flow
+(if/else, while, for), functions, calls, and returns to flat three-address IR.
 """
 
 from __future__ import annotations
@@ -15,16 +16,18 @@ from cpp2py.ir.model import (
     VarRef,
     TempRef,
     StrConst,
+    LabelRef,
     Operand,
     Opcode,
     Instruction,
     IRFunction,
     IRModule,
+    RegionInfo,
 )
 from cpp2py.frontend import ast_nodes as ast
 
 if TYPE_CHECKING:
-    from cpp2py.semantics.symbols import SemanticInfo
+    from cpp2py.semantics.symbols import SemanticInfo, Symbol
     from cpp2py.config import CompilerConfig
 
 
@@ -43,6 +46,10 @@ class IRBuilder:
         self._config = config
         self._allocator = IdAllocator()
         self._instructions: list[Instruction] = []
+        self._regions: dict[str, RegionInfo] = {}
+        self._symbol_ir_names: dict[int, str] = {}
+        self._name_counters: dict[str, int] = {}
+        self._active_scope_symbols: list[set[int]] = []
 
     def build(self) -> IRModule:
         functions: list[IRFunction] = []
@@ -54,49 +61,116 @@ class IRBuilder:
         source_name = self._program.span.file if self._program.span else ""
         return IRModule(functions=functions, source_name=source_name)
 
+    def _get_ir_name(self, sym: Symbol) -> str:
+        if sym.symbol_id in self._symbol_ir_names:
+            return self._symbol_ir_names[sym.symbol_id]
+
+        # Check if another symbol with the same name is currently active in enclosing scopes
+        name = sym.name
+        is_shadowing = any(
+            self._symbol_ir_names.get(sid, "") == name or self._symbol_ir_names.get(sid, "").startswith(f"{name}_")
+            for scope in self._active_scope_symbols
+            for sid in scope
+        )
+
+        if is_shadowing:
+            counter = self._name_counters.get(name, 0) + 1
+            self._name_counters[name] = counter
+            ir_name = f"{name}_{counter}"
+        else:
+            ir_name = name
+
+        self._symbol_ir_names[sym.symbol_id] = ir_name
+        return ir_name
+
+    def _enter_scope(self) -> None:
+        self._active_scope_symbols.append(set())
+
+    def _exit_scope(self) -> None:
+        self._active_scope_symbols.pop()
+
+    def _register_active_symbol(self, sym: Symbol) -> str:
+        ir_name = self._get_ir_name(sym)
+        if self._active_scope_symbols:
+            self._active_scope_symbols[-1].add(sym.symbol_id)
+        return ir_name
+
     def _build_function(self, func: ast.FunctionDef) -> IRFunction:
         self._instructions = []
+        self._regions = {}
+        self._symbol_ir_names = {}
+        self._name_counters = {}
+        self._active_scope_symbols = []
+
+        self._enter_scope()
+
+        # Build parameters
+        params: list[VarRef] = []
+        for p in func.params:
+            sym = self._info.symbols_by_node.get(p.node_id)
+            if sym is not None:
+                ir_name = self._register_active_symbol(sym)
+                params.append(VarRef(symbol_id=sym.symbol_id, ir_name=ir_name, type=IRType.I32))
 
         # Lower body statements
         for stmt in func.body.statements:
             self._lower_stmt(stmt)
 
+        self._exit_scope()
+
         # Check if function ends with return
         has_return = (len(self._instructions) > 0 and
                       self._instructions[-1].opcode == Opcode.RETURN)
 
+        ret_type = IRType.I32 if func.return_type.name == "int" else IRType.VOID
+
         if not has_return:
-            # Append implicit "return 0" for main
-            # Span is the closing brace
             closing_pos = func.body.span.end
             closing_span = SourceSpan(
                 file=func.body.span.file,
                 start=closing_pos,
                 end=closing_pos,
             )
-            ret_instr = Instruction(
-                op_id=self._allocator.next_op_id(),
-                opcode=Opcode.RETURN,
-                operands=(Const(0, IRType.I32),),
-                span=closing_span,
-            )
-            self._instructions.append(ret_instr)
+            if func.name == "main":
+                # Implicit return 0 for main
+                ret_instr = Instruction(
+                    op_id=self._allocator.next_op_id(),
+                    opcode=Opcode.RETURN,
+                    operands=(Const(0, IRType.I32),),
+                    span=closing_span,
+                )
+                self._instructions.append(ret_instr)
+            elif ret_type == IRType.VOID:
+                # Implicit void return
+                ret_instr = Instruction(
+                    op_id=self._allocator.next_op_id(),
+                    opcode=Opcode.RETURN,
+                    operands=(),
+                    span=closing_span,
+                )
+                self._instructions.append(ret_instr)
 
-        ret_type = IRType.I32 if func.return_type.name == "int" else IRType.VOID
         return IRFunction(
             name=func.name,
-            params=(),
+            params=tuple(params),
             return_type=ret_type,
             body=list(self._instructions),
-            regions={},
+            regions=dict(self._regions),
         )
 
     def _lower_stmt(self, stmt: ast.Stmt) -> None:
-        if isinstance(stmt, ast.DeclStmt):
+        if isinstance(stmt, ast.Block):
+            self._enter_scope()
+            for s in stmt.statements:
+                self._lower_stmt(s)
+            self._exit_scope()
+
+        elif isinstance(stmt, ast.DeclStmt):
             for decl in stmt.declarators:
                 sym = self._info.symbols_by_node.get(decl.node_id)
                 symbol_id = sym.symbol_id if sym is not None else 0
-                var_ref = VarRef(symbol_id=symbol_id, ir_name=decl.name, type=IRType.I32)
+                ir_name = self._register_active_symbol(sym) if sym is not None else decl.name
+                var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
 
                 # 1. declare v : type
                 self._instructions.append(Instruction(
@@ -121,22 +195,245 @@ class IRBuilder:
         elif isinstance(stmt, ast.AssignStmt):
             sym = self._info.symbols_by_node.get(stmt.target.node_id)
             symbol_id = sym.symbol_id if sym is not None else 0
-            var_ref = VarRef(symbol_id=symbol_id, ir_name=stmt.target.name, type=IRType.I32)
+            ir_name = self._get_ir_name(sym) if sym is not None else stmt.target.name
+            var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
 
             val_op = self._lower_expr(stmt.value)
+
+            if stmt.op == '=':
+                self._instructions.append(Instruction(
+                    op_id=self._allocator.next_op_id(),
+                    opcode=Opcode.ASSIGN,
+                    dst=var_ref,
+                    operands=(val_op,),
+                    span=stmt.span,
+                ))
+            else:
+                op_map = {
+                    '+=': Opcode.ADD,
+                    '-=': Opcode.SUB,
+                    '*=': Opcode.MUL,
+                    '/=': Opcode.DIV,
+                    '%=': Opcode.MOD,
+                }
+                opcode = op_map[stmt.op]
+                temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
+                self._instructions.append(Instruction(
+                    op_id=self._allocator.next_op_id(),
+                    opcode=opcode,
+                    dst=temp,
+                    operands=(var_ref, val_op),
+                    span=stmt.span,
+                ))
+                self._instructions.append(Instruction(
+                    op_id=self._allocator.next_op_id(),
+                    opcode=Opcode.ASSIGN,
+                    dst=var_ref,
+                    operands=(temp,),
+                    span=stmt.span,
+                ))
+
+        elif isinstance(stmt, ast.IncDecStmt):
+            sym = self._info.symbols_by_node.get(stmt.target.node_id)
+            symbol_id = sym.symbol_id if sym is not None else 0
+            ir_name = self._get_ir_name(sym) if sym is not None else stmt.target.name
+            var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
+
+            opcode = Opcode.ADD if stmt.op == '++' else Opcode.SUB
+            temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=opcode,
+                dst=temp,
+                operands=(var_ref, Const(1, IRType.I32)),
+                span=stmt.span,
+            ))
             self._instructions.append(Instruction(
                 op_id=self._allocator.next_op_id(),
                 opcode=Opcode.ASSIGN,
                 dst=var_ref,
-                operands=(val_op,),
+                operands=(temp,),
                 span=stmt.span,
             ))
+
+        elif isinstance(stmt, ast.IfStmt):
+            rid = self._allocator.next_region_id()
+            self._regions[rid] = RegionInfo(region_id=rid, kind="if", span=stmt.span)
+
+            cond_op = self._lower_condition(stmt.cond)
+
+            l_then = f"if_then_{rid}"
+            l_else = f"if_else_{rid}"
+            l_end = f"if_end_{rid}"
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.BRANCH,
+                operands=(cond_op, LabelRef(l_then), LabelRef(l_else)),
+                span=stmt.span,
+            ))
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_then,
+                operands=(LabelRef(l_then),),
+            ))
+
+            self._lower_stmt(stmt.then_body)
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.JUMP,
+                label_name=l_end,
+                operands=(LabelRef(l_end),),
+            ))
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_else,
+                operands=(LabelRef(l_else),),
+            ))
+
+            if stmt.else_body is not None:
+                self._lower_stmt(stmt.else_body)
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_end,
+                operands=(LabelRef(l_end),),
+            ))
+
+        elif isinstance(stmt, ast.WhileStmt):
+            rid = self._allocator.next_region_id()
+            self._regions[rid] = RegionInfo(region_id=rid, kind="while", span=stmt.span)
+
+            l_head = f"loop_head_{rid}"
+            l_body = f"loop_body_{rid}"
+            l_end = f"loop_end_{rid}"
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_head,
+                operands=(LabelRef(l_head),),
+                role="loop_head",
+                region_id=rid,
+            ))
+
+            cond_op = self._lower_condition(stmt.cond)
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.BRANCH,
+                operands=(cond_op, LabelRef(l_body), LabelRef(l_end)),
+                span=stmt.span,
+            ))
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_body,
+                operands=(LabelRef(l_body),),
+            ))
+
+            self._lower_stmt(stmt.body)
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.JUMP,
+                label_name=l_head,
+                operands=(LabelRef(l_head),),
+            ))
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_end,
+                operands=(LabelRef(l_end),),
+            ))
+
+        elif isinstance(stmt, ast.ForStmt):
+            rid = self._allocator.next_region_id()
+
+            loop_var = None
+            if isinstance(stmt.init, ast.DeclStmt) and stmt.init.declarators:
+                sym = self._info.symbols_by_node.get(stmt.init.declarators[0].node_id)
+                loop_var = sym.symbol_id if sym else None
+            elif isinstance(stmt.init, ast.AssignStmt):
+                sym = self._info.symbols_by_node.get(stmt.init.target.node_id)
+                loop_var = sym.symbol_id if sym else None
+
+            self._regions[rid] = RegionInfo(region_id=rid, kind="for", span=stmt.span, loop_var=loop_var)
+
+            self._enter_scope()
+
+            # 1. Lower init
+            if stmt.init is not None:
+                self._lower_stmt(stmt.init)
+
+            # 2. Canonical loop shape
+            l_head = f"loop_head_{rid}"
+            l_body = f"loop_body_{rid}"
+            l_end = f"loop_end_{rid}"
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_head,
+                operands=(LabelRef(l_head),),
+                role="loop_head",
+                region_id=rid,
+            ))
+
+            cond_op = self._lower_condition(stmt.cond)
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.BRANCH,
+                operands=(cond_op, LabelRef(l_body), LabelRef(l_end)),
+                span=stmt.span,
+            ))
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_body,
+                operands=(LabelRef(l_body),),
+            ))
+
+            self._lower_stmt(stmt.body)
+
+            if stmt.update is not None:
+                self._lower_stmt(stmt.update)
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.JUMP,
+                label_name=l_head,
+                operands=(LabelRef(l_head),),
+            ))
+
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.LABEL,
+                label_name=l_end,
+                operands=(LabelRef(l_end),),
+            ))
+
+            self._exit_scope()
+
+        elif isinstance(stmt, ast.CallStmt):
+            self._lower_call(stmt.call, is_expr=False)
 
         elif isinstance(stmt, ast.InputStmt):
             for target in stmt.targets:
                 sym = self._info.symbols_by_node.get(target.node_id)
                 symbol_id = sym.symbol_id if sym is not None else 0
-                var_ref = VarRef(symbol_id=symbol_id, ir_name=target.name, type=IRType.I32)
+                ir_name = self._get_ir_name(sym) if sym is not None else target.name
+                var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
 
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
@@ -154,7 +451,6 @@ class IRBuilder:
             operands: list[Operand] = []
             for item in items_to_lower:
                 if isinstance(item, ast.EndlMarker):
-                    # Non-final endl becomes StrConst("\n")
                     operands.append(StrConst("\n"))
                 elif isinstance(item, ast.StringLiteral):
                     operands.append(StrConst(item.value))
@@ -187,6 +483,65 @@ class IRBuilder:
                     span=stmt.span,
                 ))
 
+    def _lower_condition(self, cond: ast.Condition) -> TempRef:
+        left_op = self._lower_expr(cond.left)
+        right_op = self._lower_expr(cond.right)
+
+        cmp_map = {
+            '<': 'lt',
+            '<=': 'le',
+            '>': 'gt',
+            '>=': 'ge',
+            '==': 'eq',
+            '!=': 'ne',
+        }
+        cmp_op = cmp_map[cond.op]
+        temp = TempRef(self._allocator.next_temp_id(), IRType.BOOL)
+        self._instructions.append(Instruction(
+            op_id=self._allocator.next_op_id(),
+            opcode=Opcode.CMP,
+            dst=temp,
+            operands=(left_op, right_op),
+            cmp_op=cmp_op,
+            span=cond.span,
+        ))
+        return temp
+
+    def _lower_call(self, expr: ast.CallExpr, is_expr: bool) -> Operand | None:
+        arg_ops: list[Operand] = []
+        for arg in expr.args:
+            arg_ops.append(self._lower_expr(arg))
+
+        fn_sym = self._info.functions.get(expr.callee)
+        is_void = fn_sym is not None and isinstance(fn_sym.return_type, ast.VoidType if hasattr(ast, "VoidType") else type(None))
+        # Also check semantic info type_by_node
+        node_t = self._info.type_by_node.get(expr.node_id)
+        from cpp2py.semantics.types import VoidType
+        if isinstance(node_t, VoidType):
+            is_void = True
+
+        if is_expr and not is_void:
+            dst = TempRef(self._allocator.next_temp_id(), IRType.I32)
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.CALL,
+                dst=dst,
+                operands=tuple(arg_ops),
+                func_name=expr.callee,
+                span=expr.span,
+            ))
+            return dst
+        else:
+            self._instructions.append(Instruction(
+                op_id=self._allocator.next_op_id(),
+                opcode=Opcode.CALL,
+                dst=None,
+                operands=tuple(arg_ops),
+                func_name=expr.callee,
+                span=expr.span,
+            ))
+            return None
+
     def _lower_expr(self, expr: ast.Expr) -> Operand:
         if isinstance(expr, ast.IntLiteral):
             return Const(expr.value, IRType.I32)
@@ -194,11 +549,11 @@ class IRBuilder:
         elif isinstance(expr, ast.NameExpr):
             sym = self._info.symbols_by_node.get(expr.node_id)
             symbol_id = sym.symbol_id if sym is not None else 0
-            return VarRef(symbol_id=symbol_id, ir_name=expr.name, type=IRType.I32)
+            ir_name = self._get_ir_name(sym) if sym is not None else expr.name
+            return VarRef(symbol_id=symbol_id, ir_name=ir_name, type=IRType.I32)
 
         elif isinstance(expr, ast.UnaryExpr):
             if expr.op == '+':
-                # Unary plus has no effect
                 return self._lower_expr(expr.operand)
 
             operand_val = self._lower_expr(expr.operand)
@@ -213,7 +568,6 @@ class IRBuilder:
             return temp
 
         elif isinstance(expr, ast.BinaryExpr):
-            # Left operand evaluated before right
             left_val = self._lower_expr(expr.left)
             right_val = self._lower_expr(expr.right)
 
@@ -224,7 +578,7 @@ class IRBuilder:
                 '/': Opcode.DIV,
                 '%': Opcode.MOD,
             }
-            opcode = op_map[expr.op]
+            opcode = op_map.get(expr.op, Opcode.ADD)
             temp = TempRef(self._allocator.next_temp_id(), IRType.I32)
             self._instructions.append(Instruction(
                 op_id=self._allocator.next_op_id(),
@@ -234,5 +588,11 @@ class IRBuilder:
                 span=expr.span,
             ))
             return temp
+
+        elif isinstance(expr, ast.CallExpr):
+            res = self._lower_call(expr, is_expr=True)
+            if res is not None:
+                return res
+            return Const(0, IRType.I32)
 
         raise NotImplementedError(f"Unsupported expression node: {type(expr)}")

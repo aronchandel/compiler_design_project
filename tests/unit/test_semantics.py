@@ -91,15 +91,15 @@ def test_semantics_cin_undeclared_target():
     assert any(e.code in ("E3001", "E3005") for e in sink.errors)
 
 
-def test_semantics_invalid_return_value():
-    text = "int main() { return 1; }"
+def test_semantics_invalid_void_return_value():
+    text = "void f() { return 1; } int main() { return 0; }"
     _, sink = check_semantics(text)
     assert sink.has_errors()
-    assert any(e.code == "E4001" for e in sink.errors)
+    assert any(e.code == "E3004" for e in sink.errors)
 
 
-def test_semantics_return_not_last():
-    text = "int main() { return 0; int x = 1; }"
+def test_semantics_void_return_in_int_func():
+    text = "int f() { return; } int main() { return 0; }"
     _, sink = check_semantics(text)
     assert sink.has_errors()
-    assert any(e.code == "E4001" for e in sink.errors)
+    assert any(e.code == "E3004" for e in sink.errors)

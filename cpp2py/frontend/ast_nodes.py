@@ -122,7 +122,51 @@ class BinaryExpr:
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
 
-Expr = Union[IntLiteral, NameExpr, UnaryExpr, BinaryExpr]
+@dataclass(frozen=True, slots=True)
+class Param:
+    type_spec: TypeSpec
+    name: str
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, type_spec: TypeSpec, name: str, span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'type_spec', type_spec)
+        object.__setattr__(self, 'name', name)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+@dataclass(frozen=True, slots=True)
+class CallExpr:
+    callee: str
+    args: tuple[Expr, ...]
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, callee: str, args: tuple[Expr, ...], span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'callee', callee)
+        object.__setattr__(self, 'args', args)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+@dataclass(frozen=True, slots=True)
+class Condition:
+    op: str  # "<" "<=" ">" ">=" "==" "!="
+    left: Expr
+    right: Expr
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, op: str, left: Expr, right: Expr, span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'op', op)
+        object.__setattr__(self, 'left', left)
+        object.__setattr__(self, 'right', right)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+Expr = Union[IntLiteral, NameExpr, UnaryExpr, BinaryExpr, CallExpr]
 OutputItem = Union[Expr, StringLiteral, EndlMarker]
 
 
@@ -212,11 +256,36 @@ class ReturnStmt:
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
 
-Stmt = Union[DeclStmt, AssignStmt, InputStmt, OutputStmt, ReturnStmt]
+@dataclass(frozen=True, slots=True)
+class IncDecStmt:
+    target: NameExpr
+    op: str  # "++" or "--"
+    is_prefix: bool
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, target: NameExpr, op: str, is_prefix: bool = False,
+                 span: SourceSpan | None = None, node_id: int | None = None):
+        object.__setattr__(self, 'target', target)
+        object.__setattr__(self, 'op', op)
+        object.__setattr__(self, 'is_prefix', is_prefix)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
 
-# ---------- top-level ----------
+@dataclass(frozen=True, slots=True)
+class CallStmt:
+    call: CallExpr
+    span: SourceSpan
+    node_id: int
 
+    def __init__(self, call: CallExpr, span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'call', call)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+# Forward declaration for Block as a statement
 @dataclass(frozen=True, slots=True)
 class Block:
     statements: tuple[Stmt, ...]
@@ -230,15 +299,75 @@ class Block:
 
 
 @dataclass(frozen=True, slots=True)
+class IfStmt:
+    cond: Condition
+    then_body: Stmt
+    else_body: Stmt | None
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, cond: Condition, then_body: Stmt, else_body: Stmt | None,
+                 span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'cond', cond)
+        object.__setattr__(self, 'then_body', then_body)
+        object.__setattr__(self, 'else_body', else_body)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+@dataclass(frozen=True, slots=True)
+class WhileStmt:
+    cond: Condition
+    body: Stmt
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, cond: Condition, body: Stmt, span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'cond', cond)
+        object.__setattr__(self, 'body', body)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+@dataclass(frozen=True, slots=True)
+class ForStmt:
+    init: DeclStmt | AssignStmt | IncDecStmt | None
+    cond: Condition
+    update: AssignStmt | IncDecStmt | None
+    body: Stmt
+    span: SourceSpan
+    node_id: int
+
+    def __init__(self, init: DeclStmt | AssignStmt | IncDecStmt | None,
+                 cond: Condition,
+                 update: AssignStmt | IncDecStmt | None,
+                 body: Stmt, span: SourceSpan, node_id: int | None = None):
+        object.__setattr__(self, 'init', init)
+        object.__setattr__(self, 'cond', cond)
+        object.__setattr__(self, 'update', update)
+        object.__setattr__(self, 'body', body)
+        object.__setattr__(self, 'span', span)
+        object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
+
+
+Stmt = Union[
+    DeclStmt, AssignStmt, IncDecStmt, InputStmt, OutputStmt,
+    IfStmt, WhileStmt, ForStmt, ReturnStmt, CallStmt, Block,
+]
+
+
+# ---------- top-level ----------
+
+@dataclass(frozen=True, slots=True)
 class FunctionDef:
     name: str
     return_type: TypeSpec
-    params: tuple[()]  # empty in Phase 1
+    params: tuple[Param, ...]
     body: Block
     span: SourceSpan
     node_id: int
 
-    def __init__(self, name: str, return_type: TypeSpec, params: tuple[()],
+    def __init__(self, name: str, return_type: TypeSpec, params: tuple[Param, ...],
                  body: Block, span: SourceSpan, node_id: int | None = None):
         object.__setattr__(self, 'name', name)
         object.__setattr__(self, 'return_type', return_type)

@@ -131,15 +131,15 @@ def test_parse_unsupported_type():
     assert any(e.code == "E4002" for e in sink.errors)
 
 
-def test_parse_unsupported_while():
-    text = "int main() { while (1) {} }"
+def test_parse_unsupported_break():
+    text = "int main() { break; return 0; }"
     _, sink = parse_text(text)
     assert sink.has_errors()
     assert any(e.code == "E4001" for e in sink.errors)
 
 
-def test_parse_unsupported_nested_block():
-    text = "int main() { { int x; } }"
+def test_parse_unsupported_switch():
+    text = "int main() { switch (1) {} return 0; }"
     _, sink = parse_text(text)
     assert sink.has_errors()
     assert any(e.code == "E4001" for e in sink.errors)

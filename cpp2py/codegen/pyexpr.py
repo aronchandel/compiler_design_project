@@ -7,6 +7,12 @@ from cpp2py.frontend import ast_nodes as ast
 
 # Operator precedence levels (higher = binds tighter)
 _PREC: dict[str, int] = {
+    '<': 0,
+    '<=': 0,
+    '>': 0,
+    '>=': 0,
+    '==': 0,
+    '!=': 0,
     '+': 1,
     '-': 1,
     '*': 2,
@@ -16,6 +22,12 @@ _PREC: dict[str, int] = {
 
 # Map C++ operators to Python operators
 _OP_MAP: dict[str, str] = {
+    '<': '<',
+    '<=': '<=',
+    '>': '>',
+    '>=': '>=',
+    '==': '==',
+    '!=': '!=',
     '+': '+',
     '-': '-',
     '*': '*',
@@ -79,5 +91,15 @@ def _render(expr: ast.Expr, name_fn: callable, parent_prec: int, is_right: bool)
             result = f"({result})"
 
         return result
+
+    elif isinstance(expr, ast.CallExpr):
+        callee_str = name_fn(expr.callee)
+        args_str = ", ".join(_render(a, name_fn, parent_prec=-1, is_right=False) for a in expr.args)
+        return f"{callee_str}({args_str})"
+
+    elif isinstance(expr, ast.Condition):
+        left_str = _render(expr.left, name_fn, parent_prec=0, is_right=False)
+        right_str = _render(expr.right, name_fn, parent_prec=0, is_right=True)
+        return f"{left_str} {expr.op} {right_str}"
 
     return str(expr)

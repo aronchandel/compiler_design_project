@@ -29,7 +29,14 @@ def format_module(module: IRModule) -> str:
 
 def format_function(func: IRFunction) -> str:
     """Format a single IRFunction as text."""
-    lines: list[str] = [f"function {func.name}() -> {func.return_type} {{"]
+    if func.params:
+        param_strs = [f"{p.ir_name} : {p.type}" for p in func.params]
+        params_str = ", ".join(param_strs)
+        header = f"function {func.name}({params_str}) -> {func.return_type} {{"
+    else:
+        header = f"function {func.name}() -> {func.return_type} {{"
+
+    lines: list[str] = [header]
 
     for instr in func.body:
         lines.append(format_instruction(instr))

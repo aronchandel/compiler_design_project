@@ -40,8 +40,6 @@ def main(argv: list[str] | None = None) -> int:
     translate_parser.add_argument('--dump-ast', action='store_true', help='Dump AST instead of generating Python')
     translate_parser.add_argument('--dump-ir', action='store_true', help='Dump IR instead of generating Python')
     translate_parser.add_argument('--snapshots', metavar='DIR', help='Directory to save compilation snapshots')
-    # Hidden --backend option for Phase 1 vs Phase 2 cross-checking
-    translate_parser.add_argument('--backend', choices=['ir', 'direct'], default='ir', help=argparse.SUPPRESS)
 
     args = parser.parse_args(argv)
 
@@ -70,7 +68,7 @@ def _cmd_translate(args: argparse.Namespace) -> int:
         return 1
 
     source = SourceFile(input_path, text)
-    config = CompilerConfig(backend=args.backend, snapshot_dir=args.snapshots)
+    config = CompilerConfig(snapshot_dir=args.snapshots)
 
     if args.dump_ast:
         return _do_dump_ast(text, source, config)

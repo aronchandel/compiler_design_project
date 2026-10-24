@@ -1,4 +1,4 @@
-"""Integration tests verifying the Phase 2 IR pipeline against the direct backend and .expected files."""
+"""Integration tests verifying the IR pipeline against .expected files."""
 
 import subprocess
 import sys
@@ -20,20 +20,13 @@ def test_ir_pipeline_all_phase1_examples(tmp_path, repo_root):
 
         cpp_content = cpp_file.read_text(encoding="utf-8")
 
-        # 1. Compile through default IR pipeline
-        res_ir = compile_source(cpp_content, str(cpp_file), CompilerConfig(backend="ir"))
+        # 1. Compile through IR pipeline
+        res_ir = compile_source(cpp_content, str(cpp_file), CompilerConfig())
         assert res_ir.success, f"IR pipeline compilation failed for {stem}: {[d.message for d in res_ir.diagnostics]}"
 
-        # 2. Compile through direct backend (Phase 1 bootstrap path)
-        res_direct = compile_source(cpp_content, str(cpp_file), CompilerConfig(backend="direct"))
-        assert res_direct.success, f"Direct backend compilation failed for {stem}"
-
-        # Write generated scripts
+        # Write generated script
         py_ir_file = tmp_path / f"{stem}_ir.py"
         py_ir_file.write_text(res_ir.python_source, encoding="utf-8")
-
-        py_direct_file = tmp_path / f"{stem}_direct.py"
-        py_direct_file.write_text(res_direct.python_source, encoding="utf-8")
 
         # Stdin
         in_file = examples_dir / f"{stem}.in"
@@ -47,22 +40,11 @@ def test_ir_pipeline_all_phase1_examples(tmp_path, repo_root):
         )
         assert proc_ir.returncode == 0, f"Running {py_ir_file} failed with code {proc_ir.returncode}: {proc_ir.stderr.decode()}"
 
-        # Execute direct path
-        proc_direct = subprocess.run(
-            [sys.executable, str(py_direct_file)],
-            input=stdin_data,
-            capture_output=True,
-        )
-        assert proc_direct.returncode == 0
-
         # Normalise newlines
         actual_ir = proc_ir.stdout.replace(b"\r\n", b"\n")
-        actual_direct = proc_direct.stdout.replace(b"\r\n", b"\n")
         expected = exp_file.read_bytes().replace(b"\r\n", b"\n")
 
-        # AC2.4: IR path and direct backend produce identical stdout equal to .expected
         assert actual_ir == expected, f"Mismatch with expected in {stem}:\nExpected: {expected!r}\nGot: {actual_ir!r}"
-        assert actual_ir == actual_direct, f"Mismatch between IR path and direct backend in {stem}"
 
 
 def test_fold_demo_execution(tmp_path, repo_root):
@@ -70,7 +52,7 @@ def test_fold_demo_execution(tmp_path, repo_root):
     assert cpp_file.exists()
 
     cpp_content = cpp_file.read_text(encoding="utf-8")
-    res = compile_source(cpp_content, str(cpp_file), CompilerConfig(backend="ir"))
+    res = compile_source(cpp_content, str(cpp_file), CompilerConfig())
     assert res.success
 
     py_file = tmp_path / "fold_demo.py"

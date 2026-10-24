@@ -1,17 +1,20 @@
 """Python code generator from Intermediate Representation (IR).
 
-Conforms to Phase 2 specification:
-- Layout: headers, import sys, optional input prelude, def main():, return 0, sys.exit(main())
-- Temp inlining rule: inline a temp into its single use when every instruction between
-  definition and use is another temp definition that is itself inlined.
-- Reuses names.py for mangling and pyexpr.py for precedence-aware expression formatting.
-- Emits W6001 warnings and header comments for div and mod.
+Conforms to Phase 3 specification:
+- Rebuilds control flow from canonical IR shapes:
+  * if / elif / else (with elif folding and pass for empty blocks)
+  * while <cond>: (when condition temps inline in evaluation order)
+  * while True: fallback with if not (cond): break (when condition temps cannot inline)
+  * for loops emitted as init + while
+- Compound-assignment peephole (x = x + e -> x += e; div/mod stay x = x // e)
+- Functions in definition order with parameters, calls, and returns
+- main handling (sys.exit(main()); falling off end returns 0)
 """
 
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import cpp2py
 from cpp2py.ir.model import (
@@ -50,7 +53,7 @@ class IRToPythonGenerator:
         self._config = config
         self._mangler = NameMangler()
         self._warnings: list[str] = []
-        self._indent = "    "
+        self._indent_unit = "    "
         self._has_input = False
         self._inlined_temps: set[str] = set()
         self._temp_defs: dict[str, Instruction] = {}
@@ -102,7 +105,7 @@ class IRToPythonGenerator:
         lines.append("")
         lines.append("")
         lines.append('if __name__ == "__main__":')
-        lines.append(f"{self._indent}sys.exit(main())")
+        lines.append(f"{self._indent_unit}sys.exit(main())")
         lines.append("")
 
         text = "\n".join(lines)
@@ -118,55 +121,46 @@ class IRToPythonGenerator:
     def _gen_function(self, func: IRFunction) -> str:
         self._analyze_temps(func.body)
 
-        body_lines: list[str] = []
+        body_lines = self._gen_block(func.body, indent_level=1)
 
-        for instr in func.body:
-            self._gen_instruction(instr, body_lines)
-
-        if not body_lines:
-            body_lines.append(f"{self._indent}return 0")
+        if func.name == "main":
+            if not body_lines:
+                body_lines.append(f"{self._indent_unit}return 0")
+            elif not body_lines[-1].strip().startswith("return"):
+                body_lines.append(f"{self._indent_unit}return 0")
         else:
-            # Ensure function ends with return 0 if not already returning
-            if not body_lines[-1].strip().startswith("return"):
-                body_lines.append(f"{self._indent}return 0")
+            if not body_lines:
+                body_lines.append(f"{self._indent_unit}pass")
 
-        header = f"def {func.name}():"
+        params_str = ", ".join(self._mangler.mangle(p.ir_name) for p in func.params)
+        header = f"def {func.name}({params_str}):"
         return header + "\n" + "\n".join(body_lines)
 
     def _analyze_temps(self, body: list[Instruction]) -> None:
-        """Determine which temporaries can be inlined according to the Phase 2 rule:
-
-        Inline a temporary into its single use when every instruction between
-        definition and use is another temporary definition that is itself inlined.
-        """
+        """Determine which temporaries can be inlined."""
         self._inlined_temps.clear()
         self._temp_defs.clear()
 
-        # Count uses and find definitions
         temp_use_count: dict[str, int] = {}
         temp_def_idx: dict[str, int] = {}
         temp_use_idx: dict[str, int] = {}
 
         for idx, instr in enumerate(body):
-            # Check destination
             if instr.dst is not None and isinstance(instr.dst, TempRef):
                 t_id = instr.dst.temp_id
                 temp_def_idx[t_id] = idx
                 self._temp_defs[t_id] = instr
 
-            # Check operands for uses
             for op in instr.operands:
                 if isinstance(op, TempRef):
                     t_id = op.temp_id
                     temp_use_count[t_id] = temp_use_count.get(t_id, 0) + 1
                     temp_use_idx[t_id] = idx
 
-        # Candidates are single-use temporaries
         single_use_temps = {
             t_id for t_id, count in temp_use_count.items() if count == 1 and t_id in temp_def_idx
         }
 
-        # Check inlining viability for each single-use temp in order
         changed = True
         while changed:
             changed = False
@@ -176,8 +170,8 @@ class IRToPythonGenerator:
 
                 d_idx = temp_def_idx[t_id]
                 u_idx = temp_use_idx[t_id]
+                def_instr = self._temp_defs[t_id]
 
-                # Every instruction between d_idx and u_idx must be a temp definition that is inlined
                 can_inline = True
                 for k in range(d_idx + 1, u_idx):
                     between_instr = body[k]
@@ -186,7 +180,10 @@ class IRToPythonGenerator:
                         break
                     between_temp_id = between_instr.dst.temp_id
                     if between_temp_id not in self._inlined_temps and between_temp_id != t_id:
-                        # Maybe it can't be inlined yet, or it won't be inlined
+                        can_inline = False
+                        break
+                    if between_instr.opcode == Opcode.CALL and def_instr.opcode == Opcode.CALL:
+                        # Do not inline across another function call
                         can_inline = False
                         break
 
@@ -194,8 +191,226 @@ class IRToPythonGenerator:
                     self._inlined_temps.add(t_id)
                     changed = True
 
-    def _gen_instruction(self, instr: Instruction, lines: list[str]) -> None:
+    def _gen_block(self, instrs: list[Instruction], indent_level: int) -> list[str]:
+        """Rebuild structured code from a list of instructions."""
+        lines: list[str] = []
+        indent = self._indent_unit * indent_level
+        i = 0
+        n = len(instrs)
+
+        while i < n:
+            instr = instrs[i]
+
+            # 1. Loop Region: starts with loop_head_rN
+            if instr.opcode == Opcode.LABEL and (instr.label_name or "").startswith("loop_head_"):
+                rid = (instr.label_name or "")[len("loop_head_"):]
+                l_body = f"loop_body_{rid}"
+                l_end = f"loop_end_{rid}"
+
+                # Find branch
+                branch_idx = -1
+                for j in range(i + 1, n):
+                    if instrs[j].opcode == Opcode.BRANCH:
+                        t_target = str(instrs[j].operands[1]) if len(instrs[j].operands) > 1 else ""
+                        if t_target == l_body:
+                            branch_idx = j
+                            break
+
+                if branch_idx != -1:
+                    cond_instrs = instrs[i + 1:branch_idx]
+                    branch_instr = instrs[branch_idx]
+                    cond_op = branch_instr.operands[0]
+
+                    # Find body instructions and loop end
+                    body_start_idx = branch_idx + 1
+                    # Skip loop_body_rid: label
+                    if body_start_idx < n and instrs[body_start_idx].opcode == Opcode.LABEL and instrs[body_start_idx].label_name == l_body:
+                        body_start_idx += 1
+
+                    # Find jump loop_head_rid and loop_end_rid:
+                    jump_idx = -1
+                    end_idx = -1
+                    l_head = f"loop_head_{rid}"
+                    for j in range(body_start_idx, n):
+                        if instrs[j].opcode == Opcode.JUMP and instrs[j].label_name == l_head:
+                            jump_idx = j
+                        elif instrs[j].opcode == Opcode.LABEL and instrs[j].label_name == l_end:
+                            end_idx = j
+                            break
+
+                    if jump_idx != -1 and end_idx != -1:
+                        body_instrs = instrs[body_start_idx:jump_idx]
+
+                        # Check if condition temps can inline directly
+                        can_inline_cond = self._can_inline_loop_cond(cond_instrs, cond_op)
+
+                        if can_inline_cond:
+                            cond_str = self._render_operand_expr(cond_op)
+                            lines.append(f"{indent}while {cond_str}:")
+                            inner_lines = self._gen_block(body_instrs, indent_level + 1)
+                            if not inner_lines:
+                                lines.append(f"{indent}{self._indent_unit}pass")
+                            else:
+                                lines.extend(inner_lines)
+                        else:
+                            # Fallback: while True: + explicit condition + if not (cond): break
+                            lines.append(f"{indent}while True:")
+                            cond_lines: list[str] = []
+                            for ci in cond_instrs:
+                                self._gen_instruction(ci, cond_lines, indent_level + 1)
+                            cond_str = self._render_operand_expr(cond_op)
+                            cond_lines.append(f"{indent}{self._indent_unit}if not ({cond_str}):")
+                            cond_lines.append(f"{indent}{self._indent_unit}{self._indent_unit}break")
+                            inner_lines = self._gen_block(body_instrs, indent_level + 1)
+                            lines.extend(cond_lines)
+                            lines.extend(inner_lines)
+
+                        i = end_idx + 1
+                        continue
+
+            # 2. If Region: starts with branch c, if_then_rN, if_else_rN
+            if instr.opcode == Opcode.BRANCH:
+                t_target = str(instr.operands[1]) if len(instr.operands) > 1 else ""
+                if t_target.startswith("if_then_"):
+                    rid = t_target[len("if_then_"):]
+                    l_then = f"if_then_{rid}"
+                    l_else = f"if_else_{rid}"
+                    l_end = f"if_end_{rid}"
+
+                    cond_op = instr.operands[0]
+
+                    # Find then_start, else_start, end_idx
+                    then_start = -1
+                    else_start = -1
+                    jump_end_idx = -1
+                    end_idx = -1
+
+                    for j in range(i + 1, n):
+                        cur = instrs[j]
+                        if cur.opcode == Opcode.LABEL:
+                            name = cur.label_name or ""
+                            if name == l_then:
+                                then_start = j + 1
+                            elif name == l_else:
+                                else_start = j + 1
+                            elif name == l_end:
+                                end_idx = j
+                                break
+                        elif cur.opcode == Opcode.JUMP and cur.label_name == l_end:
+                            if jump_end_idx == -1:
+                                jump_end_idx = j
+
+                    if then_start != -1 and else_start != -1 and jump_end_idx != -1 and end_idx != -1:
+                        then_instrs = instrs[then_start:jump_end_idx]
+                        else_instrs = instrs[else_start:end_idx]
+
+                        cond_str = self._render_operand_expr(cond_op)
+                        lines.append(f"{indent}if {cond_str}:")
+                        then_lines = self._gen_block(then_instrs, indent_level + 1)
+                        if not then_lines:
+                            lines.append(f"{indent}{self._indent_unit}pass")
+                        else:
+                            lines.extend(then_lines)
+
+                        # Handle else / elif
+                        self._emit_else_or_elif(else_instrs, indent_level, lines)
+
+                        i = end_idx + 1
+                        continue
+
+            # 3. Normal instruction
+            self._gen_instruction(instr, lines, indent_level)
+            i += 1
+
+        return lines
+
+    def _can_inline_loop_cond(self, cond_instrs: list[Instruction], cond_op: Operand) -> bool:
+        """Check if loop condition temps can be inlined into a single expression."""
+        if not cond_instrs:
+            return True
+
+        # If any instruction in cond_instrs is a CALL, do NOT inline (enables fallback for calls)
+        for instr in cond_instrs:
+            if instr.opcode == Opcode.CALL:
+                return False
+
+        # All temps defined in cond_instrs (except the final cond_op) must be inlined
+        if isinstance(cond_op, TempRef):
+            for instr in cond_instrs:
+                if instr.dst is not None and isinstance(instr.dst, TempRef):
+                    t_id = instr.dst.temp_id
+                    if t_id != cond_op.temp_id and t_id not in self._inlined_temps:
+                        return False
+            # Check if cond_op itself can be rendered
+            return True
+
+        return True
+
+    def _emit_else_or_elif(self, else_instrs: list[Instruction], indent_level: int, lines: list[str]) -> None:
+        """Emit else or elif clause, folding elif chains when possible."""
+        indent = self._indent_unit * indent_level
+
+        # Check if else_instrs has actual executable instructions
+        real_instrs = [
+            ins for ins in else_instrs
+            if ins.opcode not in (Opcode.LABEL, Opcode.DECLARE)
+        ]
+        if not real_instrs:
+            return
+
+        # Check if else_instrs is exactly one if-region (elif folding)
+        first_real = real_instrs[0]
+        # Also could have condition temps preceding branch
+        branch_instr = None
+        for ins in real_instrs:
+            if ins.opcode == Opcode.BRANCH and str(ins.operands[1]).startswith("if_then_"):
+                branch_instr = ins
+                break
+
+        if branch_instr is not None:
+            # Check if all instructions in else_instrs belong to this if-region
+            t_target = str(branch_instr.operands[1])
+            rid = t_target[len("if_then_"):]
+            l_end = f"if_end_{rid}"
+            if else_instrs[-1].opcode == Opcode.LABEL and else_instrs[-1].label_name == l_end:
+                # Check condition temps can be inlined into elif
+                b_idx = else_instrs.index(branch_instr)
+                cond_temps = else_instrs[:b_idx]
+                if all(ins.dst is not None and isinstance(ins.dst, TempRef) and ins.dst.temp_id in self._inlined_temps for ins in cond_temps):
+                    # Fold into elif!
+                    cond_str = self._render_operand_expr(branch_instr.operands[0])
+                    lines.append(f"{indent}elif {cond_str}:")
+
+                    l_then = f"if_then_{rid}"
+                    l_else = f"if_else_{rid}"
+                    then_start = else_instrs.index(next(ins for ins in else_instrs if ins.label_name == l_then)) + 1
+                    jump_end = else_instrs.index(next(ins for ins in else_instrs if ins.opcode == Opcode.JUMP and ins.label_name == l_end))
+                    else_start = else_instrs.index(next(ins for ins in else_instrs if ins.label_name == l_else)) + 1
+                    end_idx = len(else_instrs) - 1
+
+                    then_sub = else_instrs[then_start:jump_end]
+                    else_sub = else_instrs[else_start:end_idx]
+
+                    then_lines = self._gen_block(then_sub, indent_level + 1)
+                    if not then_lines:
+                        lines.append(f"{indent}{self._indent_unit}pass")
+                    else:
+                        lines.extend(then_lines)
+
+                    self._emit_else_or_elif(else_sub, indent_level, lines)
+                    return
+
+        # Regular else
+        lines.append(f"{indent}else:")
+        else_lines = self._gen_block(else_instrs, indent_level + 1)
+        if not else_lines:
+            lines.append(f"{indent}{self._indent_unit}pass")
+        else:
+            lines.extend(else_lines)
+
+    def _gen_instruction(self, instr: Instruction, lines: list[str], indent_level: int = 1) -> None:
         opcode = instr.opcode
+        indent = self._indent_unit * indent_level
 
         # Check for div / mod warnings (W6001)
         if opcode in (Opcode.DIV, Opcode.MOD):
@@ -203,37 +418,54 @@ class IRToPythonGenerator:
             msg = f"'{op_sym}' is emitted as Python floor division; the result differs from C++ when an operand is negative"
             self._sink.warning("W6001", msg, span=instr.span)
 
-            if instr.span is not None:
-                loc = f"{instr.span.start.line}:{instr.span.start.col}"
-            else:
-                loc = "0:0"
+            loc = f"{instr.span.start.line}:{instr.span.start.col}" if instr.span is not None else "0:0"
             warning_entry = f"W6001 {loc}: {msg}"
             if warning_entry not in self._warnings:
                 self._warnings.append(warning_entry)
 
-        # If this instruction defines an inlined temporary, skip emitting it as a separate statement
+        # Skip inlined temps
         if instr.dst is not None and isinstance(instr.dst, TempRef) and instr.dst.temp_id in self._inlined_temps:
             return
 
-        if opcode == Opcode.DECLARE:
-            # Declarations without initializers emit nothing in Python
+        if opcode in (Opcode.DECLARE, Opcode.LABEL, Opcode.JUMP):
             return
 
         elif opcode == Opcode.ASSIGN:
             dst_name = self._mangle_target(instr.dst)
-            val_expr = self._render_operand_expr(instr.operands[0])
-            lines.append(f"{self._indent}{dst_name} = {val_expr}")
 
-        elif opcode in (Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.MOD, Opcode.NEG):
-            # Non-inlined temporary or variable assignment
+            # Peephole for compound assignment: x += e, x -= e, x *= e
+            src_op = instr.operands[0]
+            if isinstance(src_op, TempRef) and src_op.temp_id in self._temp_defs:
+                def_instr = self._temp_defs[src_op.temp_id]
+                if def_instr.opcode in (Opcode.ADD, Opcode.SUB, Opcode.MUL):
+                    left_op = def_instr.operands[0]
+                    if isinstance(left_op, VarRef) and isinstance(instr.dst, VarRef) and left_op.ir_name == instr.dst.ir_name:
+                        op_symbol = {Opcode.ADD: "+=", Opcode.SUB: "-=", Opcode.MUL: "*="}[def_instr.opcode]
+                        rhs_str = self._render_operand_expr(def_instr.operands[1])
+                        lines.append(f"{indent}{dst_name} {op_symbol} {rhs_str}")
+                        return
+
+            val_expr = self._render_operand_expr(src_op)
+            lines.append(f"{indent}{dst_name} = {val_expr}")
+
+        elif opcode in (Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.MOD, Opcode.NEG, Opcode.CMP):
             dst_name = self._mangle_target(instr.dst)
             ast_expr = self._build_ast_for_instr(instr)
             val_str = render_expr(ast_expr, self._mangler.mangle)
-            lines.append(f"{self._indent}{dst_name} = {val_str}")
+            lines.append(f"{indent}{dst_name} = {val_str}")
+
+        elif opcode == Opcode.CALL:
+            callee = self._mangler.mangle(instr.func_name or "")
+            args_str = ", ".join(self._render_operand_expr(op) for op in instr.operands)
+            if instr.dst is not None:
+                dst_name = self._mangle_target(instr.dst)
+                lines.append(f"{indent}{dst_name} = {callee}({args_str})")
+            else:
+                lines.append(f"{indent}{callee}({args_str})")
 
         elif opcode == Opcode.READ:
             target_name = self._mangle_target(instr.dst or instr.operands[0])
-            lines.append(f"{self._indent}{target_name} = int(next(_tokens))")
+            lines.append(f"{indent}{target_name} = int(next(_tokens))")
 
         elif opcode == Opcode.PRINT:
             items = instr.operands
@@ -246,9 +478,8 @@ class IRToPythonGenerator:
                 else:
                     print_args.append(self._render_operand_expr(item))
 
-            # Special case: print() alone
             if not print_args and has_trailing_endl:
-                lines.append(f"{self._indent}print()")
+                lines.append(f"{indent}print()")
                 return
 
             kw_parts: list[str] = []
@@ -259,14 +490,14 @@ class IRToPythonGenerator:
 
             all_args = list(print_args) + kw_parts
             args_str = ", ".join(all_args)
-            lines.append(f"{self._indent}print({args_str})")
+            lines.append(f"{indent}print({args_str})")
 
         elif opcode == Opcode.RETURN:
             if instr.operands:
                 val_str = self._render_operand_expr(instr.operands[0])
-                lines.append(f"{self._indent}return {val_str}")
+                lines.append(f"{indent}return {val_str}")
             else:
-                lines.append(f"{self._indent}return 0")
+                lines.append(f"{indent}return")
 
     def _mangle_target(self, target: Any) -> str:
         if isinstance(target, VarRef):
@@ -318,6 +549,20 @@ class IRToPythonGenerator:
         elif opcode == Opcode.NEG:
             operand = self._build_ast_expr(instr.operands[0])
             return ast.UnaryExpr("-", operand, dummy_span)
+
+        elif opcode == Opcode.CMP:
+            cmp_map = {
+                'lt': '<', 'le': '<=', 'gt': '>', 'ge': '>=', 'eq': '==', 'ne': '!='
+            }
+            op_sym = cmp_map.get(instr.cmp_op or "", "==")
+            left = self._build_ast_expr(instr.operands[0])
+            right = self._build_ast_expr(instr.operands[1])
+            return ast.BinaryExpr(op_sym, left, right, dummy_span)
+
+        elif opcode == Opcode.CALL:
+            callee = instr.func_name or ""
+            args = tuple(self._build_ast_expr(op) for op in instr.operands)
+            return ast.CallExpr(callee, args, dummy_span)
 
         elif opcode == Opcode.ASSIGN:
             return self._build_ast_expr(instr.operands[0])

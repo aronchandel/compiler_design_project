@@ -16,7 +16,7 @@
 | P0 | Architecture and repository setup | **VERIFIED** | 2026-10-23 | `python -m pytest -q` → 2 passed; `python -c "import cpp2py; print(cpp2py.__version__)"` → 0.0.0; `cpp2py/` contains only `__init__.py`; `git status` clean after commit |
 | P1 | Minimal frontend and translator | **VERIFIED** | 2026-10-24 | 104 passed (pytest -q); 104 collected (>=60); all positive examples match .expected byte-identically; 15/15 error programs exit 2 with expected codes and no output file; AST dump, W6001 warning, and layering verified |
 | P2 | Custom IR, AST→IR, snapshots | **VERIFIED** | 2026-10-24 | 163 passed (pytest -q); 163 collected (>=100); golden IR matches ARCH §D.4 Stage 3 character-for-character; verifier tests pass E5001; IR path equals direct backend stdout; snapshots deterministic & identical across runs; fold_demo prints 48; layering verified |
-| P3 | Control flow, functions, I/O syntax | NOT STARTED | — | — |
+| P3 | Control flow, functions, I/O syntax | **VERIFIED** | 2026-10-24 | 243 passed (pytest -q, 84 new tests >= 70); all 14 Phase 3 examples produce byte-identical stdout to .expected; all 11 error programs exit 2 with expected code and no output file; golden while IR equals ARCH §D.4; verifier accepts all examples and rejects 7 hand-built shape violations; ast_to_python.py & --backend removed; while True fallback, shadowing, recursion verified; AC3.1–AC3.10 PASS |
 | P4 | Transform framework, constant folding, logs | NOT STARTED | — | — |
 | P5 | Types, range analysis, compatibility helpers | NOT STARTED | — | — |
 | P6 | Differential testing infrastructure | NOT STARTED | — | — |
@@ -488,9 +488,9 @@ ls cpp2py/codegen
 **10. Failure modes.** Wrong dangling-`else` binding; loop condition evaluated once instead of every iteration; shadowing collisions in Python's flat function scope; definite-assignment false negatives/positives; `for` update skipped on paths; condition inlined past a side-effecting call (reordering); recursion limit surprises; direct backend removed before all tests are ported (AC3.6).
 
 **11. Checklist.**
-- [ ] Parser, semantics, builder, generator extended; bootstrap generator removed
-- [ ] ≥ 70 new tests passing; examples and error programs as specified
-- [ ] AC3.1–AC3.10 checked with real output; status table updated (P3 → VERIFIED)
+- [x] Parser, semantics, builder, generator extended; bootstrap generator removed
+- [x] ≥ 70 new tests passing; examples and error programs as specified
+- [x] AC3.1–AC3.10 checked with real output; status table updated (P3 → VERIFIED)
 
 **12. Antigravity prompt.**
 

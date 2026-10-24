@@ -18,15 +18,16 @@ class TokenKind(Enum):
 
     # C++ keywords we recognise
     INT = auto()          # 'int'
+    VOID = auto()         # 'void'
     RETURN = auto()       # 'return'
     USING = auto()        # 'using'
     NAMESPACE = auto()    # 'namespace'
+    IF = auto()           # 'if'
+    ELSE = auto()         # 'else'
+    WHILE = auto()        # 'while'
+    FOR = auto()          # 'for'
 
     # Unsupported keywords (detected to produce E4001)
-    IF = auto()
-    ELSE = auto()
-    WHILE = auto()
-    FOR = auto()
     DO = auto()
     SWITCH = auto()
     BREAK = auto()
@@ -50,7 +51,6 @@ class TokenKind(Enum):
     SHORT = auto()
     UNSIGNED = auto()
     SIGNED = auto()
-    VOID = auto()
 
     # Punctuation / operators
     PLUS = auto()         # +
@@ -133,7 +133,6 @@ KEYWORDS: dict[str, TokenKind] = {
 
 # Sets for quick membership testing
 UNSUPPORTED_KEYWORDS: frozenset[TokenKind] = frozenset({
-    TokenKind.IF, TokenKind.ELSE, TokenKind.WHILE, TokenKind.FOR,
     TokenKind.DO, TokenKind.SWITCH, TokenKind.BREAK, TokenKind.CONTINUE,
     TokenKind.GOTO, TokenKind.CLASS, TokenKind.STRUCT, TokenKind.NEW,
     TokenKind.DELETE, TokenKind.TEMPLATE, TokenKind.CONST, TokenKind.STATIC,
@@ -143,16 +142,11 @@ UNSUPPORTED_KEYWORDS: frozenset[TokenKind] = frozenset({
 UNSUPPORTED_TYPE_KEYWORDS: frozenset[TokenKind] = frozenset({
     TokenKind.FLOAT, TokenKind.DOUBLE, TokenKind.CHAR, TokenKind.BOOL,
     TokenKind.LONG, TokenKind.SHORT, TokenKind.UNSIGNED, TokenKind.SIGNED,
-    TokenKind.VOID,
 })
 
 UNSUPPORTED_OPERATORS: frozenset[TokenKind] = frozenset({
-    TokenKind.PLUS_PLUS, TokenKind.MINUS_MINUS,
-    TokenKind.PLUS_EQ, TokenKind.MINUS_EQ, TokenKind.STAR_EQ,
-    TokenKind.SLASH_EQ, TokenKind.PERCENT_EQ,
-    TokenKind.AMP_AMP, TokenKind.PIPE_PIPE, TokenKind.BANG, TokenKind.BANG_EQ,
-    TokenKind.LT, TokenKind.GT, TokenKind.LT_EQ, TokenKind.GT_EQ,
-    TokenKind.EQ_EQ, TokenKind.QUESTION, TokenKind.COLON,
+    TokenKind.AMP_AMP, TokenKind.PIPE_PIPE, TokenKind.BANG,
+    TokenKind.QUESTION, TokenKind.COLON,
 })
 
 

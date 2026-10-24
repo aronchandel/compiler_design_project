@@ -6,18 +6,14 @@ import pytest
 
 ERROR_EXPECTATIONS = {
     "bad_char": "E1001",
-    "compound_assign": "E4001",
     "literal_too_big": "E1004",
     "missing_semicolon": "E2002",
-    "nested_block": "E4001",
     "no_main": "E2001",
     "redeclared": "E3002",
-    "return_value": "E4001",
     "undeclared_var": "E3001",
     "unsupported_directive": "E1005",
     "unsupported_float": "E4002",
     "unsupported_header": "E4003",
-    "unsupported_while": "E4001",
     "unterminated_string": "E1002",
     "use_before_init": "E3003",
 }
