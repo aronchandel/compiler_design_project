@@ -41,8 +41,8 @@ def test_python_gen_input_prelude_absent_when_no_reading():
 
 
 def test_python_gen_inline_single_use_temp():
-    # int a = 6 * 7; inlines t0 into a = 6 * 7
-    res = compile_source("int main() { int a = 6 * 7; return 0; }", "test.cpp")
+    # int a = 6 * 7; inlines t0 into a = 6 * 7 when not constant-folded
+    res = compile_source("int main() { int a = 6 * 7; return 0; }", "test.cpp", CompilerConfig(fold_constants=False))
     assert res.success
     assert "    a = 6 * 7" in res.python_source
     assert "t0 =" not in res.python_source

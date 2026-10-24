@@ -72,7 +72,8 @@ def format_instruction(instr: Instruction) -> str:
     if instr.origin:
         derived = f"[derived from {', '.join(instr.origin)}]"
         if comment_parts:
-            comment_text = comment_parts[0] + "     " + derived
+            pad = max(1, 9 - len(comment_parts[0]))
+            comment_text = comment_parts[0] + " " * pad + derived
         else:
             comment_text = derived
     else:

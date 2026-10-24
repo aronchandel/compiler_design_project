@@ -33,42 +33,53 @@ class SnapshotStore:
 
     def __init__(self, out_dir: str | Path) -> None:
         self.out_dir = Path(out_dir)
+        self._stage_idx: int = 0
+        self._stages: list[dict[str, Any]] = []
 
-    def save_phase2_snapshots(
+    def save_initial_ir(self, module: IRModule) -> None:
+        """Save the 00_ir_initial snapshot."""
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        stage_name = f"{self._stage_idx:02d}_ir_initial"
+        self._write_ir_stage(stage_name, module)
+        self._stages.append({"name": stage_name, "changed": False})
+        self._stage_idx += 1
+
+    def save_pass_snapshot(self, pass_name: str, module: IRModule) -> None:
+        """Save a snapshot after a pass that modified the IR."""
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        stage_name = f"{self._stage_idx:02d}_after_{pass_name}"
+        self._write_ir_stage(stage_name, module)
+        self._stages.append({"name": stage_name, "changed": True})
+        self._stage_idx += 1
+
+    def save_final_ir(self, module: IRModule) -> None:
+        """Save the NN_ir_final snapshot."""
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        stage_name = f"{self._stage_idx:02d}_ir_final"
+        self._write_ir_stage(stage_name, module)
+        self._stages.append({"name": stage_name, "changed": False})
+        self._stage_idx += 1
+
+    def save_output_and_manifest(
         self,
         source_text: str,
-        initial_ir: IRModule,
-        final_ir: IRModule,
         python_source: str,
         config: CompilerConfig,
         diagnostics: tuple[Diagnostic, ...] = (),
     ) -> None:
-        """Write all Phase 2 snapshot files deterministically."""
+        """Save the generated Python output and manifest.json."""
         self.out_dir.mkdir(parents=True, exist_ok=True)
-
-        # 1. 00_ir_initial
-        self._write_ir_stage("00_ir_initial", initial_ir)
-
-        # 2. 01_ir_final
-        self._write_ir_stage("01_ir_final", final_ir)
-
-        # 3. output.py
         output_file = self.out_dir / "output.py"
         output_file.write_text(python_source, encoding="utf-8")
 
-        # 4. manifest.json (timestamp-free!)
         sha256 = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
-
         manifest = {
             "tool_version": cpp2py.__version__,
             "source_sha256": sha256,
             "config": {
                 "int_bits": config.target.int_bits,
             },
-            "stages": [
-                {"name": "00_ir_initial", "changed": False},
-                {"name": "01_ir_final", "changed": False},
-            ],
+            "stages": self._stages,
             "diagnostics": [
                 {
                     "severity": d.severity.value,
@@ -82,6 +93,20 @@ class SnapshotStore:
         manifest_file = self.out_dir / "manifest.json"
         manifest_text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
         manifest_file.write_text(manifest_text, encoding="utf-8")
+
+    def save_phase2_snapshots(
+        self,
+        source_text: str,
+        initial_ir: IRModule,
+        final_ir: IRModule,
+        python_source: str,
+        config: CompilerConfig,
+        diagnostics: tuple[Diagnostic, ...] = (),
+    ) -> None:
+        """Legacy helper for Phase 2 snapshot tests."""
+        self.save_initial_ir(initial_ir)
+        self.save_final_ir(final_ir)
+        self.save_output_and_manifest(source_text, python_source, config, diagnostics)
 
     def _write_ir_stage(self, stage_name: str, module: IRModule) -> None:
         txt_file = self.out_dir / f"{stage_name}.ir.txt"

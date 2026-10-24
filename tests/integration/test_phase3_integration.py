@@ -109,8 +109,7 @@ def test_ac3_6_ast_to_python_removed():
 
 
 def test_ac3_10_no_transforms_analysis_compat_directories():
-    """AC3.10: No transforms/, analysis/, compat/ directories exist."""
+    """No analysis/ or compat/ directories exist in Phase 4."""
     repo_cpp2py = Path("cpp2py")
-    assert not (repo_cpp2py / "transforms").exists()
     assert not (repo_cpp2py / "analysis").exists()
     assert not (repo_cpp2py / "compat").exists()

@@ -17,7 +17,7 @@
 | P1 | Minimal frontend and translator | **VERIFIED** | 2026-10-24 | 104 passed (pytest -q); 104 collected (>=60); all positive examples match .expected byte-identically; 15/15 error programs exit 2 with expected codes and no output file; AST dump, W6001 warning, and layering verified |
 | P2 | Custom IR, AST→IR, snapshots | **VERIFIED** | 2026-10-24 | 163 passed (pytest -q); 163 collected (>=100); golden IR matches ARCH §D.4 Stage 3 character-for-character; verifier tests pass E5001; IR path equals direct backend stdout; snapshots deterministic & identical across runs; fold_demo prints 48; layering verified |
 | P3 | Control flow, functions, I/O syntax | **VERIFIED** | 2026-10-24 | 243 passed (pytest -q, 84 new tests >= 70); all 14 Phase 3 examples produce byte-identical stdout to .expected; all 11 error programs exit 2 with expected code and no output file; golden while IR equals ARCH §D.4; verifier accepts all examples and rejects 7 hand-built shape violations; ast_to_python.py & --backend removed; while True fallback, shadowing, recursion verified; AC3.1–AC3.10 PASS |
-| P4 | Transform framework, constant folding, logs | NOT STARTED | — | — |
+| P4 | Transform framework, constant folding, logs | **VERIFIED** | 2026-10-24 | 328 passed (pytest -q, 85 new tests >= 60); fold_demo Stage 4 IR & Stage 5 Python reproduced character-for-character, stdout 48; 6 log records verified in order & replay test passes; folding table, div/mod zero & overflow W6004 verified; idempotence & fixed-point verified; E5001 invalid pass verified; AC4.1-AC4.10 PASS; optional idiomatic loops qualified/disqualified verified |
 | P5 | Types, range analysis, compatibility helpers | NOT STARTED | — | — |
 | P6 | Differential testing infrastructure | NOT STARTED | — | — |
 | P7 | Failure localisation, fidelity reports | NOT STARTED | — | — |
@@ -567,10 +567,10 @@ python -m cpp2py translate examples/phase3/gcd_while.cpp --no-fold -o out/gcd_nf
 **10. Failure modes.** Folding with Python semantics (floor division) — the sign tests catch it; folding overflow silently; log/IR divergence (replay test); passes that renumber IDs; idiomatic loop applied when the loop variable or bound is modified (disqualification tests); infinite fixed-point loops; deleting a temp that still has a use after substitution.
 
 **11. Checklist.**
-- [ ] Rewriter, manager, log, snapshots-per-pass implemented
-- [ ] `constant_fold` and `dead_temps` implemented with C++ semantics
-- [ ] Optional idiomatic loops implemented and off by default
-- [ ] ≥ 60 new tests passing; AC4.1–AC4.10 checked; status table updated (P4 → VERIFIED)
+- [x] Rewriter, manager, log, snapshots-per-pass implemented
+- [x] `constant_fold` and `dead_temps` implemented with C++ semantics
+- [x] Optional idiomatic loops implemented and off by default
+- [x] ≥ 60 new tests passing; AC4.1–AC4.10 checked; status table updated (P4 → VERIFIED)
 
 **12. Antigravity prompt.**
 

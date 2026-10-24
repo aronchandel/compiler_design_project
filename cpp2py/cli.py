@@ -40,6 +40,9 @@ def main(argv: list[str] | None = None) -> int:
     translate_parser.add_argument('--dump-ast', action='store_true', help='Dump AST instead of generating Python')
     translate_parser.add_argument('--dump-ir', action='store_true', help='Dump IR instead of generating Python')
     translate_parser.add_argument('--snapshots', metavar='DIR', help='Directory to save compilation snapshots')
+    translate_parser.add_argument('--no-fold', action='store_false', dest='fold_constants', default=True, help='Disable constant folding and transform passes')
+    translate_parser.add_argument('--transform-log', metavar='FILE', dest='transform_log', default=None, help='File to write transformation log (JSON Lines)')
+    translate_parser.add_argument('--idiomatic-loops', action='store_true', dest='idiomatic_loops', default=False, help='Emit idiomatic Python for loops when qualifying')
 
     args = parser.parse_args(argv)
 
@@ -68,7 +71,12 @@ def _cmd_translate(args: argparse.Namespace) -> int:
         return 1
 
     source = SourceFile(input_path, text)
-    config = CompilerConfig(snapshot_dir=args.snapshots)
+    config = CompilerConfig(
+        snapshot_dir=args.snapshots,
+        fold_constants=args.fold_constants,
+        idiomatic_loops=args.idiomatic_loops,
+        transform_log_path=args.transform_log,
+    )
 
     if args.dump_ast:
         return _do_dump_ast(text, source, config)
@@ -137,6 +145,17 @@ def _do_dump_ir(text: str, source: SourceFile, config: CompilerConfig) -> int:
     if sink.has_errors():
         _print_diagnostics(sink.all(), source)
         return 2
+
+    if config.fold_constants:
+        from cpp2py.transforms.constant_fold import ConstantFoldPass
+        from cpp2py.transforms.dead_temps import DeadTempsPass
+        from cpp2py.transforms.manager import run_pipeline
+
+        passes = [ConstantFoldPass(), DeadTempsPass()]
+        run_pipeline(module, passes, config, sink)
+        if sink.has_errors():
+            _print_diagnostics(sink.all(), source)
+            return 2
 
     sys.stdout.write(format_module(module))
     return 0

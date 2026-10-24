@@ -163,6 +163,7 @@ class RegionInfo:
     kind: str  # "if", "while", "for"
     span: SourceSpan | None = None
     loop_var: str | int | None = None
+    loop_var_declared_in_init: bool = False
 
 
 @dataclass(slots=True)

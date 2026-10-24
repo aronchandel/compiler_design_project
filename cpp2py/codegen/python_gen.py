@@ -57,6 +57,7 @@ class IRToPythonGenerator:
         self._has_input = False
         self._inlined_temps: set[str] = set()
         self._temp_defs: dict[str, Instruction] = {}
+        self._current_func: IRFunction | None = None
 
     def generate(self) -> str:
         # Check if any function reads input
@@ -119,6 +120,7 @@ class IRToPythonGenerator:
         return text
 
     def _gen_function(self, func: IRFunction) -> str:
+        self._current_func = func
         self._analyze_temps(func.body)
 
         body_lines = self._gen_block(func.body, indent_level=1)
@@ -198,7 +200,62 @@ class IRToPythonGenerator:
         i = 0
         n = len(instrs)
 
+        # Pre-scan for qualifying idiomatic for loops
+        idiomatic_matches: dict[int, tuple[str, str, list[Instruction], int]] = {}
+        suppressed_inits: set[int] = set()
+
+        if getattr(self._config, "idiomatic_loops", False):
+            for k in range(n):
+                ins = instrs[k]
+                if ins.opcode == Opcode.LABEL and (ins.label_name or "").startswith("loop_head_"):
+                    rid = (ins.label_name or "")[len("loop_head_"):]
+                    l_body = f"loop_body_{rid}"
+                    l_end = f"loop_end_{rid}"
+                    l_head = f"loop_head_{rid}"
+
+                    # Find branch
+                    b_idx = -1
+                    for j in range(k + 1, n):
+                        if instrs[j].opcode == Opcode.BRANCH:
+                            t_target = str(instrs[j].operands[1]) if len(instrs[j].operands) > 1 else ""
+                            if t_target == l_body:
+                                b_idx = j
+                                break
+                    if b_idx != -1:
+                        b_start = b_idx + 1
+                        if b_start < n and instrs[b_start].opcode == Opcode.LABEL and instrs[b_start].label_name == l_body:
+                            b_start += 1
+                        j_idx = -1
+                        e_idx = -1
+                        for j in range(b_start, n):
+                            if instrs[j].opcode == Opcode.JUMP and instrs[j].label_name == l_head:
+                                j_idx = j
+                            elif instrs[j].opcode == Opcode.LABEL and instrs[j].label_name == l_end:
+                                e_idx = j
+                                break
+                        if j_idx != -1 and e_idx != -1:
+                            m = self._try_match_idiomatic_loop(instrs, k, b_idx, b_start, j_idx, rid)
+                            if m is not None:
+                                v_str, r_str, r_body, init_idx = m
+                                idiomatic_matches[k] = (v_str, r_str, r_body, e_idx)
+                                suppressed_inits.add(init_idx)
+
         while i < n:
+            if i in suppressed_inits:
+                i += 1
+                continue
+
+            if i in idiomatic_matches:
+                v_str, r_str, r_body, e_idx = idiomatic_matches[i]
+                lines.append(f"{indent}for {v_str} in {r_str}:")
+                inner_lines = self._gen_block(r_body, indent_level + 1)
+                if not inner_lines:
+                    lines.append(f"{indent}{self._indent_unit}pass")
+                else:
+                    lines.extend(inner_lines)
+                i = e_idx + 1
+                continue
+
             instr = instrs[i]
 
             # 1. Loop Region: starts with loop_head_rN
@@ -345,6 +402,166 @@ class IRToPythonGenerator:
             return True
 
         return True
+
+    def _try_match_idiomatic_loop(
+        self,
+        instrs: list[Instruction],
+        loop_head_idx: int,
+        branch_idx: int,
+        body_start_idx: int,
+        jump_idx: int,
+        rid: str,
+    ) -> tuple[str, str, list[Instruction], int] | None:
+        """Attempt to match a for loop qualifying for Python for i in range(...) syntax.
+
+        Returns (var_str, range_str, real_body_instrs, init_idx) or None.
+        """
+        if not getattr(self._config, "idiomatic_loops", False):
+            return None
+
+        if self._current_func is None:
+            return None
+
+        region = self._current_func.regions.get(rid)
+        if region is None or region.kind != "for":
+            return None
+
+        # 1. loop_var must be declared in the for init
+        if not getattr(region, "loop_var_declared_in_init", False) or region.loop_var is None:
+            return None
+
+        loop_var_sym = region.loop_var
+
+        # Find initialization right before loop_head
+        init_idx = -1
+        for k in range(loop_head_idx - 1, -1, -1):
+            ins = instrs[k]
+            if ins.dst and isinstance(ins.dst, VarRef) and ins.dst.symbol_id == loop_var_sym:
+                if ins.opcode == Opcode.ASSIGN:
+                    init_idx = k
+                break
+            if ins.opcode == Opcode.DECLARE:
+                continue
+            if ins.dst and isinstance(ins.dst, TempRef) and ins.dst.temp_id in self._inlined_temps:
+                continue
+            break
+
+        if init_idx == -1:
+            return None
+
+        init_instr = instrs[init_idx]
+        a_op = init_instr.operands[0]
+        loop_var_ref = init_instr.dst
+
+        # 2. Check update at the end of body_instrs
+        if jump_idx - body_start_idx < 2:
+            return None
+
+        assign_step = instrs[jump_idx - 1]
+        def_step = instrs[jump_idx - 2]
+
+        if assign_step.opcode != Opcode.ASSIGN or not (
+            assign_step.dst and isinstance(assign_step.dst, VarRef) and assign_step.dst.symbol_id == loop_var_sym
+        ):
+            return None
+
+        if def_step.dst != assign_step.operands[0]:
+            return None
+
+        if def_step.opcode not in (Opcode.ADD, Opcode.SUB):
+            return None
+
+        if not (isinstance(def_step.operands[0], VarRef) and def_step.operands[0].symbol_id == loop_var_sym):
+            return None
+
+        if not isinstance(def_step.operands[1], Const):
+            return None
+
+        step_c = def_step.operands[1].value
+        if step_c <= 0:
+            return None
+
+        is_increasing = (def_step.opcode == Opcode.ADD)
+        is_decreasing = (def_step.opcode == Opcode.SUB)
+
+        real_body_instrs = instrs[body_start_idx : jump_idx - 2]
+
+        # 3. loop_var must not be written in real_body_instrs
+        for ins in real_body_instrs:
+            if ins.dst and isinstance(ins.dst, VarRef) and ins.dst.symbol_id == loop_var_sym:
+                return None
+            if ins.opcode == Opcode.READ:
+                for rop in ins.operands:
+                    if isinstance(rop, VarRef) and rop.symbol_id == loop_var_sym:
+                        return None
+
+        # 4. Check condition and bound operand
+        cond_instrs = instrs[loop_head_idx + 1 : branch_idx]
+        branch_instr = instrs[branch_idx]
+        cond_op = branch_instr.operands[0]
+
+        cmp_instr = next((ci for ci in cond_instrs if ci.dst == cond_op), None)
+        if cmp_instr is None or cmp_instr.opcode != Opcode.CMP:
+            return None
+
+        cmp_op = cmp_instr.cmp_op
+        op1 = cmp_instr.operands[0]
+        op2 = cmp_instr.operands[1]
+
+        if not (isinstance(op1, VarRef) and op1.symbol_id == loop_var_sym):
+            return None
+
+        bound_op = op2
+        if isinstance(bound_op, Const):
+            pass
+        elif isinstance(bound_op, VarRef):
+            bound_sym = bound_op.symbol_id
+            for ins in real_body_instrs:
+                if ins.dst and isinstance(ins.dst, VarRef) and ins.dst.symbol_id == bound_sym:
+                    return None
+                if ins.opcode == Opcode.READ:
+                    for rop in ins.operands:
+                        if isinstance(rop, VarRef) and rop.symbol_id == bound_sym:
+                            return None
+        else:
+            return None
+
+        # 5. Check condition direction
+        if is_increasing:
+            if cmp_op not in ("lt", "le"):
+                return None
+        elif is_decreasing:
+            if cmp_op not in ("gt", "ge"):
+                return None
+        else:
+            return None
+
+        # Map to range(...)
+        var_str = self._mangler.mangle(loop_var_ref.ir_name)
+        a_str = self._render_operand_expr(a_op)
+
+        if cmp_op == "lt":
+            b_str = self._render_operand_expr(bound_op)
+            r_str = f"range({a_str}, {b_str})" if step_c == 1 else f"range({a_str}, {b_str}, {step_c})"
+        elif cmp_op == "le":
+            if isinstance(bound_op, Const):
+                b_str = str(bound_op.value + 1)
+            else:
+                b_str = f"{self._render_operand_expr(bound_op)} + 1"
+            r_str = f"range({a_str}, {b_str})" if step_c == 1 else f"range({a_str}, {b_str}, {step_c})"
+        elif cmp_op == "gt":
+            b_str = self._render_operand_expr(bound_op)
+            r_str = f"range({a_str}, {b_str}, -{step_c})"
+        elif cmp_op == "ge":
+            if isinstance(bound_op, Const):
+                b_str = str(bound_op.value - 1)
+            else:
+                b_str = f"{self._render_operand_expr(bound_op)} - 1"
+            r_str = f"range({a_str}, {b_str}, -{step_c})"
+        else:
+            return None
+
+        return var_str, r_str, real_body_instrs, init_idx
 
     def _emit_else_or_elif(self, else_instrs: list[Instruction], indent_level: int, lines: list[str]) -> None:
         """Emit else or elif clause, folding elif chains when possible."""

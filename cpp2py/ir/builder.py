@@ -359,14 +359,23 @@ class IRBuilder:
             rid = self._allocator.next_region_id()
 
             loop_var = None
+            loop_var_declared_in_init = False
             if isinstance(stmt.init, ast.DeclStmt) and stmt.init.declarators:
                 sym = self._info.symbols_by_node.get(stmt.init.declarators[0].node_id)
                 loop_var = sym.symbol_id if sym else None
+                loop_var_declared_in_init = True
             elif isinstance(stmt.init, ast.AssignStmt):
                 sym = self._info.symbols_by_node.get(stmt.init.target.node_id)
                 loop_var = sym.symbol_id if sym else None
+                loop_var_declared_in_init = False
 
-            self._regions[rid] = RegionInfo(region_id=rid, kind="for", span=stmt.span, loop_var=loop_var)
+            self._regions[rid] = RegionInfo(
+                region_id=rid,
+                kind="for",
+                span=stmt.span,
+                loop_var=loop_var,
+                loop_var_declared_in_init=loop_var_declared_in_init,
+            )
 
             self._enter_scope()
 

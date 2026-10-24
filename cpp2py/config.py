@@ -1,4 +1,4 @@
-"""Compiler configuration for cpp2py (Phase 1: minimal)."""
+"""Compiler configuration for cpp2py (Phase 4)."""
 
 from __future__ import annotations
 
@@ -24,3 +24,6 @@ class CompilerConfig:
     """Top-level compiler configuration."""
     target: TargetModel = field(default_factory=TargetModel)
     snapshot_dir: str | None = None
+    fold_constants: bool = True
+    idiomatic_loops: bool = False
+    transform_log_path: str | None = None
