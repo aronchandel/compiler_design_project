@@ -1,0 +1,9 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L4:5
+  op_1   declare b : i32                 ; L4:5
+  op_2   read a                          ; L5:5
+  op_3   read b                          ; L5:5
+  op_4   t0 = mod a, b                   ; L6:13
+  op_5   print t0, endl                  ; L6:5
+  op_6   return 0                        ; L7:5
+}

@@ -1,0 +1,7 @@
+{
+  "case_id": "case_28_narrowing_boundary_zero",
+  "config_overrides": {
+    "overflow_policy": "wrap"
+  },
+  "notes": "Curated boundary test case_28_narrowing_boundary_zero"
+}

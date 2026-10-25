@@ -1,0 +1,11 @@
+{
+  "config": {},
+  "first_seen": "2026-10-25",
+  "generator_version": "1.0",
+  "notes": "Stdout mismatch between C++ and Python",
+  "outcome": "MISMATCH_STDOUT",
+  "seed": null,
+  "sha8": "63be5d16",
+  "status": "open",
+  "tool_version": "0.0.0"
+}

@@ -1,0 +1,80 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_10": {
+      "exact_result_range": {
+        "hi": 0,
+        "lo": -2147483650
+      },
+      "op_id": "op_10",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 0,
+          "lo": -2147483648
+        },
+        {
+          "hi": 0,
+          "lo": -2
+        }
+      ],
+      "result_range": {
+        "hi": 0,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_12": {
+      "exact_result_range": {
+        "hi": 0,
+        "lo": -4
+      },
+      "op_id": "op_12",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": -1,
+          "lo": -5
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 0,
+        "lo": -4
+      },
+      "risks": []
+    },
+    "op_9": {
+      "exact_result_range": {
+        "hi": 0,
+        "lo": -2
+      },
+      "op_id": "op_9",
+      "opcode": "div",
+      "operand_ranges": [
+        {
+          "hi": -1,
+          "lo": -5
+        },
+        {
+          "hi": 2,
+          "lo": 2
+        }
+      ],
+      "result_range": {
+        "hi": 0,
+        "lo": -2
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 10
+}

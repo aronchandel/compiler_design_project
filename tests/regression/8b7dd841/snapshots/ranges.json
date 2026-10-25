@@ -1,0 +1,151 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_10": {
+      "exact_result_range": {
+        "hi": 2,
+        "lo": 2
+      },
+      "op_id": "op_10",
+      "opcode": "sub",
+      "operand_ranges": [
+        {
+          "hi": 2,
+          "lo": 2
+        },
+        {
+          "hi": 0,
+          "lo": 0
+        }
+      ],
+      "result_range": {
+        "hi": 2,
+        "lo": 2
+      },
+      "risks": []
+    },
+    "op_19": {
+      "exact_result_range": {
+        "hi": 1,
+        "lo": -2147483649
+      },
+      "op_id": "op_19",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 2,
+          "lo": -2147483648
+        },
+        {
+          "hi": -1,
+          "lo": -1
+        }
+      ],
+      "result_range": {
+        "hi": 1,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_21": {
+      "exact_result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "op_id": "op_21",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": []
+    },
+    "op_32": {
+      "exact_result_range": {
+        "hi": 2147483645,
+        "lo": -2147483650
+      },
+      "op_id": "op_32",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": -2,
+          "lo": -2
+        }
+      ],
+      "result_range": {
+        "hi": 2147483645,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_34": {
+      "exact_result_range": {
+        "hi": 5,
+        "lo": 1
+      },
+      "op_id": "op_34",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 4,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 5,
+        "lo": 1
+      },
+      "risks": []
+    },
+    "op_9": {
+      "exact_result_range": {
+        "hi": 0,
+        "lo": 0
+      },
+      "op_id": "op_9",
+      "opcode": "div",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 1
+        },
+        {
+          "hi": -3,
+          "lo": -3
+        }
+      ],
+      "result_range": {
+        "hi": 0,
+        "lo": 0
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 23
+}

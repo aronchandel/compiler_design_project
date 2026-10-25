@@ -1,0 +1,95 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_6": {
+      "exact_result_range": {
+        "hi": -20,
+        "lo": -20
+      },
+      "op_id": "op_6",
+      "opcode": "cast",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        }
+      ],
+      "result_range": {
+        "hi": -20,
+        "lo": -20
+      },
+      "risks": []
+    },
+    "op_7": {
+      "exact_result_range": {
+        "hi": -6,
+        "lo": -6
+      },
+      "op_id": "op_7",
+      "opcode": "div",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        },
+        {
+          "hi": 3,
+          "lo": 3
+        }
+      ],
+      "result_range": {
+        "hi": -6,
+        "lo": -6
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ]
+    },
+    "op_8": {
+      "exact_result_range": {
+        "hi": -20,
+        "lo": -20
+      },
+      "op_id": "op_8",
+      "opcode": "cast",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        }
+      ],
+      "result_range": {
+        "hi": -20,
+        "lo": -20
+      },
+      "risks": []
+    },
+    "op_9": {
+      "exact_result_range": {
+        "hi": 0,
+        "lo": -2
+      },
+      "op_id": "op_9",
+      "opcode": "mod",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        },
+        {
+          "hi": 3,
+          "lo": 3
+        }
+      ],
+      "result_range": {
+        "hi": 0,
+        "lo": -2
+      },
+      "risks": [
+        "MOD_SIGN_DIFFERS"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

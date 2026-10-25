@@ -1,0 +1,971 @@
+{
+  "functions": [
+    {
+      "body": [
+        {
+          "dst": "a",
+          "op_id": "op_0",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "a",
+          "op_id": "op_1",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 1
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_2",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_4",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -1
+            }
+          ],
+          "origin": [
+            "op_3"
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "c",
+          "op_id": "op_5",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "c",
+          "op_id": "op_7",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -1
+            }
+          ],
+          "origin": [
+            "op_6"
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "x",
+          "op_id": "op_8",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "x",
+              "symbol_id": 3,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "x",
+          "op_id": "op_10",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -1
+            }
+          ],
+          "origin": [
+            "op_9"
+          ],
+          "span": {
+            "end": {
+              "col": 39,
+              "line": 5
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "y",
+          "op_id": "op_11",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "y",
+              "symbol_id": 4,
+              "type": "i64"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 22,
+              "line": 6
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "y",
+          "op_id": "op_13",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i64",
+              "value": 42
+            }
+          ],
+          "origin": [
+            "op_12"
+          ],
+          "span": {
+            "end": {
+              "col": 22,
+              "line": 6
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "a",
+          "op_id": "op_14",
+          "opcode": "read",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 7
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_15",
+          "opcode": "read",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 7
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "dst": "t4",
+          "op_id": "op_16",
+          "opcode": "mul",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            },
+            {
+              "kind": "var",
+              "name": "x",
+              "symbol_id": 3,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 21,
+              "line": 8
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 14,
+              "line": 8
+            }
+          }
+        },
+        {
+          "dst": "t5",
+          "op_id": "op_17",
+          "opcode": "sub",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            },
+            {
+              "kind": "temp",
+              "temp_id": "t4",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 22,
+              "line": 8
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 9,
+              "line": 8
+            }
+          }
+        },
+        {
+          "dst": "x",
+          "op_id": "op_18",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t5",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 8
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 8
+            }
+          }
+        },
+        {
+          "dst": "t6",
+          "op_id": "op_19",
+          "opcode": "cmp",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            },
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 15,
+              "line": 9
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 9,
+              "line": 9
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_20",
+          "opcode": "branch",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t6",
+              "type": "bool"
+            },
+            {
+              "kind": "label",
+              "name": "if_then_r0"
+            },
+            {
+              "kind": "label",
+              "name": "if_else_r0"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 6,
+              "line": 13
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 9
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_21",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "if_then_r0"
+            }
+          ]
+        },
+        {
+          "dst": "t8",
+          "op_id": "op_23",
+          "opcode": "sub",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -42
+            },
+            {
+              "kind": "var",
+              "name": "x",
+              "symbol_id": 3,
+              "type": "i32"
+            }
+          ],
+          "origin": [
+            "op_22"
+          ],
+          "span": {
+            "end": {
+              "col": 24,
+              "line": 10
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 13,
+              "line": 10
+            }
+          }
+        },
+        {
+          "dst": "c",
+          "op_id": "op_24",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t8",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 25,
+              "line": 10
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 9,
+              "line": 10
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_25",
+          "opcode": "jump",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "if_end_r0"
+            }
+          ]
+        },
+        {
+          "dst": null,
+          "op_id": "op_26",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "if_else_r0"
+            }
+          ]
+        },
+        {
+          "dst": "c",
+          "op_id": "op_27",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 15,
+              "line": 12
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 9,
+              "line": 12
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_28",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "if_end_r0"
+            }
+          ]
+        },
+        {
+          "dst": "iter_2",
+          "op_id": "op_29",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "iter_2",
+              "symbol_id": 5,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 25,
+              "line": 14
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 10,
+              "line": 14
+            }
+          }
+        },
+        {
+          "dst": "iter_2",
+          "op_id": "op_30",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 25,
+              "line": 14
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 10,
+              "line": 14
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_31",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_head_r1"
+            }
+          ]
+        },
+        {
+          "dst": "t9",
+          "op_id": "op_32",
+          "opcode": "cmp",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "iter_2",
+              "symbol_id": 5,
+              "type": "i32"
+            },
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 2
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 36,
+              "line": 14
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 26,
+              "line": 14
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_33",
+          "opcode": "branch",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t9",
+              "type": "bool"
+            },
+            {
+              "kind": "label",
+              "name": "loop_body_r1"
+            },
+            {
+              "kind": "label",
+              "name": "loop_end_r1"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 6,
+              "line": 16
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 14
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_34",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_body_r1"
+            }
+          ]
+        },
+        {
+          "dst": "t10",
+          "op_id": "op_35",
+          "opcode": "add",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "x",
+              "symbol_id": 3,
+              "type": "i32"
+            },
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 1
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 18,
+              "line": 15
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 13,
+              "line": 15
+            }
+          }
+        },
+        {
+          "dst": "x",
+          "op_id": "op_36",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t10",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 15
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 9,
+              "line": 15
+            }
+          }
+        },
+        {
+          "dst": "t11",
+          "op_id": "op_37",
+          "opcode": "add",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "iter_2",
+              "symbol_id": 5,
+              "type": "i32"
+            },
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 1
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 57,
+              "line": 14
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 47,
+              "line": 14
+            }
+          }
+        },
+        {
+          "dst": "iter_2",
+          "op_id": "op_38",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t11",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 57,
+              "line": 14
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 38,
+              "line": 14
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_39",
+          "opcode": "jump",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_head_r1"
+            }
+          ]
+        },
+        {
+          "dst": null,
+          "op_id": "op_40",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_end_r1"
+            }
+          ]
+        },
+        {
+          "dst": null,
+          "op_id": "op_41",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 17
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 17
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_42",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 18
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 18
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_43",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 19
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 19
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_44",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "x",
+              "symbol_id": 3,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 20
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 20
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_45",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "y",
+              "symbol_id": 4,
+              "type": "i64"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 21
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 21
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_46",
+          "opcode": "return",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 14,
+              "line": 22
+            },
+            "file": "gen_seed_61_60[0].cpp",
+            "start": {
+              "col": 5,
+              "line": 22
+            }
+          }
+        }
+      ],
+      "name": "main",
+      "params": [],
+      "return_type": "i32"
+    }
+  ],
+  "source_name": "gen_seed_61_60[0].cpp"
+}

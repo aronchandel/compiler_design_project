@@ -1,0 +1,21 @@
+{
+  "config": {
+    "compat_mode": "naive",
+    "int_bits": 32,
+    "long_long_bits": 64,
+    "overflow_policy": "wrap"
+  },
+  "diagnostics": [],
+  "source_sha256": "92a5d45260fda21bd9a2f26e066dcd9e0f2f0ecff300e73b93024e6a84c25cbb",
+  "stages": [
+    {
+      "changed": false,
+      "name": "00_ir_initial"
+    },
+    {
+      "changed": false,
+      "name": "01_ir_final"
+    }
+  ],
+  "tool_version": "0.0.0"
+}

@@ -1,0 +1,5 @@
+{
+  "case_id": "case_21_i64_max_literal",
+  "config_overrides": {},
+  "notes": "Curated boundary test case_21_i64_max_literal"
+}

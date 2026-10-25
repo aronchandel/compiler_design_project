@@ -1,0 +1,50 @@
+{
+  "config": {
+    "compat_mode": "range_guided",
+    "int_bits": 32,
+    "long_long_bits": 64,
+    "overflow_policy": "assume_no_overflow"
+  },
+  "diagnostics": [
+    {
+      "code": "W6002",
+      "message": "operation may overflow",
+      "severity": "warning"
+    },
+    {
+      "code": "W6002",
+      "message": "operation may overflow",
+      "severity": "warning"
+    },
+    {
+      "code": "W6002",
+      "message": "operation may overflow",
+      "severity": "warning"
+    },
+    {
+      "code": "W6002",
+      "message": "operation may overflow",
+      "severity": "warning"
+    }
+  ],
+  "source_sha256": "af392b95331d514615e2534a216543612903d54778545de0281dec95687f40c7",
+  "stages": [
+    {
+      "changed": false,
+      "name": "00_ir_initial"
+    },
+    {
+      "changed": true,
+      "name": "01_after_constant_fold"
+    },
+    {
+      "changed": true,
+      "name": "02_after_dead_temps"
+    },
+    {
+      "changed": false,
+      "name": "03_ir_final"
+    }
+  ],
+  "tool_version": "0.0.0"
+}

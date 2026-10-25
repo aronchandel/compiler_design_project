@@ -1,0 +1,8 @@
+#include <iostream>
+using namespace std;
+int main() {
+    int a = -2147483647 - 1;
+    int b = -a;
+    cout << b << endl;
+    return 0;
+}

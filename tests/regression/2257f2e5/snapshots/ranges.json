@@ -1,0 +1,32 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_6": {
+      "exact_result_range": {
+        "hi": -333333333333,
+        "lo": -333333333333
+      },
+      "op_id": "op_6",
+      "opcode": "div",
+      "operand_ranges": [
+        {
+          "hi": -1000000000000,
+          "lo": -1000000000000
+        },
+        {
+          "hi": 3,
+          "lo": 3
+        }
+      ],
+      "result_range": {
+        "hi": -333333333333,
+        "lo": -333333333333
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

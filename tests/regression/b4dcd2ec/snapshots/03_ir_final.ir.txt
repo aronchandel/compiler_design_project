@@ -1,0 +1,55 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_2   a = assign -1                   ; L5:5     [derived from op_1]
+  op_3   declare b : i32                 ; L5:5
+  op_4   b = assign 5                    ; L5:5
+  op_5   declare c : i32                 ; L5:5
+  op_7   c = assign -1                   ; L5:5     [derived from op_6]
+  op_8   declare x : i32                 ; L5:5
+  op_9   x = assign 5                    ; L5:5
+  op_10  declare y : i32                 ; L5:5
+  op_11  y = assign 10                   ; L5:5
+  op_12  read a                          ; L6:5
+  op_13  t2 = sub y, a                   ; L7:10
+  op_14  t3 = mul t2, a                  ; L7:9
+  op_15  c = assign t3                   ; L7:5
+  op_16  declare iter_1 : i32            ; L8:10
+  op_17  iter_1 = assign 0               ; L8:10
+  op_18  loop_head_r0:                   ; role=loop_head region=r0
+  op_19  t4 = cmp lt iter_1, 4           ; L8:26
+  op_20  branch t4, loop_body_r0, loop_end_r0 ; L8:5
+  op_21  loop_body_r0:
+  op_23  t6 = add y, -1                  ; L9:13    [derived from op_22]
+  op_24  y = assign t6                   ; L9:9
+  op_25  t7 = add iter_1, 1              ; L8:47
+  op_26  iter_1 = assign t7              ; L8:38
+  op_27  jump loop_head_r0
+  op_28  loop_end_r0:
+  op_29  t8 = cmp le a, y                ; L11:9
+  op_30  branch t8, if_then_r1, if_else_r1 ; L11:5
+  op_31  if_then_r1:
+  op_32  y = assign 1                    ; L12:9
+  op_33  jump if_end_r1
+  op_34  if_else_r1:
+  op_35  t9 = mul a, 1                   ; L14:13
+  op_36  y = assign t9                   ; L14:9
+  op_37  if_end_r1:
+  op_38  declare iter_3 : i32            ; L16:10
+  op_39  iter_3 = assign 0               ; L16:10
+  op_40  loop_head_r2:                   ; role=loop_head region=r2
+  op_41  t10 = cmp lt iter_3, 5          ; L16:26
+  op_42  branch t10, loop_body_r2, loop_end_r2 ; L16:5
+  op_43  loop_body_r2:
+  op_45  t12 = add b, -1                 ; L17:13   [derived from op_44]
+  op_46  b = assign t12                  ; L17:9
+  op_47  t13 = add iter_3, 1             ; L16:47
+  op_48  iter_3 = assign t13             ; L16:38
+  op_49  jump loop_head_r2
+  op_50  loop_end_r2:
+  op_51  print a, endl                   ; L19:5
+  op_52  print b, endl                   ; L20:5
+  op_53  print c, endl                   ; L21:5
+  op_54  print x, endl                   ; L22:5
+  op_55  print y, endl                   ; L23:5
+  op_56  return 0                        ; L24:5
+}

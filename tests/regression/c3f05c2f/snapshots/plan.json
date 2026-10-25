@@ -1,0 +1,84 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 0,
+    "native": 3
+  },
+  "decisions": {
+    "op_10": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_10",
+      "operand_ranges": [
+        {
+          "hi": 0,
+          "lo": -2147483648
+        },
+        {
+          "hi": 0,
+          "lo": -2
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": 0,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_12": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_12",
+      "operand_ranges": [
+        {
+          "hi": -1,
+          "lo": -5
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": 0,
+        "lo": -4
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_9": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_9",
+      "operand_ranges": [
+        {
+          "hi": -1,
+          "lo": -5
+        },
+        {
+          "hi": 2,
+          "lo": 2
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": 0,
+        "lo": -2
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "naive",
+  "policy": "assume_no_overflow"
+}

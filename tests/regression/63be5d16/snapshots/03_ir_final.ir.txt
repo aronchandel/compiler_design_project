@@ -1,0 +1,12 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L4:5
+  op_2   a = assign -20                  ; L4:5     [derived from op_1]
+  op_3   declare b : i64                 ; L5:5
+  op_5   b = assign 3                    ; L5:5     [derived from op_4]
+  op_6   t2 = cast a to i64              ; L6:13
+  op_7   t3 = div t2, b                  ; L6:13
+  op_8   t4 = cast a to i64              ; L6:29
+  op_9   t5 = mod t4, b                  ; L6:29
+  op_10  print t3, " ", t5, endl         ; L6:5
+  op_11  return 0                        ; L7:5
+}

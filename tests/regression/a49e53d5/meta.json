@@ -1,0 +1,13 @@
+{
+  "config": {
+    "overflow_policy": "wrap"
+  },
+  "first_seen": "2026-10-25",
+  "generator_version": "1.0",
+  "notes": "C++ execution timed out (WerFault hang fixed; replayed as UB_EXCLUDED 0xC0000095 hardware divide overflow)",
+  "outcome": "TIMEOUT_CPP",
+  "seed": null,
+  "sha8": "a49e53d5",
+  "status": "fixed",
+  "tool_version": "0.0.0"
+}

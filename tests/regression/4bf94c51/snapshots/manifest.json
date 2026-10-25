@@ -1,0 +1,29 @@
+{
+  "config": {
+    "compat_mode": "naive",
+    "int_bits": 32,
+    "long_long_bits": 64,
+    "overflow_policy": "wrap"
+  },
+  "diagnostics": [],
+  "source_sha256": "ec36bae509cce69dfb87b7678239c5e3a0c80316f089979d87a1d114f235535a",
+  "stages": [
+    {
+      "changed": false,
+      "name": "00_ir_initial"
+    },
+    {
+      "changed": true,
+      "name": "01_after_constant_fold"
+    },
+    {
+      "changed": true,
+      "name": "02_after_dead_temps"
+    },
+    {
+      "changed": false,
+      "name": "03_ir_final"
+    }
+  ],
+  "tool_version": "0.0.0"
+}

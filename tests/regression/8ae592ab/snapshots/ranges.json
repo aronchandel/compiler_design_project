@@ -1,0 +1,103 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_20": {
+      "exact_result_range": {
+        "hi": 2147483649,
+        "lo": 1
+      },
+      "op_id": "op_20",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -1
+        },
+        {
+          "hi": 2,
+          "lo": 2
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": 1
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_22": {
+      "exact_result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "op_id": "op_22",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": []
+    },
+    "op_32": {
+      "exact_result_range": {
+        "hi": 2147483648,
+        "lo": 0
+      },
+      "op_id": "op_32",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -1
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": 0
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_34": {
+      "exact_result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "op_id": "op_34",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": []
+    }
+  },
+  "converged": true,
+  "iterations": 26
+}

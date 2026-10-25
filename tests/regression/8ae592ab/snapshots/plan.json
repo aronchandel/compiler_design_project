@@ -1,0 +1,107 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 0,
+    "native": 4
+  },
+  "decisions": {
+    "op_20": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_20",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -1
+        },
+        {
+          "hi": 2,
+          "lo": 2
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": 1
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_22": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_22",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_32": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_32",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -1
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": 0
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_34": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_34",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "range_guided",
+  "policy": "assume_no_overflow"
+}
