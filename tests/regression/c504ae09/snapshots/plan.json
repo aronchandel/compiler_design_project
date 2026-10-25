@@ -1,0 +1,132 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 1,
+    "native": 4
+  },
+  "decisions": {
+    "op_13": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_13",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 3,
+          "lo": 3
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483645
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_15": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_15",
+      "operand_ranges": [
+        {
+          "hi": 3,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 4,
+        "lo": 1
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_19": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_19",
+      "operand_ranges": [
+        {
+          "hi": -1,
+          "lo": -1
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_20": {
+      "action": "helper",
+      "helper": "_cpp_div",
+      "op_id": "op_20",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "range allows negative operand; C++ truncating division needed",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_21": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_21",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "range_guided",
+  "policy": "assume_no_overflow"
+}

@@ -1,0 +1,5 @@
+{
+  "case_id": "case_10_div_by_neg_one",
+  "config_overrides": {},
+  "notes": "Curated boundary test case_10_div_by_neg_one"
+}

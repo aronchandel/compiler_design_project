@@ -1,0 +1,9 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L4:5
+  op_2   a = assign -2147483647          ; L4:5     [derived from op_1]
+  op_3   declare b : i32                 ; L5:5
+  op_4   t1 = sub a, 2                   ; L5:13
+  op_5   b = assign t1                   ; L5:5
+  op_6   print b, endl                   ; L6:5
+  op_7   return 0                        ; L7:5
+}

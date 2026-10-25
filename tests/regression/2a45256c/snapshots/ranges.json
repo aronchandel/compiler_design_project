@@ -1,0 +1,28 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_5": {
+      "exact_result_range": {
+        "hi": 2147483648,
+        "lo": 2147483648
+      },
+      "op_id": "op_5",
+      "opcode": "neg",
+      "operand_ranges": [
+        {
+          "hi": -2147483648,
+          "lo": -2147483648
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

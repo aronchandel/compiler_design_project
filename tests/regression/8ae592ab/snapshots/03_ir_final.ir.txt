@@ -1,0 +1,42 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_1   a = assign 2                    ; L5:5
+  op_2   declare b : i32                 ; L5:5
+  op_4   b = assign -1                   ; L5:5     [derived from op_3]
+  op_5   read a                          ; L6:5
+  op_6   t1 = cmp le b, a                ; L7:9
+  op_7   branch t1, if_then_r0, if_else_r0 ; L7:5
+  op_8   if_then_r0:
+  op_9   a = assign a                    ; L8:9
+  op_10  jump if_end_r0
+  op_11  if_else_r0:
+  op_12  a = assign 1                    ; L10:9
+  op_13  if_end_r0:
+  op_14  declare iter_1 : i32            ; L12:10
+  op_15  iter_1 = assign 0               ; L12:10
+  op_16  loop_head_r1:                   ; role=loop_head region=r1
+  op_17  t2 = cmp lt iter_1, 2           ; L12:26
+  op_18  branch t2, loop_body_r1, loop_end_r1 ; L12:5
+  op_19  loop_body_r1:
+  op_20  t3 = add a, 2                   ; L13:13
+  op_21  a = assign t3                   ; L13:9
+  op_22  t4 = add iter_1, 1              ; L12:47
+  op_23  iter_1 = assign t4              ; L12:38
+  op_24  jump loop_head_r1
+  op_25  loop_end_r1:
+  op_26  declare iter_2 : i32            ; L15:10
+  op_27  iter_2 = assign 0               ; L15:10
+  op_28  loop_head_r2:                   ; role=loop_head region=r2
+  op_29  t5 = cmp lt iter_2, 2           ; L15:26
+  op_30  branch t5, loop_body_r2, loop_end_r2 ; L15:5
+  op_31  loop_body_r2:
+  op_32  t6 = add a, 1                   ; L16:13
+  op_33  a = assign t6                   ; L16:9
+  op_34  t7 = add iter_2, 1              ; L15:47
+  op_35  iter_2 = assign t7              ; L15:38
+  op_36  jump loop_head_r2
+  op_37  loop_end_r2:
+  op_38  print a, endl                   ; L18:5
+  op_39  print b, endl                   ; L19:5
+  op_40  return 0                        ; L20:5
+}

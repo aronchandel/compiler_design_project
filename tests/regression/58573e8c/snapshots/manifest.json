@@ -1,0 +1,32 @@
+{
+  "config": {
+    "compat_mode": "naive",
+    "int_bits": 32,
+    "long_long_bits": 64,
+    "overflow_policy": "assume_no_overflow"
+  },
+  "diagnostics": [
+    {
+      "code": "W6001",
+      "message": "'%' is emitted as Python floor division; the result differs from C++ when an operand is negative",
+      "severity": "warning"
+    },
+    {
+      "code": "W6001",
+      "message": "'%' is emitted as Python floor division; the result differs from C++ when an operand is negative",
+      "severity": "warning"
+    }
+  ],
+  "source_sha256": "83416ec97cf02d283244412716a1b6728c8b0201d1ac6abb67dcc69f63a599e8",
+  "stages": [
+    {
+      "changed": false,
+      "name": "00_ir_initial"
+    },
+    {
+      "changed": false,
+      "name": "01_ir_final"
+    }
+  ],
+  "tool_version": "0.0.0"
+}

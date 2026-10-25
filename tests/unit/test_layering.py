@@ -93,6 +93,17 @@ def test_layering_rules():
             ]), f"Layering violation in {f.name}: imports {imp}"
 
     # Rule 8: No forbidden later-phase directories
-    forbidden_dirs = ["testing", "localisation", "reporting", "evaluation"]
+    forbidden_dirs = ["localisation", "reporting", "evaluation"]
     for d in forbidden_dirs:
         assert not (pkg_dir / d).exists(), f"Forbidden later-phase directory exists: cpp2py/{d}"
+
+    # Rule 9: testing imports only public compiler API and base
+    testing_files = list((pkg_dir / "testing").rglob("*.py"))
+    for f in testing_files:
+        imports = get_imports(f)
+        for imp in imports:
+            assert not any(imp.startswith(prefix) for prefix in [
+                "cpp2py.frontend", "cpp2py.semantics", "cpp2py.ir",
+                "cpp2py.transforms", "cpp2py.analysis", "cpp2py.compat",
+                "cpp2py.codegen", "cpp2py.cli"
+            ]), f"Layering violation in testing file {f.name}: imports {imp}"

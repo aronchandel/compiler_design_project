@@ -1,0 +1,413 @@
+{
+  "functions": [
+    {
+      "body": [
+        {
+          "dst": "sum",
+          "op_id": "op_0",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "sum",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 17,
+              "line": 4
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "sum",
+          "op_id": "op_1",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 17,
+              "line": 4
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "i",
+          "op_id": "op_2",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "i",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 21,
+              "line": 5
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 10,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "t0",
+          "op_id": "op_3",
+          "opcode": "neg",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 5
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 20,
+              "line": 5
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 18,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "i",
+          "op_id": "op_4",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t0",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 21,
+              "line": 5
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 10,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_5",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_head_r0"
+            }
+          ]
+        },
+        {
+          "dst": "t1",
+          "op_id": "op_6",
+          "opcode": "cmp",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "i",
+              "symbol_id": 1,
+              "type": "i32"
+            },
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 27,
+              "line": 5
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 22,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_7",
+          "opcode": "branch",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t1",
+              "type": "bool"
+            },
+            {
+              "kind": "label",
+              "name": "loop_body_r0"
+            },
+            {
+              "kind": "label",
+              "name": "loop_end_r0"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 6,
+              "line": 7
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_8",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_body_r0"
+            }
+          ]
+        },
+        {
+          "dst": "t2",
+          "op_id": "op_9",
+          "opcode": "div",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "i",
+              "symbol_id": 1,
+              "type": "i32"
+            },
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 2
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 28,
+              "line": 6
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 21,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "t3",
+          "op_id": "op_10",
+          "opcode": "add",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "sum",
+              "symbol_id": 0,
+              "type": "i32"
+            },
+            {
+              "kind": "temp",
+              "temp_id": "t2",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 28,
+              "line": 6
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 15,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "sum",
+          "op_id": "op_11",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t3",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 29,
+              "line": 6
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 9,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "t4",
+          "op_id": "op_12",
+          "opcode": "add",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "i",
+              "symbol_id": 1,
+              "type": "i32"
+            },
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 1
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 38,
+              "line": 5
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 33,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "i",
+          "op_id": "op_13",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t4",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 38,
+              "line": 5
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 29,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_14",
+          "opcode": "jump",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_head_r0"
+            }
+          ]
+        },
+        {
+          "dst": null,
+          "op_id": "op_15",
+          "opcode": "label",
+          "operands": [
+            {
+              "kind": "label",
+              "name": "loop_end_r0"
+            }
+          ]
+        },
+        {
+          "dst": null,
+          "op_id": "op_16",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "sum",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 25,
+              "line": 8
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 5,
+              "line": 8
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_17",
+          "opcode": "return",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 14,
+              "line": 9
+            },
+            "file": "case_29_div_loop_neg.cpp",
+            "start": {
+              "col": 5,
+              "line": 9
+            }
+          }
+        }
+      ],
+      "name": "main",
+      "params": [],
+      "return_type": "i32"
+    }
+  ],
+  "source_name": "case_29_div_loop_neg.cpp"
+}

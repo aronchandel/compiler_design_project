@@ -1,0 +1,61 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 0,
+    "native": 2
+  },
+  "decisions": {
+    "op_12": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_12",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483647
+        },
+        {
+          "hi": 2147483646,
+          "lo": -2147483648
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_21": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_21",
+      "operand_ranges": [
+        {
+          "hi": 42,
+          "lo": 42
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483606
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "range_guided",
+  "policy": "assume_no_overflow"
+}

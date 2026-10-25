@@ -1,0 +1,7 @@
+{
+  "case_id": "case_18_int_min_mod_neg_one_wrap",
+  "config_overrides": {
+    "overflow_policy": "wrap"
+  },
+  "notes": "Curated boundary test case_18_int_min_mod_neg_one_wrap"
+}

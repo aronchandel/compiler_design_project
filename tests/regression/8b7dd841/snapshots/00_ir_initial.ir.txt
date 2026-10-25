@@ -1,0 +1,45 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_1   t0 = neg 1                      ; L5:13
+  op_2   a = assign t0                   ; L5:5
+  op_3   declare b : i32                 ; L5:5
+  op_4   b = assign 2                    ; L5:5
+  op_5   declare c : i32                 ; L5:5
+  op_6   c = assign 1                    ; L5:5
+  op_7   read a                          ; L6:5
+  op_8   t1 = neg 3                      ; L7:19
+  op_9   t2 = div c, t1                  ; L7:14
+  op_10  t3 = sub b, t2                  ; L7:9
+  op_11  c = assign t3                   ; L7:5
+  op_12  declare iter_1 : i32            ; L8:10
+  op_13  iter_1 = assign 0               ; L8:10
+  op_14  loop_head_r0:                   ; role=loop_head region=r0
+  op_15  t4 = cmp lt iter_1, 2           ; L8:26
+  op_16  branch t4, loop_body_r0, loop_end_r0 ; L8:5
+  op_17  loop_body_r0:
+  op_18  t5 = neg 1                      ; L9:17
+  op_19  t6 = add b, t5                  ; L9:13
+  op_20  b = assign t6                   ; L9:9
+  op_21  t7 = add iter_1, 1              ; L8:47
+  op_22  iter_1 = assign t7              ; L8:38
+  op_23  jump loop_head_r0
+  op_24  loop_end_r0:
+  op_25  declare iter_2 : i32            ; L11:10
+  op_26  iter_2 = assign 0               ; L11:10
+  op_27  loop_head_r1:                   ; role=loop_head region=r1
+  op_28  t8 = cmp lt iter_2, 5           ; L11:26
+  op_29  branch t8, loop_body_r1, loop_end_r1 ; L11:5
+  op_30  loop_body_r1:
+  op_31  t9 = neg 2                      ; L12:17
+  op_32  t10 = add a, t9                 ; L12:13
+  op_33  a = assign t10                  ; L12:9
+  op_34  t11 = add iter_2, 1             ; L11:47
+  op_35  iter_2 = assign t11             ; L11:38
+  op_36  jump loop_head_r1
+  op_37  loop_end_r1:
+  op_38  b = assign a                    ; L14:5
+  op_39  print a, endl                   ; L15:5
+  op_40  print b, endl                   ; L16:5
+  op_41  print c, endl                   ; L17:5
+  op_42  return 0                        ; L18:5
+}

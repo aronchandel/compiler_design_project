@@ -1,0 +1,8 @@
+function main() -> i32 {
+  op_0   declare x : i32                 ; L4:5
+  op_1   x = assign 2147483647           ; L4:5
+  op_2   t0 = add x, 1                   ; L5:9
+  op_3   x = assign t0                   ; L5:5
+  op_4   print x, endl                   ; L6:5
+  op_5   return 0                        ; L7:5
+}

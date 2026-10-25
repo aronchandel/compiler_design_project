@@ -1,0 +1,32 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_4": {
+      "exact_result_range": {
+        "hi": -2147483649,
+        "lo": -2147483649
+      },
+      "op_id": "op_4",
+      "opcode": "sub",
+      "operand_ranges": [
+        {
+          "hi": -2147483648,
+          "lo": -2147483648
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

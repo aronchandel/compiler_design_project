@@ -1,0 +1,7 @@
+{
+  "case_id": "case_20_prod_near_i32_min_wrap",
+  "config_overrides": {
+    "overflow_policy": "wrap"
+  },
+  "notes": "Curated boundary test case_20_prod_near_i32_min_wrap"
+}

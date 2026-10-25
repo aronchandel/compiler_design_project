@@ -50,6 +50,16 @@ def main(argv: list[str] | None = None) -> int:
     translate_parser.add_argument('--ranges-out', metavar='FILE', dest='ranges_out', default=None, help='File to write ranges JSON')
     translate_parser.add_argument('--compat-plan', metavar='FILE', dest='compat_plan', default=None, help='File to write compatibility plan JSON')
 
+    # difftest subcommand
+    difftest_parser = subparsers.add_parser('difftest', help='Differential testing against C++ compiler')
+    difftest_parser.add_argument('--suite', choices=['curated', 'generated', 'all'], default='curated', help='Test suite to run (default: curated)')
+    difftest_parser.add_argument('--seed', type=int, default=1, help='Seed for generated suite (default: 1)')
+    difftest_parser.add_argument('--count', type=int, default=200, help='Count of programs for generated suite (default: 200)')
+    difftest_parser.add_argument('--compat', choices=['naive', 'always', 'range_guided'], default='range_guided', help='Compatibility helper mode (default: range_guided)')
+    difftest_parser.add_argument('--overflow', choices=['assume_no_overflow', 'wrap', 'trap'], default='assume_no_overflow', help='Signed integer overflow policy (default: assume_no_overflow)')
+    difftest_parser.add_argument('--timeout', type=float, default=5.0, help='Timeout in seconds per execution (default: 5.0)')
+    difftest_parser.add_argument('--out', metavar='DIR', default=None, help='Directory for differential testing summary and artifacts')
+
     args = parser.parse_args(argv)
 
     if args.command is None:
@@ -59,7 +69,27 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == 'translate':
         return _cmd_translate(args)
 
+    if args.command == 'difftest':
+        return _cmd_difftest(args)
+
     return 1
+
+
+def _cmd_difftest(args: argparse.Namespace) -> int:
+    """Handle the difftest subcommand."""
+    from cpp2py.testing.difftest import run_suite
+
+    summary = run_suite(
+        suite=args.suite,
+        seed=args.seed,
+        count=args.count,
+        compat_mode=args.compat,
+        overflow_policy=args.overflow,
+        timeout=args.timeout,
+        out_dir=args.out,
+    )
+    summary.print_summary()
+    return 4 if summary.has_mismatches() else 0
 
 
 def _cmd_translate(args: argparse.Namespace) -> int:

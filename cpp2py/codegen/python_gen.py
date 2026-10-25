@@ -27,6 +27,7 @@ from cpp2py.ir.model import (
     TempRef,
     StrConst,
     Operand,
+    IRType,
 )
 from cpp2py.codegen.names import NameMangler
 from cpp2py.codegen.pyexpr import render_expr

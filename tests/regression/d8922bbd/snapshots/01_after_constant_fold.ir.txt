@@ -1,0 +1,20 @@
+function main() -> i32 {
+  op_0   declare sum : i32               ; L4:5
+  op_1   sum = assign 0                  ; L4:5
+  op_2   declare i : i32                 ; L5:10
+  op_3   t0 = assign -5                  ; L5:18
+  op_4   i = assign -5                   ; L5:10    [derived from op_3]
+  op_5   loop_head_r0:                   ; role=loop_head region=r0
+  op_6   t1 = cmp lt i, 0                ; L5:22
+  op_7   branch t1, loop_body_r0, loop_end_r0 ; L5:5
+  op_8   loop_body_r0:
+  op_9   t2 = mod i, 2                   ; L6:21
+  op_10  t3 = add sum, t2                ; L6:15
+  op_11  sum = assign t3                 ; L6:9
+  op_12  t4 = add i, 1                   ; L5:33
+  op_13  i = assign t4                   ; L5:29
+  op_14  jump loop_head_r0
+  op_15  loop_end_r0:
+  op_16  print sum, endl                 ; L8:5
+  op_17  return 0                        ; L9:5
+}

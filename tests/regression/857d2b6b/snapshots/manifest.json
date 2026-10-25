@@ -1,0 +1,32 @@
+{
+  "config": {
+    "compat_mode": "range_guided",
+    "int_bits": 32,
+    "long_long_bits": 64,
+    "overflow_policy": "assume_no_overflow"
+  },
+  "diagnostics": [
+    {
+      "code": "W6002",
+      "message": "operation may overflow",
+      "severity": "warning"
+    },
+    {
+      "code": "W6002",
+      "message": "operation may overflow",
+      "severity": "warning"
+    }
+  ],
+  "source_sha256": "4df619575376f699a650047ef797979967ba34c86b3b963a834938ac6e447f0e",
+  "stages": [
+    {
+      "changed": false,
+      "name": "00_ir_initial"
+    },
+    {
+      "changed": false,
+      "name": "01_ir_final"
+    }
+  ],
+  "tool_version": "0.0.0"
+}
