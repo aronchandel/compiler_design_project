@@ -49,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     translate_parser.add_argument('--assume-range', action='append', dest='assume_ranges', default=[], metavar='FUNC.VAR=LO:HI', help='Assume range for variable in function')
     translate_parser.add_argument('--ranges-out', metavar='FILE', dest='ranges_out', default=None, help='File to write ranges JSON')
     translate_parser.add_argument('--compat-plan', metavar='FILE', dest='compat_plan', default=None, help='File to write compatibility plan JSON')
+    translate_parser.add_argument('--fidelity-report', metavar='DIR', dest='fidelity_report', default=None, help='Directory to write fidelity report (fidelity.json and fidelity.md)')
 
     # difftest subcommand
     difftest_parser = subparsers.add_parser('difftest', help='Differential testing against C++ compiler')
@@ -59,6 +60,12 @@ def main(argv: list[str] | None = None) -> int:
     difftest_parser.add_argument('--overflow', choices=['assume_no_overflow', 'wrap', 'trap'], default='assume_no_overflow', help='Signed integer overflow policy (default: assume_no_overflow)')
     difftest_parser.add_argument('--timeout', type=float, default=5.0, help='Timeout in seconds per execution (default: 5.0)')
     difftest_parser.add_argument('--out', metavar='DIR', default=None, help='Directory for differential testing summary and artifacts')
+    difftest_parser.add_argument('--fidelity-report', metavar='DIR', dest='fidelity_report', default=None, help='Directory to write differential fidelity report')
+
+    # localise subcommand
+    localise_parser = subparsers.add_parser('localise', help='Perform failure localisation on a mismatch case directory')
+    localise_parser.add_argument('--case', required=True, metavar='DIR', help='Case or failure directory containing snapshots and inputs')
+    localise_parser.add_argument('--top', type=int, default=5, metavar='K', help='Number of top suspects to report (default: 5)')
 
     args = parser.parse_args(argv)
 
@@ -72,7 +79,23 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == 'difftest':
         return _cmd_difftest(args)
 
+    if args.command == 'localise':
+        return _cmd_localise(args)
+
     return 1
+
+
+def _cmd_localise(args: argparse.Namespace) -> int:
+    """Handle the localise subcommand."""
+    from cpp2py.localisation import localise
+
+    try:
+        report = localise(args.case, top_k=args.top)
+        sys.stdout.write(report.format_text() + "\n")
+        return 0
+    except Exception as e:
+        sys.stderr.write(f"error: localisation failed on {args.case}: {e}\n")
+        return 1
 
 
 def _cmd_difftest(args: argparse.Namespace) -> int:
@@ -89,6 +112,13 @@ def _cmd_difftest(args: argparse.Namespace) -> int:
         out_dir=args.out,
     )
     summary.print_summary()
+
+    if getattr(args, 'fidelity_report', None):
+        from cpp2py.reporting import build_difftest_fidelity_report, render_fidelity_json, render_fidelity_md
+        rep = build_difftest_fidelity_report(summary, failures_base_dir=args.out)
+        render_fidelity_json(rep, args.fidelity_report)
+        render_fidelity_md(rep, args.fidelity_report)
+
     return 4 if summary.has_mismatches() else 0
 
 
@@ -138,7 +168,7 @@ def _cmd_translate(args: argparse.Namespace) -> int:
     if args.dump_ir:
         return _do_dump_ir(text, source, config)
 
-    return _do_translate(text, source, config, args.output)
+    return _do_translate(text, source, config, args.output, getattr(args, 'fidelity_report', None))
 
 
 def _do_dump_ast(text: str, source: SourceFile, config: CompilerConfig) -> int:
@@ -215,10 +245,26 @@ def _do_dump_ir(text: str, source: SourceFile, config: CompilerConfig) -> int:
     return 0
 
 
-def _do_translate(text: str, source: SourceFile, config: CompilerConfig,
-                  output_path: str | None) -> int:
+def _do_translate(
+    text: str,
+    source: SourceFile,
+    config: CompilerConfig,
+    output_path: str | None,
+    fidelity_report_dir: str | None = None,
+) -> int:
     """Translate and output."""
     result = compile_source(text, source.name, config)
+
+    # If fidelity report requested, generate it regardless of success/failure
+    if fidelity_report_dir:
+        from cpp2py.reporting import (
+            build_translation_fidelity_report,
+            render_fidelity_json,
+            render_fidelity_md,
+        )
+        rep = build_translation_fidelity_report(text, source.name, config, result)
+        render_fidelity_json(rep, fidelity_report_dir)
+        render_fidelity_md(rep, fidelity_report_dir)
 
     # Print diagnostics to stderr
     _print_diagnostics(result.diagnostics, source)
@@ -231,7 +277,6 @@ def _do_translate(text: str, source: SourceFile, config: CompilerConfig,
         return 3
 
     if output_path:
-        # Create output directory if needed
         out_dir = os.path.dirname(output_path)
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)

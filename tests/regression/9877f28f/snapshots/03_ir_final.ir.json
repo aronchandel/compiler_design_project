@@ -4,6 +4,12 @@
       "body": [
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_0",
           "opcode": "declare",
           "operands": [
@@ -17,17 +23,25 @@
           "span": {
             "end": {
               "col": 33,
-              "line": 4
+              "line": 4,
+              "offset": 86
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_1",
           "opcode": "assign",
           "operands": [
@@ -40,17 +54,25 @@
           "span": {
             "end": {
               "col": 33,
-              "line": 4
+              "line": 4,
+              "offset": 86
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i64"
+          },
           "op_id": "op_2",
           "opcode": "declare",
           "operands": [
@@ -64,17 +86,25 @@
           "span": {
             "end": {
               "col": 22,
-              "line": 5
+              "line": 5,
+              "offset": 108
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 91
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i64"
+          },
           "op_id": "op_5",
           "opcode": "assign",
           "operands": [
@@ -90,17 +120,24 @@
           "span": {
             "end": {
               "col": 22,
-              "line": 5
+              "line": 5,
+              "offset": 108
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 91
             }
           }
         },
         {
           "dst": "t2",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t2",
+            "type": "i64"
+          },
           "op_id": "op_6",
           "opcode": "mod",
           "operands": [
@@ -120,17 +157,20 @@
           "span": {
             "end": {
               "col": 18,
-              "line": 6
+              "line": 6,
+              "offset": 126
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 13,
-              "line": 6
+              "line": 6,
+              "offset": 121
             }
           }
         },
         {
           "dst": null,
+          "newline": true,
           "op_id": "op_7",
           "opcode": "print",
           "operands": [
@@ -143,12 +183,14 @@
           "span": {
             "end": {
               "col": 27,
-              "line": 6
+              "line": 6,
+              "offset": 135
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 6
+              "line": 6,
+              "offset": 113
             }
           }
         },
@@ -166,18 +208,22 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 7
+              "line": 7,
+              "offset": 149
             },
             "file": "case_40_i64_mod_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 7
+              "line": 7,
+              "offset": 140
             }
           }
         }
       ],
       "name": "main",
+      "param_refs": [],
       "params": [],
+      "regions": {},
       "return_type": "i32"
     }
   ],

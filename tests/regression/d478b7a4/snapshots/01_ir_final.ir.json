@@ -4,6 +4,12 @@
       "body": [
         {
           "dst": "x",
+          "dst_operand": {
+            "kind": "var",
+            "name": "x",
+            "symbol_id": 0,
+            "type": "i32"
+          },
           "op_id": "op_0",
           "opcode": "declare",
           "operands": [
@@ -17,17 +23,25 @@
           "span": {
             "end": {
               "col": 24,
-              "line": 4
+              "line": 4,
+              "offset": 77
             },
             "file": "case_15_int_max_plus_one_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "x",
+          "dst_operand": {
+            "kind": "var",
+            "name": "x",
+            "symbol_id": 0,
+            "type": "i32"
+          },
           "op_id": "op_1",
           "opcode": "assign",
           "operands": [
@@ -40,17 +54,24 @@
           "span": {
             "end": {
               "col": 24,
-              "line": 4
+              "line": 4,
+              "offset": 77
             },
             "file": "case_15_int_max_plus_one_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "t0",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t0",
+            "type": "i32"
+          },
           "op_id": "op_2",
           "opcode": "add",
           "operands": [
@@ -69,17 +90,25 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 5
+              "line": 5,
+              "offset": 91
             },
             "file": "case_15_int_max_plus_one_wrap.cpp",
             "start": {
               "col": 9,
-              "line": 5
+              "line": 5,
+              "offset": 86
             }
           }
         },
         {
           "dst": "x",
+          "dst_operand": {
+            "kind": "var",
+            "name": "x",
+            "symbol_id": 0,
+            "type": "i32"
+          },
           "op_id": "op_3",
           "opcode": "assign",
           "operands": [
@@ -92,17 +121,20 @@
           "span": {
             "end": {
               "col": 15,
-              "line": 5
+              "line": 5,
+              "offset": 92
             },
             "file": "case_15_int_max_plus_one_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 82
             }
           }
         },
         {
           "dst": null,
+          "newline": true,
           "op_id": "op_4",
           "opcode": "print",
           "operands": [
@@ -116,12 +148,14 @@
           "span": {
             "end": {
               "col": 23,
-              "line": 6
+              "line": 6,
+              "offset": 115
             },
             "file": "case_15_int_max_plus_one_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 6
+              "line": 6,
+              "offset": 97
             }
           }
         },
@@ -139,18 +173,22 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 7
+              "line": 7,
+              "offset": 129
             },
             "file": "case_15_int_max_plus_one_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 7
+              "line": 7,
+              "offset": 120
             }
           }
         }
       ],
       "name": "main",
+      "param_refs": [],
       "params": [],
+      "regions": {},
       "return_type": "i32"
     }
   ],

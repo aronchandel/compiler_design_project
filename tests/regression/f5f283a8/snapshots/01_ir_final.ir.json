@@ -4,6 +4,12 @@
       "body": [
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_0",
           "opcode": "declare",
           "operands": [
@@ -17,17 +23,25 @@
           "span": {
             "end": {
               "col": 30,
-              "line": 4
+              "line": 4,
+              "offset": 83
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_1",
           "opcode": "assign",
           "operands": [
@@ -40,17 +54,25 @@
           "span": {
             "end": {
               "col": 30,
-              "line": 4
+              "line": 4,
+              "offset": 83
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i32"
+          },
           "op_id": "op_2",
           "opcode": "declare",
           "operands": [
@@ -64,17 +86,24 @@
           "span": {
             "end": {
               "col": 15,
-              "line": 5
+              "line": 5,
+              "offset": 98
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 88
             }
           }
         },
         {
           "dst": "t0",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t0",
+            "type": "i32"
+          },
           "op_id": "op_3",
           "opcode": "cast",
           "operands": [
@@ -88,17 +117,25 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 5
+              "line": 5,
+              "offset": 97
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 9,
-              "line": 5
+              "line": 5,
+              "offset": 92
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i32"
+          },
           "op_id": "op_4",
           "opcode": "assign",
           "operands": [
@@ -111,17 +148,20 @@
           "span": {
             "end": {
               "col": 15,
-              "line": 5
+              "line": 5,
+              "offset": 98
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 88
             }
           }
         },
         {
           "dst": null,
+          "newline": true,
           "op_id": "op_5",
           "opcode": "print",
           "operands": [
@@ -135,12 +175,14 @@
           "span": {
             "end": {
               "col": 23,
-              "line": 6
+              "line": 6,
+              "offset": 121
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 5,
-              "line": 6
+              "line": 6,
+              "offset": 103
             }
           }
         },
@@ -158,18 +200,22 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 7
+              "line": 7,
+              "offset": 135
             },
             "file": "case_26_narrowing_wrap_pos.cpp",
             "start": {
               "col": 5,
-              "line": 7
+              "line": 7,
+              "offset": 126
             }
           }
         }
       ],
       "name": "main",
+      "param_refs": [],
       "params": [],
+      "regions": {},
       "return_type": "i32"
     }
   ],

@@ -12,7 +12,7 @@ from cpp2py.testing.cxx_runner import ExecutionResult, _get_minimal_env
 
 
 def run_python(
-    source_or_file: str,
+    source_or_file: str | Path,
     stdin_text: str = "",
     timeout: float = 5.0,
     output_cap: int = 1048576,
@@ -28,10 +28,10 @@ def run_python(
         run_cwd = Path(cwd)
 
     if is_file:
-        script_path = str(source_or_file)
+        script_path = str(Path(source_or_file).resolve())
     else:
         temp_script = run_cwd / "program.py"
-        temp_script.write_text(source_or_file, encoding="utf-8")
+        temp_script.write_text(str(source_or_file), encoding="utf-8")
         script_path = str(temp_script)
 
     cmd = [sys.executable, "-X", "utf8", script_path]
@@ -60,32 +60,32 @@ def run_python(
                 stderr="Execution timed out",
                 exit_code=-1,
                 timed_out=True,
+                output_capped=False,
             )
 
         capped = False
         if len(raw_stdout) > output_cap:
             raw_stdout = raw_stdout[:output_cap]
             capped = True
-        if len(raw_stderr) > output_cap:
-            raw_stderr = raw_stderr[:output_cap]
-            capped = True
 
-        stdout = raw_stdout.decode("utf-8", errors="replace")
-        stderr = raw_stderr.decode("utf-8", errors="replace")
+        stdout_str = raw_stdout.decode("utf-8", errors="replace")
+        stderr_str = raw_stderr.decode("utf-8", errors="replace")
 
         return ExecutionResult(
-            stdout=stdout,
-            stderr=stderr,
+            stdout=stdout_str,
+            stderr=stderr_str,
             exit_code=proc.returncode,
             timed_out=False,
             output_capped=capped,
         )
-    except (OSError, subprocess.SubprocessError) as exc:
+
+    except Exception as e:
         return ExecutionResult(
             stdout="",
-            stderr=f"Failed to execute Python: {exc}",
+            stderr=str(e),
             exit_code=-1,
             timed_out=False,
+            output_capped=False,
         )
     finally:
         if temp_dir_obj is not None:

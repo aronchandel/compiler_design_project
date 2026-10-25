@@ -4,6 +4,12 @@
       "body": [
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i32"
+          },
           "op_id": "op_0",
           "opcode": "declare",
           "operands": [
@@ -17,17 +23,25 @@
           "span": {
             "end": {
               "col": 25,
-              "line": 4
+              "line": 4,
+              "offset": 78
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i32"
+          },
           "op_id": "op_2",
           "opcode": "assign",
           "operands": [
@@ -43,17 +57,25 @@
           "span": {
             "end": {
               "col": 25,
-              "line": 4
+              "line": 4,
+              "offset": 78
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i32"
+          },
           "op_id": "op_3",
           "opcode": "declare",
           "operands": [
@@ -67,17 +89,24 @@
           "span": {
             "end": {
               "col": 19,
-              "line": 5
+              "line": 5,
+              "offset": 97
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 83
             }
           }
         },
         {
           "dst": "t1",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t1",
+            "type": "i32"
+          },
           "op_id": "op_4",
           "opcode": "sub",
           "operands": [
@@ -96,17 +125,25 @@
           "span": {
             "end": {
               "col": 18,
-              "line": 5
+              "line": 5,
+              "offset": 96
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 13,
-              "line": 5
+              "line": 5,
+              "offset": 91
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i32"
+          },
           "op_id": "op_5",
           "opcode": "assign",
           "operands": [
@@ -119,17 +156,20 @@
           "span": {
             "end": {
               "col": 19,
-              "line": 5
+              "line": 5,
+              "offset": 97
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 83
             }
           }
         },
         {
           "dst": null,
+          "newline": true,
           "op_id": "op_6",
           "opcode": "print",
           "operands": [
@@ -143,12 +183,14 @@
           "span": {
             "end": {
               "col": 23,
-              "line": 6
+              "line": 6,
+              "offset": 120
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 6
+              "line": 6,
+              "offset": 102
             }
           }
         },
@@ -166,18 +208,22 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 7
+              "line": 7,
+              "offset": 134
             },
             "file": "case_35_sub_overflow_wrap.cpp",
             "start": {
               "col": 5,
-              "line": 7
+              "line": 7,
+              "offset": 125
             }
           }
         }
       ],
       "name": "main",
+      "param_refs": [],
       "params": [],
+      "regions": {},
       "return_type": "i32"
     }
   ],
