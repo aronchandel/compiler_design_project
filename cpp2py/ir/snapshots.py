@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import cpp2py
 from cpp2py.ir.printer import format_module
+from cpp2py.ir.serialization import module_to_json
 from cpp2py.ir.model import (
     IRModule,
     Instruction,
@@ -130,48 +131,4 @@ class SnapshotStore:
 
 
 def _serialize_module(module: IRModule) -> dict[str, Any]:
-    return {
-        "source_name": module.source_name,
-        "functions": [_serialize_function(f) for f in module.functions],
-    }
-
-
-def _serialize_function(func: Any) -> dict[str, Any]:
-    return {
-        "name": func.name,
-        "return_type": str(func.return_type),
-        "params": [str(p) for p in func.params],
-        "body": [_serialize_instruction(i) for i in func.body],
-    }
-
-
-def _serialize_instruction(instr: Instruction) -> dict[str, Any]:
-    res: dict[str, Any] = {
-        "op_id": instr.op_id,
-        "opcode": instr.opcode.value,
-        "dst": str(instr.dst) if instr.dst is not None else None,
-        "operands": [_serialize_operand(op) for op in instr.operands],
-    }
-    if instr.span is not None:
-        res["span"] = {
-            "file": instr.span.file,
-            "start": {"line": instr.span.start.line, "col": instr.span.start.col},
-            "end": {"line": instr.span.end.line, "col": instr.span.end.col},
-        }
-    if instr.origin:
-        res["origin"] = list(instr.origin)
-    return res
-
-
-def _serialize_operand(op: Operand) -> dict[str, Any]:
-    if isinstance(op, Const):
-        return {"kind": "const", "value": op.value, "type": str(op.type)}
-    elif isinstance(op, VarRef):
-        return {"kind": "var", "name": op.ir_name, "symbol_id": op.symbol_id, "type": str(op.type)}
-    elif isinstance(op, TempRef):
-        return {"kind": "temp", "temp_id": op.temp_id, "type": str(op.type)}
-    elif isinstance(op, StrConst):
-        return {"kind": "str", "text": op.text}
-    elif isinstance(op, LabelRef):
-        return {"kind": "label", "name": op.name}
-    return {"kind": "unknown", "text": str(op)}
+    return module_to_json(module)

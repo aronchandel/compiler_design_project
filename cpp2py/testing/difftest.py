@@ -228,16 +228,34 @@ def run_case(
         if diff_res.is_mismatch():
             snap_dir = None
             if out_dir is not None:
-                snap_dir = out_dir / "failures" / cid / "snapshots"
+                case_dir = out_dir / "failures" / cid
+                snap_dir = case_dir / "snapshots"
                 snap_dir.mkdir(parents=True, exist_ok=True)
                 snap_config = CompilerConfig(
                     target=config.target,
                     compat_mode=config.compat_mode,
                     snapshot_dir=str(snap_dir),
+                    transform_log_path=str(snap_dir / "transform_log.jsonl"),
                     fold_constants=config.fold_constants,
                     idiomatic_loops=config.idiomatic_loops,
                 )
                 compile_source(case.program_source, f"{cid}.cpp", snap_config)
+
+                # Save case artifacts in out_dir / "failures" / cid for localisation
+                (case_dir / "program.cpp").write_text(case.program_source, encoding="utf-8")
+                (case_dir / "input.txt").write_text(in_text, encoding="utf-8")
+                if cxx_exec is not None:
+                    (case_dir / "cxx_output.txt").write_text(cxx_exec.stdout, encoding="utf-8")
+                meta_data = {
+                    "case_id": cid,
+                    "outcome": diff_res.outcome.value,
+                    "reason": diff_res.reason,
+                    "cxx_result": cxx_exec.to_dict() if cxx_exec else None,
+                    "py_result": py_exec.to_dict() if py_exec else None,
+                }
+                (case_dir / "meta.json").write_text(
+                    json.dumps(meta_data, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
 
             save_regression_case(
                 case=case,

@@ -4,6 +4,12 @@
       "body": [
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_0",
           "opcode": "declare",
           "operands": [
@@ -17,17 +23,24 @@
           "span": {
             "end": {
               "col": 31,
-              "line": 4
+              "line": 4,
+              "offset": 84
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "t0",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t0",
+            "type": "i64"
+          },
           "op_id": "op_1",
           "opcode": "neg",
           "operands": [
@@ -40,17 +53,25 @@
           "span": {
             "end": {
               "col": 30,
-              "line": 4
+              "line": 4,
+              "offset": 83
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 19,
-              "line": 4
+              "line": 4,
+              "offset": 72
             }
           }
         },
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_2",
           "opcode": "assign",
           "operands": [
@@ -63,17 +84,25 @@
           "span": {
             "end": {
               "col": 31,
-              "line": 4
+              "line": 4,
+              "offset": 84
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i32"
+          },
           "op_id": "op_3",
           "opcode": "declare",
           "operands": [
@@ -87,17 +116,24 @@
           "span": {
             "end": {
               "col": 15,
-              "line": 5
+              "line": 5,
+              "offset": 99
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 89
             }
           }
         },
         {
           "dst": "t1",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t1",
+            "type": "i32"
+          },
           "op_id": "op_4",
           "opcode": "cast",
           "operands": [
@@ -111,17 +147,25 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 5
+              "line": 5,
+              "offset": 98
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 9,
-              "line": 5
+              "line": 5,
+              "offset": 93
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i32"
+          },
           "op_id": "op_5",
           "opcode": "assign",
           "operands": [
@@ -134,17 +178,20 @@
           "span": {
             "end": {
               "col": 15,
-              "line": 5
+              "line": 5,
+              "offset": 99
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 89
             }
           }
         },
         {
           "dst": null,
+          "newline": true,
           "op_id": "op_6",
           "opcode": "print",
           "operands": [
@@ -158,12 +205,14 @@
           "span": {
             "end": {
               "col": 23,
-              "line": 6
+              "line": 6,
+              "offset": 122
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 5,
-              "line": 6
+              "line": 6,
+              "offset": 104
             }
           }
         },
@@ -181,18 +230,22 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 7
+              "line": 7,
+              "offset": 136
             },
             "file": "case_27_narrowing_wrap_neg.cpp",
             "start": {
               "col": 5,
-              "line": 7
+              "line": 7,
+              "offset": 127
             }
           }
         }
       ],
       "name": "main",
+      "param_refs": [],
       "params": [],
+      "regions": {},
       "return_type": "i32"
     }
   ],
