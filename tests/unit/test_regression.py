@@ -82,3 +82,32 @@ def test_persisted_regression_discovery():
         assert c.origin == "regression"
         assert len(c.inputs) >= 1
         assert c.program_source.strip()
+
+
+def test_regression_known_limitation_status():
+    """Verify saving a regression case with status known_limitation and written reason."""
+    with tempfile.TemporaryDirectory() as td:
+        reg_dir = Path(td) / "regression"
+        case = TestCase(
+            case_id="limitation_01",
+            program_source="int main() { return 0; }",
+            inputs=[""],
+            origin="generated",
+            seed=42,
+        )
+        diff_res = DiffResult(
+            case_id="limitation_01",
+            outcome=Outcome.MISMATCH_STDOUT,
+            reason="Overflow under assume_no_overflow",
+        )
+        saved = save_regression_case(
+            case=case,
+            input_text="",
+            result=diff_res,
+            regression_base_dir=reg_dir,
+            status="known_limitation",
+        )
+        meta = json.loads((saved / "meta.json").read_text(encoding="utf-8"))
+        assert meta["status"] == "known_limitation"
+        assert meta["notes"] == "Overflow under assume_no_overflow"
+

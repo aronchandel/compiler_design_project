@@ -2,10 +2,10 @@
   "config": {},
   "first_seen": "2026-10-25",
   "generator_version": "1.0",
-  "notes": "Stdout mismatch between C++ and Python",
+  "notes": "Undefined behavior (signed integer overflow/underflow) under assume_no_overflow policy (ARCH \u00a7A.1, \u00a7E.2). Platform compiler (MinGW GCC 6.3.0) lacks libubsan, so UBSan did not flag it as UB_EXCLUDED; x86 wrapped at runtime while Python evaluated with arbitrary precision.",
   "outcome": "MISMATCH_STDOUT",
   "seed": 18,
   "sha8": "5ddc1769",
-  "status": "open",
+  "status": "known_limitation",
   "tool_version": "0.0.0"
 }

@@ -52,3 +52,16 @@ def test_load_example_cases():
         assert ex.origin == "example"
         assert ex.expected_stdout is not None
         assert ex.program_source.strip()
+
+
+def test_corpus_missing_directory():
+    cases = load_curated_cases(cases_dir="non_existent_directory_for_test")
+    assert cases == []
+
+
+def test_curated_cases_program_structure():
+    cases = load_curated_cases()
+    for c in cases:
+        assert "#include <iostream>" in c.program_source
+        assert "main(" in c.program_source
+
