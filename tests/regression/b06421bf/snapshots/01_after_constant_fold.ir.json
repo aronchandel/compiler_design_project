@@ -4,6 +4,12 @@
       "body": [
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_0",
           "opcode": "declare",
           "operands": [
@@ -17,17 +23,25 @@
           "span": {
             "end": {
               "col": 33,
-              "line": 4
+              "line": 4,
+              "offset": 86
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "a",
+          "dst_operand": {
+            "kind": "var",
+            "name": "a",
+            "symbol_id": 0,
+            "type": "i64"
+          },
           "op_id": "op_1",
           "opcode": "assign",
           "operands": [
@@ -40,17 +54,25 @@
           "span": {
             "end": {
               "col": 33,
-              "line": 4
+              "line": 4,
+              "offset": 86
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 4
+              "line": 4,
+              "offset": 58
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i64"
+          },
           "op_id": "op_2",
           "opcode": "declare",
           "operands": [
@@ -64,17 +86,24 @@
           "span": {
             "end": {
               "col": 22,
-              "line": 5
+              "line": 5,
+              "offset": 108
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 91
             }
           }
         },
         {
           "dst": "t0",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t0",
+            "type": "i32"
+          },
           "op_id": "op_3",
           "opcode": "assign",
           "operands": [
@@ -87,17 +116,24 @@
           "span": {
             "end": {
               "col": 21,
-              "line": 5
+              "line": 5,
+              "offset": 107
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 19,
-              "line": 5
+              "line": 5,
+              "offset": 105
             }
           }
         },
         {
           "dst": "t1",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t1",
+            "type": "i64"
+          },
           "op_id": "op_4",
           "opcode": "assign",
           "operands": [
@@ -113,17 +149,25 @@
           "span": {
             "end": {
               "col": 21,
-              "line": 5
+              "line": 5,
+              "offset": 107
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 15,
-              "line": 5
+              "line": 5,
+              "offset": 101
             }
           }
         },
         {
           "dst": "b",
+          "dst_operand": {
+            "kind": "var",
+            "name": "b",
+            "symbol_id": 1,
+            "type": "i64"
+          },
           "op_id": "op_5",
           "opcode": "assign",
           "operands": [
@@ -139,17 +183,24 @@
           "span": {
             "end": {
               "col": 22,
-              "line": 5
+              "line": 5,
+              "offset": 108
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 5
+              "line": 5,
+              "offset": 91
             }
           }
         },
         {
           "dst": "t2",
+          "dst_operand": {
+            "kind": "temp",
+            "temp_id": "t2",
+            "type": "i64"
+          },
           "op_id": "op_6",
           "opcode": "div",
           "operands": [
@@ -169,17 +220,20 @@
           "span": {
             "end": {
               "col": 18,
-              "line": 6
+              "line": 6,
+              "offset": 126
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 13,
-              "line": 6
+              "line": 6,
+              "offset": 121
             }
           }
         },
         {
           "dst": null,
+          "newline": true,
           "op_id": "op_7",
           "opcode": "print",
           "operands": [
@@ -192,12 +246,14 @@
           "span": {
             "end": {
               "col": 27,
-              "line": 6
+              "line": 6,
+              "offset": 135
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 6
+              "line": 6,
+              "offset": 113
             }
           }
         },
@@ -215,18 +271,22 @@
           "span": {
             "end": {
               "col": 14,
-              "line": 7
+              "line": 7,
+              "offset": 149
             },
             "file": "case_39_i64_div_pos_neg.cpp",
             "start": {
               "col": 5,
-              "line": 7
+              "line": 7,
+              "offset": 140
             }
           }
         }
       ],
       "name": "main",
+      "param_refs": [],
       "params": [],
+      "regions": {},
       "return_type": "i32"
     }
   ],

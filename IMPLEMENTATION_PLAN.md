@@ -20,7 +20,7 @@
 | P4 | Transform framework, constant folding, logs | **VERIFIED** | 2026-10-24 | 328 passed (pytest -q, 85 new tests >= 60); fold_demo Stage 4 IR & Stage 5 Python reproduced character-for-character, stdout 48; 6 log records verified in order & replay test passes; folding table, div/mod zero & overflow W6004 verified; idempotence & fixed-point verified; E5001 invalid pass verified; AC4.1-AC4.10 PASS; optional idiomatic loops qualified/disqualified verified |
 | P5 | Types, range analysis, compatibility helpers | **VERIFIED** | 2026-10-25 | 453 passed (pytest -q, 125 new tests >= 120); brute-force soundness test passes for all transfer functions (>= 10^4 pairs); exhaustive helper tests on [-50, 50]; div_no_helper_needed has 0 helpers, div_needs_helper has helpers in range_guided and always; self-consistency on all Phase 5 examples vs .expected verified; naive reproduces Phase 4; plan.json and ranges.json deterministic; default overflow policy does not wrap; analysis converges; AC5.1-AC5.10 PASS |
 | P6 | Differential testing infrastructure | **VERIFIED** | 2026-10-25 | 518 passed (pytest -q, 65 new tests >= 60); in sandbox: 510 passed, 8 skipped with explicit reason; difftest curated range_guided exits 0 (40/40, 100%, 2 UB_EXCLUDED), naive exits 4 with 22 mismatches (18/40, 45%); difftest generated seed 1 count 200 executes 325 runs (313 PASS, 12 MISMATCH_STDOUT, 96.31%) with 12 signed-overflow UB mismatches persisted to tests/regression with full snapshots and triaged as known_limitation (UB under assume_no_overflow without host libubsan); historical records a49e53d5 and 54657d2c reconciled to fixed; AC6.1–AC6.9 PASS |
-| P7 | Failure localisation, fidelity reports | NOT STARTED | — | — |
+| P7 | Failure localisation, fidelity reports | **VERIFIED** | 2026-10-25 | 570 passed (pytest -q, 85 new tests >= 70; sandboxed 555 passed, 15 skipped); serialization round-trip character-identical on all 38 examples; interpreter cross-validation vs g++ passes 40/40 non-UB curated cases and 36/36 non-UB examples (4 hardware/signed-overflow UB cases excluded and documented); seeded faults F1–F5 verified exact stage verdicts and top-3 suspects; fidelity reports (JSON & MD) generated with schema_version, disclaimer verbatim, agreement rate with denominators, and matching plan counts; localise successfully diagnosed naive failure case_01_div_neg_pos to codegen_or_plan suspect #1 op_4 (score 9); AC7.1–AC7.9 PASS |
 | P8 | Baselines, evaluation, limitations | NOT STARTED | — | — |
 
 ## Phase dependency graph
@@ -829,9 +829,9 @@ python -m cpp2py localise --case out/dt_naive/failures/<first_failing_case> --to
 **10. Failure modes.** Interpreter and translator sharing a C++-semantics error (cross-validation vs `g++` is the guard); suspects printed with unwarranted certainty (disclaimer test); trace slices that miss the true op when output is produced after a loop; report numbers without denominators; interpreter diverging on UB inputs (excluded and labelled); snapshot set incomplete (manifest check).
 
 **11. Checklist.**
-- [ ] Serialization, interpreter, replay, slicing, ranking, `localise` command
-- [ ] Fidelity report (JSON and Markdown) for translate and difftest
-- [ ] ≥ 70 new tests; AC7.1–AC7.9 checked; status table updated (P7 → VERIFIED)
+- [x] Serialization, interpreter, replay, slicing, ranking, `localise` command
+- [x] Fidelity report (JSON and Markdown) for translate and difftest
+- [x] ≥ 70 new tests; AC7.1–AC7.9 checked; status table updated (P7 → VERIFIED)
 
 **12. Antigravity prompt.**
 
@@ -951,6 +951,7 @@ Record every justified departure from `ARCHITECTURE.md` here (date, phase, what 
 |---|---|---|---|---|
 | 2026-10-25 | P6 | Import `IRType` in `cpp2py/codegen/python_gen.py` | Line 824 and 100 referenced `IRType.I64` and `IRType.I32` for `wrap_int_min_div`, but `IRType` was missing from `from cpp2py.ir.model import (...)` | Bug fix approved by user per Rule 2; enables proper emission of `_wrap_i32`/`_wrap_i64` on wrapped division overflow. |
 | 2026-10-25 | P6 | MinGW GCC 6.3.0 lacks `libubsan` on Windows | Probe detects missing sanitizer linker library and marks `sanitizer_available=False` with reason | Handled gracefully via capability probe as anticipated by ARCH §H.2; sanitizer tests skip with explicit reason. |
+| 2026-10-25 | P7 | Extended IR snapshot JSON schema to preserve full opcode/operand metadata | The Phase 2 snapshot schema omitted label_name, role, region_id, newline, cmp_op, func_name, regions, and full operand typing for dst, preventing character-identical format_module() reconstruction. Added these fields to ir/serialization.py while maintaining backwards compatibility with Phase 2 string-based dst representations. | Lossless character-identical format_module() round-tripping for all example IR snapshots without breaking existing snapshot tests. |
 
 ## Open questions carried from ARCH §K.4
 
