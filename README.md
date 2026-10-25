@@ -2,7 +2,7 @@
 
 A source‑to‑source translator that converts a restricted subset of C++ into readable Python.
 
-**Status:** Phase 7 complete (failure localisation, backward def-use dynamic trace slicing, heuristic ranking, and fidelity reports; see IMPLEMENTATION_PLAN.md).
+**Status:** Phase 8 complete (comparative baseline evaluation across B0/B1/E presets, curated benchmark corpus & ground-truth labels, evaluation metrics, dynamic helper instrumentation, fault injection catalogue, reproducible tables, and limitations documentation; all acceptance criteria AC8.1–AC8.11 verified; see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)).
 
 ## Usage
 
@@ -57,6 +57,19 @@ Localise the root-cause stage and rank suspect operations for a differential tes
 python -m cpp2py localise --case out/dt_naive/failures/case_01_div_neg_pos --top 5
 ```
 
+### Comparative Evaluation (Phase 8)
+
+Run comparative baseline evaluation across B0 (naive), B1 (always-protect), and E (range-guided):
+```bash
+python -m cpp2py eval --suite benchmark --seed 1 --out out/eval1
+python -m cpp2py eval --suite generated --seed 7 --count 200 --out out/eval_gen
+```
+
+Run seeded fault failure localisation evaluation:
+```bash
+python -m cpp2py eval localisation --out out/eval_loc
+```
+
 Check the version:
 ```bash
 python -m cpp2py --version
@@ -74,10 +87,11 @@ Run compiler-dependent tests (differential tests against `g++` and localisation 
 python -m pytest -q -m requires_cxx
 ```
 
-The test suite contains unit and integration tests verifying the lexer, parser, semantic analyzer, IR builder, verifier, printer, transforms, range analysis, compatibility plan, code generator, differential testing runners, comparator, corpus, automated generator, regression store, IR serialization, reference IR interpreter, dynamic slicing, suspect ranking, fault localisation, and fidelity reports.
+The test suite contains unit and integration tests verifying the lexer, parser, semantic analyzer, IR builder, verifier, printer, transforms, range analysis, compatibility plan, code generator, differential testing runners, comparator, corpus, automated generator, regression store, IR serialization, reference IR interpreter, dynamic slicing, suspect ranking, fault localisation, fidelity reports, evaluation presets, metrics, benchmark label validation, fault injection catalogue, and table reproducibility.
 
 ## Project documentation
 
 - [Architecture](ARCHITECTURE.md)
 - [Implementation plan](IMPLEMENTATION_PLAN.md)
+- [Limitations & Threats to Validity](docs/LIMITATIONS.md)
 - [Agent rules](AGENTS.md)

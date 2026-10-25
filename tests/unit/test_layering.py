@@ -93,7 +93,7 @@ def test_layering_rules():
             ]), f"Layering violation in {f.name}: imports {imp}"
 
     # Rule 8: No forbidden later-phase directories
-    forbidden_dirs = ["evaluation"]
+    forbidden_dirs: list[str] = []  # P0-P8 all implemented
     for d in forbidden_dirs:
         assert not (pkg_dir / d).exists(), f"Forbidden later-phase directory exists: cpp2py/{d}"
 

@@ -44,11 +44,14 @@ def test_localisation_imports_layering() -> None:
 
 
 def test_no_evaluation_code_exists_in_cpp2py() -> None:
-    """Verify AC7.9: No evaluation code exists in production cpp2py package."""
+    """In Phase 8, cpp2py/evaluation exists. Verify production packages do not import evaluation."""
     root = Path("cpp2py")
-    assert not (root / "evaluation").exists(), "cpp2py/evaluation must not exist in Phase 7"
-    for py_file in root.rglob("*.py"):
-        assert "evaluation" not in py_file.stem, f"Unexpected evaluation file {py_file}"
+    for subdir in ("frontend", "semantics", "ir", "transforms", "analysis", "codegen", "compiler"):
+        pkg = root / subdir
+        if pkg.exists():
+            for py_file in pkg.rglob("*.py"):
+                txt = py_file.read_text(encoding="utf-8")
+                assert "cpp2py.evaluation" not in txt, f"Layering violation: {py_file} imports cpp2py.evaluation"
 
 
 def test_localisation_does_not_modify_inputs(tmp_path: Path) -> None:
