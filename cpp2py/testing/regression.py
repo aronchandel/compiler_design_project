@@ -48,6 +48,23 @@ def save_regression_case(
     (case_dir / "input.txt").write_text(input_text, encoding="utf-8")
 
     # 3. meta.json
+    meta_path = case_dir / "meta.json"
+    if meta_path.exists():
+        try:
+            existing = json.loads(meta_path.read_text(encoding="utf-8"))
+            if existing.get("status") in ("known_limitation", "fixed") and status == "open":
+                status = existing["status"]
+                if existing.get("notes"):
+                    result_notes = existing["notes"]
+                else:
+                    result_notes = result.reason
+            else:
+                result_notes = result.reason
+        except Exception:
+            result_notes = result.reason
+    else:
+        result_notes = result.reason
+
     meta: dict[str, Any] = {
         "sha8": sha8,
         "seed": case.seed,
@@ -57,9 +74,9 @@ def save_regression_case(
         "outcome": result.outcome.value,
         "first_seen": first_seen,
         "status": status,
-        "notes": result.reason,
+        "notes": result_notes,
     }
-    (case_dir / "meta.json").write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     # 4. snapshots/
     snap_target = case_dir / "snapshots"

@@ -158,3 +158,48 @@ def test_compute_agreement_rate_empty():
     assert num == 0
     assert denom == 0
     assert rate is None
+
+
+def test_outcome_ub_hardware_integer_overflow():
+    # NTSTATUS 0xC0000095 (STATUS_INTEGER_OVERFLOW / divide error)
+    cxx = ExecutionResult(stdout="", stderr="", exit_code=3221225621)
+    py = ExecutionResult(stdout="0\n", stderr="", exit_code=0)
+    res = compare_results("t15", cxx_result=cxx, py_result=py)
+    assert res.outcome == Outcome.UB_EXCLUDED
+    assert not res.is_mismatch()
+    assert "3221225621" in res.reason
+
+
+def test_outcome_ub_hardware_divide_by_zero():
+    # NTSTATUS 0xC0000094 (STATUS_INTEGER_DIVIDE_BY_ZERO)
+    cxx = ExecutionResult(stdout="", stderr="", exit_code=3221225620)
+    py = ExecutionResult(stdout="0\n", stderr="", exit_code=0)
+    res = compare_results("t16", cxx_result=cxx, py_result=py)
+    assert res.outcome == Outcome.UB_EXCLUDED
+    assert not res.is_mismatch()
+
+
+def test_outcome_ub_sigfpe():
+    # Linux SIGFPE (-8 or 128+8=136)
+    cxx1 = ExecutionResult(stdout="", stderr="", exit_code=-8)
+    py1 = ExecutionResult(stdout="0\n", stderr="", exit_code=0)
+    res1 = compare_results("t17a", cxx_result=cxx1, py_result=py1)
+    assert res1.outcome == Outcome.UB_EXCLUDED
+
+    cxx2 = ExecutionResult(stdout="", stderr="", exit_code=136)
+    py2 = ExecutionResult(stdout="0\n", stderr="", exit_code=0)
+    res2 = compare_results("t17b", cxx_result=cxx2, py_result=py2)
+    assert res2.outcome == Outcome.UB_EXCLUDED
+
+
+def test_diff_result_to_dict():
+    cxx = ExecutionResult(stdout="1\n", stderr="", exit_code=0)
+    py = ExecutionResult(stdout="1\n", stderr="", exit_code=0)
+    res = compare_results("t18", cxx_result=cxx, py_result=py)
+    d = res.to_dict()
+    assert d["case_id"] == "t18"
+    assert d["outcome"] == "PASS"
+    assert res.is_mismatch() is False
+    assert d["cxx_result"]["exit_code"] == 0
+    assert d["py_result"]["exit_code"] == 0
+
