@@ -1,0 +1,99 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 0,
+    "native": 4
+  },
+  "decisions": {
+    "op_6": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_6",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": -20,
+        "lo": -20
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_7": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_7",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        },
+        {
+          "hi": 3,
+          "lo": 3
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": -6,
+        "lo": -6
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_8": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_8",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": -20,
+        "lo": -20
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_9": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_9",
+      "operand_ranges": [
+        {
+          "hi": -20,
+          "lo": -20
+        },
+        {
+          "hi": 3,
+          "lo": 3
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": 0,
+        "lo": -2
+      },
+      "risks": [
+        "MOD_SIGN_DIFFERS"
+      ],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "naive",
+  "policy": "assume_no_overflow"
+}

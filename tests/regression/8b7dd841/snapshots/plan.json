@@ -1,0 +1,155 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 1,
+    "native": 5
+  },
+  "decisions": {
+    "op_10": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_10",
+      "operand_ranges": [
+        {
+          "hi": 2,
+          "lo": 2
+        },
+        {
+          "hi": 0,
+          "lo": 0
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 2,
+        "lo": 2
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_19": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_19",
+      "operand_ranges": [
+        {
+          "hi": 2,
+          "lo": -2147483648
+        },
+        {
+          "hi": -1,
+          "lo": -1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 1,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_21": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_21",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_32": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_32",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": -2,
+          "lo": -2
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483645,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_34": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_34",
+      "operand_ranges": [
+        {
+          "hi": 4,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 5,
+        "lo": 1
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    },
+    "op_9": {
+      "action": "helper",
+      "helper": "_cpp_div",
+      "op_id": "op_9",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 1
+        },
+        {
+          "hi": -3,
+          "lo": -3
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "range allows negative operand; C++ truncating division needed",
+      "result_range": {
+        "hi": 0,
+        "lo": 0
+      },
+      "risks": [
+        "DIV_TRUNC_DIFFERS"
+      ],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "range_guided",
+  "policy": "assume_no_overflow"
+}

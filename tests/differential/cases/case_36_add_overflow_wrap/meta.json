@@ -1,0 +1,7 @@
+{
+  "case_id": "case_36_add_overflow_wrap",
+  "config_overrides": {
+    "overflow_policy": "wrap"
+  },
+  "notes": "Curated boundary test case_36_add_overflow_wrap"
+}

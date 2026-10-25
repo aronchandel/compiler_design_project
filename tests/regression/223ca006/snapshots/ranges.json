@@ -1,0 +1,32 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_6": {
+      "exact_result_range": {
+        "hi": -2147488281,
+        "lo": -2147488281
+      },
+      "op_id": "op_6",
+      "opcode": "mul",
+      "operand_ranges": [
+        {
+          "hi": -46341,
+          "lo": -46341
+        },
+        {
+          "hi": 46341,
+          "lo": 46341
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

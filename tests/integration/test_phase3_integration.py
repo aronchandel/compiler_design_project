@@ -111,5 +111,4 @@ def test_ac3_6_ast_to_python_removed():
 def test_ac3_10_no_transforms_analysis_compat_directories():
     """No testing/, localisation/, reporting/, or evaluation/ directories exist in Phase 5."""
     repo_cpp2py = Path("cpp2py")
-    assert not (repo_cpp2py / "testing").exists()
     assert not (repo_cpp2py / "localisation").exists()

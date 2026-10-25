@@ -1,0 +1,134 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 0,
+    "native": 5
+  },
+  "decisions": {
+    "op_16": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_16",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": -1,
+          "lo": -1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_17": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_17",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483647
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_23": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_23",
+      "operand_ranges": [
+        {
+          "hi": -42,
+          "lo": -42
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483606,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_35": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_35",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "assume_no_overflow policy: no helper inserted",
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ],
+      "wrap_int_min_div": false
+    },
+    "op_37": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_37",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "proven within type bounds: native operator is safe",
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": [],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "range_guided",
+  "policy": "assume_no_overflow"
+}

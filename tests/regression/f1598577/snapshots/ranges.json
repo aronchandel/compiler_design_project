@@ -1,0 +1,34 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_4": {
+      "exact_result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "op_id": "op_4",
+      "opcode": "mod",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "risks": [
+        "DIV_BY_ZERO_POSSIBLE",
+        "INT_MIN_DIV_MINUS_ONE",
+        "MOD_SIGN_DIFFERS"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

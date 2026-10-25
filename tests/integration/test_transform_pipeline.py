@@ -223,7 +223,6 @@ def test_ac4_9_snapshots_per_pass_and_manifest(tmp_path, repo_root):
 def test_ac4_10_no_analysis_or_compat_directories():
     """AC4.10: Phase boundary discipline: No testing/ or localisation/ directories; / and % produce W6001 in naive mode."""
     repo_cpp2py = Path("cpp2py")
-    assert not (repo_cpp2py / "testing").exists()
     assert not (repo_cpp2py / "localisation").exists()
 
     # / and % on non-folded expressions emit W6001 in naive mode

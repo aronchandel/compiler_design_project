@@ -1,0 +1,7 @@
+{
+  "case_id": "case_15_int_max_plus_one_wrap",
+  "config_overrides": {
+    "overflow_policy": "wrap"
+  },
+  "notes": "Curated boundary test case_15_int_max_plus_one_wrap"
+}

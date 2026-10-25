@@ -1,0 +1,29 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_1   a = assign 2                    ; L5:5
+  op_2   declare b : i32                 ; L5:5
+  op_3   b = assign 1                    ; L5:5
+  op_4   read a                          ; L6:5
+  op_5   read b                          ; L6:5
+  op_6   t0 = cmp ge a, b                ; L7:9
+  op_7   branch t0, if_then_r0, if_else_r0 ; L7:5
+  op_8   if_then_r0:
+  op_9   a = assign b                    ; L8:9
+  op_10  jump if_end_r0
+  op_11  if_else_r0:
+  op_12  t1 = sub b, a                   ; L10:13
+  op_13  a = assign t1                   ; L10:9
+  op_14  if_end_r0:
+  op_15  t2 = cmp gt b, b                ; L12:9
+  op_16  branch t2, if_then_r1, if_else_r1 ; L12:5
+  op_17  if_then_r1:
+  op_18  b = assign a                    ; L13:9
+  op_19  jump if_end_r1
+  op_20  if_else_r1:
+  op_21  t3 = add 42, b                  ; L15:13
+  op_22  b = assign t3                   ; L15:9
+  op_23  if_end_r1:
+  op_24  print a, endl                   ; L17:5
+  op_25  print b, endl                   ; L18:5
+  op_26  return 0                        ; L19:5
+}

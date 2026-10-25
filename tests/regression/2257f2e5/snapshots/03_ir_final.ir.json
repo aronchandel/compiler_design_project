@@ -1,0 +1,188 @@
+{
+  "functions": [
+    {
+      "body": [
+        {
+          "dst": "a",
+          "op_id": "op_0",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i64"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 34,
+              "line": 4
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "a",
+          "op_id": "op_2",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i64",
+              "value": -1000000000000
+            }
+          ],
+          "origin": [
+            "op_1"
+          ],
+          "span": {
+            "end": {
+              "col": 34,
+              "line": 4
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_3",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i64"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 21,
+              "line": 5
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_5",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i64",
+              "value": 3
+            }
+          ],
+          "origin": [
+            "op_4"
+          ],
+          "span": {
+            "end": {
+              "col": 21,
+              "line": 5
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "t2",
+          "op_id": "op_6",
+          "opcode": "div",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i64"
+            },
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i64"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 18,
+              "line": 6
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 13,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_7",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t2",
+              "type": "i64"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 27,
+              "line": 6
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 5,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_8",
+          "opcode": "return",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 14,
+              "line": 7
+            },
+            "file": "case_37_i64_div_neg_pos.cpp",
+            "start": {
+              "col": 5,
+              "line": 7
+            }
+          }
+        }
+      ],
+      "name": "main",
+      "params": [],
+      "return_type": "i32"
+    }
+  ],
+  "source_name": "case_37_i64_div_neg_pos.cpp"
+}

@@ -1,0 +1,36 @@
+{
+  "assumptions": [],
+  "counts": {
+    "helper": 0,
+    "native": 1
+  },
+  "decisions": {
+    "op_6": {
+      "action": "native",
+      "helper": null,
+      "op_id": "op_6",
+      "operand_ranges": [
+        {
+          "hi": 1000000000000,
+          "lo": 1000000000000
+        },
+        {
+          "hi": -3,
+          "lo": -3
+        }
+      ],
+      "policy": "assume_no_overflow",
+      "reason": "naive mode: native operator emitted without range analysis",
+      "result_range": {
+        "hi": 2,
+        "lo": 0
+      },
+      "risks": [
+        "MOD_SIGN_DIFFERS"
+      ],
+      "wrap_int_min_div": false
+    }
+  },
+  "mode": "naive",
+  "policy": "assume_no_overflow"
+}

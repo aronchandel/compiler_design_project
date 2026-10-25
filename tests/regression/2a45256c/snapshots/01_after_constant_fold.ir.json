@@ -1,0 +1,229 @@
+{
+  "functions": [
+    {
+      "body": [
+        {
+          "dst": "a",
+          "op_id": "op_0",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 29,
+              "line": 4
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "t0",
+          "op_id": "op_1",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -2147483647
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 24,
+              "line": 4
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 13,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "t1",
+          "op_id": "op_2",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -2147483648
+            }
+          ],
+          "origin": [
+            "op_1"
+          ],
+          "span": {
+            "end": {
+              "col": 28,
+              "line": 4
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 13,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "a",
+          "op_id": "op_3",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": -2147483648
+            }
+          ],
+          "origin": [
+            "op_2"
+          ],
+          "span": {
+            "end": {
+              "col": 29,
+              "line": 4
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_4",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 16,
+              "line": 5
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "t2",
+          "op_id": "op_5",
+          "opcode": "neg",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 15,
+              "line": 5
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 13,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_6",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t2",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 16,
+              "line": 5
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_7",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 6
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_8",
+          "opcode": "return",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 14,
+              "line": 7
+            },
+            "file": "case_34_unary_minus_int_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 7
+            }
+          }
+        }
+      ],
+      "name": "main",
+      "params": [],
+      "return_type": "i32"
+    }
+  ],
+  "source_name": "case_34_unary_minus_int_min_wrap.cpp"
+}

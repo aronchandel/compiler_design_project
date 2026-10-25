@@ -1,0 +1,55 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_17": {
+      "exact_result_range": {
+        "hi": 2147483648,
+        "lo": -2147483647
+      },
+      "op_id": "op_17",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_19": {
+      "exact_result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "op_id": "op_19",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": []
+    }
+  },
+  "converged": true,
+  "iterations": 10
+}

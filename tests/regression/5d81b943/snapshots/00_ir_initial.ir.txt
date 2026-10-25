@@ -1,0 +1,49 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_1   a = assign 1                    ; L5:5
+  op_2   declare b : i32                 ; L5:5
+  op_3   t0 = neg 1                      ; L5:20
+  op_4   b = assign t0                   ; L5:5
+  op_5   declare c : i32                 ; L5:5
+  op_6   t1 = neg 1                      ; L5:28
+  op_7   c = assign t1                   ; L5:5
+  op_8   declare x : i32                 ; L5:5
+  op_9   t2 = neg 1                      ; L5:36
+  op_10  x = assign t2                   ; L5:5
+  op_11  declare y : i64                 ; L6:5
+  op_12  t3 = cast 42 to i64             ; L6:15
+  op_13  y = assign t3                   ; L6:5
+  op_14  read a                          ; L7:5
+  op_15  read b                          ; L7:5
+  op_16  t4 = mul b, x                   ; L8:14
+  op_17  t5 = sub a, t4                  ; L8:9
+  op_18  x = assign t5                   ; L8:5
+  op_19  t6 = cmp ge c, c                ; L9:9
+  op_20  branch t6, if_then_r0, if_else_r0 ; L9:5
+  op_21  if_then_r0:
+  op_22  t7 = neg 42                     ; L10:14
+  op_23  t8 = sub t7, x                  ; L10:13
+  op_24  c = assign t8                   ; L10:9
+  op_25  jump if_end_r0
+  op_26  if_else_r0:
+  op_27  c = assign c                    ; L12:9
+  op_28  if_end_r0:
+  op_29  declare iter_2 : i32            ; L14:10
+  op_30  iter_2 = assign 0               ; L14:10
+  op_31  loop_head_r1:                   ; role=loop_head region=r1
+  op_32  t9 = cmp lt iter_2, 2           ; L14:26
+  op_33  branch t9, loop_body_r1, loop_end_r1 ; L14:5
+  op_34  loop_body_r1:
+  op_35  t10 = add x, 1                  ; L15:13
+  op_36  x = assign t10                  ; L15:9
+  op_37  t11 = add iter_2, 1             ; L14:47
+  op_38  iter_2 = assign t11             ; L14:38
+  op_39  jump loop_head_r1
+  op_40  loop_end_r1:
+  op_41  print a, endl                   ; L17:5
+  op_42  print b, endl                   ; L18:5
+  op_43  print c, endl                   ; L19:5
+  op_44  print x, endl                   ; L20:5
+  op_45  print y, endl                   ; L21:5
+  op_46  return 0                        ; L22:5
+}

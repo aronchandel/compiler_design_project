@@ -1,0 +1,253 @@
+{
+  "functions": [
+    {
+      "body": [
+        {
+          "dst": "a",
+          "op_id": "op_0",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 20,
+              "line": 4
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "t0",
+          "op_id": "op_1",
+          "opcode": "neg",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 46341
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 4
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 13,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "a",
+          "op_id": "op_2",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t0",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 20,
+              "line": 4
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 4
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_3",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 5
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "b",
+          "op_id": "op_4",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 46341
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 5
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 5
+            }
+          }
+        },
+        {
+          "dst": "c",
+          "op_id": "op_5",
+          "opcode": "declare",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 6
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "t1",
+          "op_id": "op_6",
+          "opcode": "mul",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "a",
+              "symbol_id": 0,
+              "type": "i32"
+            },
+            {
+              "kind": "var",
+              "name": "b",
+              "symbol_id": 1,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 18,
+              "line": 6
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 13,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": "c",
+          "op_id": "op_7",
+          "opcode": "assign",
+          "operands": [
+            {
+              "kind": "temp",
+              "temp_id": "t1",
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 19,
+              "line": 6
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 6
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_8",
+          "opcode": "print",
+          "operands": [
+            {
+              "kind": "var",
+              "name": "c",
+              "symbol_id": 2,
+              "type": "i32"
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 23,
+              "line": 7
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 7
+            }
+          }
+        },
+        {
+          "dst": null,
+          "op_id": "op_9",
+          "opcode": "return",
+          "operands": [
+            {
+              "kind": "const",
+              "type": "i32",
+              "value": 0
+            }
+          ],
+          "span": {
+            "end": {
+              "col": 14,
+              "line": 8
+            },
+            "file": "case_20_prod_near_i32_min_wrap.cpp",
+            "start": {
+              "col": 5,
+              "line": 8
+            }
+          }
+        }
+      ],
+      "name": "main",
+      "params": [],
+      "return_type": "i32"
+    }
+  ],
+  "source_name": "case_20_prod_near_i32_min_wrap.cpp"
+}

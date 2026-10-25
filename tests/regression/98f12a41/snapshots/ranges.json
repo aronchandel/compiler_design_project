@@ -1,0 +1,28 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_3": {
+      "exact_result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "op_id": "op_3",
+      "opcode": "cast",
+      "operand_ranges": [
+        {
+          "hi": 4294967296,
+          "lo": 4294967296
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "NARROWING_LOSSY"
+      ]
+    }
+  },
+  "converged": true,
+  "iterations": 1
+}

@@ -1,0 +1,30 @@
+function main() -> i32 {
+  op_0   declare a : i32                 ; L5:5
+  op_1   a = assign 10                   ; L5:5
+  op_2   declare b : i32                 ; L5:5
+  op_3   b = assign 10                   ; L5:5
+  op_4   declare c : i32                 ; L5:5
+  op_5   c = assign 10                   ; L5:5
+  op_6   declare x : i32                 ; L5:5
+  op_7   x = assign 5                    ; L5:5
+  op_8   read a                          ; L6:5
+  op_9   read b                          ; L6:5
+  op_10  b = assign b                    ; L7:5
+  op_11  declare iter_1 : i32            ; L8:10
+  op_12  iter_1 = assign 0               ; L8:10
+  op_13  loop_head_r0:                   ; role=loop_head region=r0
+  op_14  t0 = cmp lt iter_1, 2           ; L8:26
+  op_15  branch t0, loop_body_r0, loop_end_r0 ; L8:5
+  op_16  loop_body_r0:
+  op_17  t1 = add b, 1                   ; L9:13
+  op_18  b = assign t1                   ; L9:9
+  op_19  t2 = add iter_1, 1              ; L8:47
+  op_20  iter_1 = assign t2              ; L8:38
+  op_21  jump loop_head_r0
+  op_22  loop_end_r0:
+  op_23  print a, endl                   ; L11:5
+  op_24  print b, endl                   ; L12:5
+  op_25  print c, endl                   ; L13:5
+  op_26  print x, endl                   ; L14:5
+  op_27  return 0                        ; L15:5
+}

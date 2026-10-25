@@ -1,0 +1,130 @@
+{
+  "assumptions": [],
+  "by_op": {
+    "op_16": {
+      "exact_result_range": {
+        "hi": 2147483648,
+        "lo": -2147483647
+      },
+      "op_id": "op_16",
+      "opcode": "mul",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": -1,
+          "lo": -1
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_17": {
+      "exact_result_range": {
+        "hi": 4294967294,
+        "lo": -4294967295
+      },
+      "op_id": "op_17",
+      "opcode": "sub",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483647
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_23": {
+      "exact_result_range": {
+        "hi": 2147483606,
+        "lo": -2147483689
+      },
+      "op_id": "op_23",
+      "opcode": "sub",
+      "operand_ranges": [
+        {
+          "hi": -42,
+          "lo": -42
+        },
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        }
+      ],
+      "result_range": {
+        "hi": 2147483606,
+        "lo": -2147483648
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_35": {
+      "exact_result_range": {
+        "hi": 2147483648,
+        "lo": -2147483647
+      },
+      "op_id": "op_35",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 2147483647,
+          "lo": -2147483648
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2147483647,
+        "lo": -2147483647
+      },
+      "risks": [
+        "SIGNED_OVERFLOW_POSSIBLE"
+      ]
+    },
+    "op_37": {
+      "exact_result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "op_id": "op_37",
+      "opcode": "add",
+      "operand_ranges": [
+        {
+          "hi": 1,
+          "lo": 0
+        },
+        {
+          "hi": 1,
+          "lo": 1
+        }
+      ],
+      "result_range": {
+        "hi": 2,
+        "lo": 1
+      },
+      "risks": []
+    }
+  },
+  "converged": true,
+  "iterations": 13
+}

@@ -1,0 +1,11 @@
+function main() -> i32 {
+  op_0   declare a : i64                 ; L4:5
+  op_1   t0 = neg 1000000000000          ; L4:19
+  op_2   a = assign t0                   ; L4:5
+  op_3   declare b : i64                 ; L5:5
+  op_4   t1 = cast 3 to i64              ; L5:15
+  op_5   b = assign t1                   ; L5:5
+  op_6   t2 = mod a, b                   ; L6:13
+  op_7   print t2, endl                  ; L6:5
+  op_8   return 0                        ; L7:5
+}
