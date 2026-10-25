@@ -103,3 +103,31 @@ def test_run_cxx_timeout():
         res = run_cxx(slow_bin, timeout=0.5)
         assert res.timed_out is True
         assert res.exit_code == -1
+
+
+@pytest.mark.requires_cxx
+def test_cxx_hardware_division_overflow_termination():
+    """Verify that INT_MIN / -1 terminates promptly on hardware fault with STATUS_INTEGER_OVERFLOW / SIGFPE."""
+    caps = probe_cxx_capabilities()
+    if not caps.available:
+        pytest.skip(f"g++ not available: {caps.reason}")
+
+    src = """#include <iostream>
+int main() {
+    int x = -2147483647 - 1;
+    int d = -1;
+    int r = x / d;
+    std::cout << r << std::endl;
+    return 0;
+}
+"""
+    build = compile_cxx(src, overflow_policy="wrap")
+    assert build.success, f"Compilation failed: {build.compile_error}"
+
+    # Execution must terminate promptly (well under 5.0s) and not time out
+    res = run_cxx(build.binary_path, timeout=5.0)
+    assert not res.timed_out, "Execution timed out on hardware division overflow"
+    # On Windows: STATUS_INTEGER_OVERFLOW (3221225621 / 0xC0000095)
+    # On POSIX: SIGFPE (-8 or 136)
+    assert res.exit_code in (3221225621, -8, 136)
+

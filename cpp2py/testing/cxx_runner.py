@@ -220,6 +220,8 @@ def compile_cxx(
         flags.append("-fwrapv")
     elif overflow_policy == "trap":
         flags.append("-ftrapv")
+    if sys.platform == "win32":
+        flags.append("-D_CPP2PY_WIN32_GUARD=1")
 
     if extra_flags:
         flags.extend(extra_flags)
@@ -231,10 +233,8 @@ def compile_cxx(
         if cached_bin is not None:
             return BuildResult(success=True, binary_path=cached_bin, flags=flags)
 
-    temp_dir_obj: tempfile.TemporaryDirectory | None = None
     if build_dir is None:
-        temp_dir_obj = tempfile.TemporaryDirectory()
-        work_dir = Path(temp_dir_obj.name)
+        work_dir = Path(tempfile.mkdtemp(prefix="cpp2py_build_"))
     else:
         work_dir = build_dir
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -245,7 +245,32 @@ def compile_cxx(
 
     src_file.write_text(source_code, encoding="utf-8")
 
-    cmd = [compiler, *flags, str(src_file), "-o", str(bin_file)]
+    cmd = [compiler, *flags]
+    if sys.platform == "win32":
+        veh_header = work_dir / "_cpp2py_win32_veh.h"
+        veh_header.write_text(
+            "#if defined(_WIN32)\n"
+            "#include <windows.h>\n"
+            "namespace {\n"
+            "    struct _Cpp2pyVehInit {\n"
+            "        static LONG WINAPI _Handler(PEXCEPTION_POINTERS ep) {\n"
+            "            if (ep && ep->ExceptionRecord &&\n"
+            "                (ep->ExceptionRecord->ExceptionCode == 0xC0000095 || ep->ExceptionRecord->ExceptionCode == 0xC0000094)) {\n"
+            "                ExitProcess(ep->ExceptionRecord->ExceptionCode);\n"
+            "            }\n"
+            "            return EXCEPTION_CONTINUE_SEARCH;\n"
+            "        }\n"
+            "        _Cpp2pyVehInit() {\n"
+            "            AddVectoredExceptionHandler(1, _Handler);\n"
+            "        }\n"
+            "    } _cpp2py_veh_init;\n"
+            "}\n"
+            "#endif\n",
+            encoding="utf-8",
+        )
+        cmd.extend(["-include", str(veh_header)])
+
+    cmd.extend([str(src_file), "-o", str(bin_file)])
     try:
         proc = subprocess.run(
             cmd,
