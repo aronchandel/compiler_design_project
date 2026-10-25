@@ -1,0 +1,277 @@
+[
+  {
+    "file": "prog01_arith_basic.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Operands are positive compile-time values (100 and 5).",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog01_arith_basic.cpp",
+    "line": 8,
+    "col": 15,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "Dividend is positive compile-time constant 100.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog02_negative_div.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "Negative dividend -7 produces -3 in C++ but -4 under Python // floor division.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog03_negative_mod.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "%",
+    "label": "needs_helper",
+    "reason": "Negative dividend -7 produces -1 in C++ but 1 under Python % modulo.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog04_loop_counter_div.cpp",
+    "line": 7,
+    "col": 22,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Loop counter i is non-negative in [0, 19] with positive divisor 2.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog05_input_div_unconstrained.cpp",
+    "line": 8,
+    "col": 15,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "Input operand a is unconstrained and may be negative at runtime.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog06_input_mod_unconstrained.cpp",
+    "line": 8,
+    "col": 15,
+    "op": "%",
+    "label": "needs_helper",
+    "reason": "Input operand a is unconstrained and may be negative at runtime.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog07_assumed_range.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Under assumed range x in [0, 1000], dividend is strictly non-negative.",
+    "assumed_ranges": {
+      "main.x": [
+        0,
+        1000
+      ]
+    }
+  },
+  {
+    "file": "prog08_boundary_div.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "Negative boundary operand -2147483647 requires helper to avoid floor division.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog09_mixed_sign_expr.cpp",
+    "line": 7,
+    "col": 18,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Operand pos is positive constant 42.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog09_mixed_sign_expr.cpp",
+    "line": 8,
+    "col": 18,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "Operand neg is negative constant -42.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog10_countdown_loop.cpp",
+    "line": 7,
+    "col": 19,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Loop counter i descends in non-negative interval [0, 30].",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog11_power_of_two_mod.cpp",
+    "line": 7,
+    "col": 19,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "Loop counter i is positive in [1, 16], so % matches Python modulo.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog12_nested_loops_div.cpp",
+    "line": 8,
+    "col": 33,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Both (i * 10) in [0, 40] and j in [1, 5] are non-negative.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog13_conditional_signs.cpp",
+    "line": 9,
+    "col": 19,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "Inside val < 0 branch, dividend is negative.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog13_conditional_signs.cpp",
+    "line": 11,
+    "col": 19,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Inside else branch where val >= 0, dividend is non-negative.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog14_factorial_div.cpp",
+    "line": 7,
+    "col": 18,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Both fact (120) and d (6) are positive compile-time constants.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog15_gcd_algorithm.cpp",
+    "line": 8,
+    "col": 19,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "Positive operands 48 and 18 ensure all intermediate remainders are positive.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog16_collatz_step.cpp",
+    "line": 6,
+    "col": 15,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "Positive constant n (27) with positive divisor 2.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog16_collatz_step.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Positive constant n (27) with positive divisor 2.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog17_sign_flip_mod.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "%",
+    "label": "needs_helper",
+    "reason": "Negated variable y = -15 has negative value causing Python % to differ.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog18_average_calculator.cpp",
+    "line": 8,
+    "col": 19,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "Input sum can be negative, differing under Python floor division.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog19_even_odd_check.cpp",
+    "line": 7,
+    "col": 15,
+    "op": "%",
+    "label": "needs_helper",
+    "reason": "Arbitrary input integer n may be negative, where C++ remainder differs.",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog20_scaling_transform.cpp",
+    "line": 7,
+    "col": 30,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Scaled loop product (i * 5) is non-negative in [0, 45].",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog20_scaling_transform.cpp",
+    "line": 8,
+    "col": 27,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "Scaled loop product (i * 5) is non-negative in [0, 45].",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog21_digit_extraction.cpp",
+    "line": 6,
+    "col": 18,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "Constant num is positive (1234).",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog21_digit_extraction.cpp",
+    "line": 7,
+    "col": 20,
+    "op": "/",
+    "label": "native_ok",
+    "reason": "Constant num is positive (1234).",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog21_digit_extraction.cpp",
+    "line": 8,
+    "col": 19,
+    "op": "%",
+    "label": "native_ok",
+    "reason": "num1 is positive (123).",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog22_negative_scaling.cpp",
+    "line": 8,
+    "col": 21,
+    "op": "/",
+    "label": "needs_helper",
+    "reason": "neg is strictly negative in [-5, -1].",
+    "assumed_ranges": {}
+  },
+  {
+    "file": "prog22_negative_scaling.cpp",
+    "line": 9,
+    "col": 21,
+    "op": "%",
+    "label": "needs_helper",
+    "reason": "neg is strictly negative in [-5, -1].",
+    "assumed_ranges": {}
+  }
+]

@@ -40,6 +40,8 @@ def run_python(
     env = _get_minimal_env()
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUTF8"] = "1"
+    if "CPP2PY_INSTR_OUT" in os.environ:
+        env["CPP2PY_INSTR_OUT"] = os.environ["CPP2PY_INSTR_OUT"]
 
     try:
         proc = subprocess.Popen(

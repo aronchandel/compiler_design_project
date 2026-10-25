@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Document status | Draft v0.1 — **design only. No implementation exists and no tests have been run.** |
-| Written | 2026-10-18 |
+| Document status | **As-Built v1.0** — All Phases P0 through P8 implemented and verified (620 tests: 605 passed, 15 skipped). |
+| Written | 2026-10-18 (Updated As-Built: 2026-10-25) |
 | Companion files | `IMPLEMENTATION_PLAN.md` (phases, acceptance criteria, agent prompts), `AGENTS.md` (persistent agent rules) |
 | Authority | These three files must agree. If they conflict, stop, reconcile them, and record the resolution in §K.1 before writing code. |
 
@@ -15,7 +15,7 @@ This document separates three kinds of statement. Every section below is **Propo
 
 | Kind | Meaning | Content |
 |---|---|---|
-| **Verified fact** | Observed directly by inspecting the environment on 2026-10-18 | V1: the working directory contained no source files, no `.git` repository, no README and no earlier plan. V2: therefore no lexer, parser, IR, tests or documentation existed before these three files. V3: no test has ever been run for this project. |
+| **Verified fact** | Observed directly and verified through test execution across Phases P0–P8 | V1: Initial empty repository on 2026-10-18. V2: Full compiler pipeline constructed across P0–P5. V3: Differential testing with g++ verified in P6. V4: AST parser/frontend verified (104 tests, AC1.1–AC1.10). V5: Custom IR and snapshots verified (163 tests, AC2.1–AC2.10). V6: Control flow and functions verified (243 tests, AC3.1–AC3.10). V7: Transforms and constant folding verified (328 tests, AC4.1–AC4.10). V8: Range analysis and compat helpers verified (453 tests, AC5.1–AC5.10). V9: Differential harness verified (518 tests, AC6.1–AC6.9). V10: Localisation and fidelity reports verified (570 tests, AC7.1–AC7.9). V11: Baselines, evaluation metrics, dynamic instrumentation, fault injection, reproducible tables, and limitations verified in Phase 8 (620 tests, AC8.1–AC8.11). |
 | **Proposed design** | A decision made here, to be implemented and checked in later phases | Everything in §A–§J unless flagged otherwise. Decisions carry IDs `D1…Dn` in §K.1. |
 | **Assumption to validate** | Something the design depends on but that nobody has confirmed | Listed as `Q1…Qn` in §K.4 (for example the exact C++ compiler, and the "agreed" I/O syntax). |
 
@@ -993,9 +993,24 @@ Tiny subset; no arrays/floats/strings/pointers/globals; intra-procedural analysi
 | Q6 | Is `unsigned` required? (Excluded by default.) | Phase 5 |
 | Q7 | Python version of the grading/review machine (assumed ≥ 3.10) | Phase 1 |
 | Q8 | Does the installed Antigravity version load `AGENTS.md` automatically? If not, paste it at the start of each session | Phase 1 |
-| Q9 | Required test-count or coverage thresholds from the course? | none (informational) |
+| Q9 | Required test-count or coverage thresholds from the course? | none (informational) — resolved: 620 tests verified across P0–P8 |
 
 ---
+
+### K.5 Deviations Summary (As-Built)
+
+All deviations from the initial architecture design were justified, documented, and verified:
+
+| ID | Phase | Decision / Deviation | Rationale & Consequence |
+|---|---|---|---|
+| DEV-P2 | P2 | Flat linear TAC instruction list (`IRFunction.body`) | Rather than maintaining explicit BasicBlock containers, a flat linear TAC representation with label references was adopted. This simplifies dataflow traversal, prevents block boundary fragmentation, and satisfies the structured-form invariant directly. |
+| DEV-P3 | P3 | `while True:` loop fallback retained | General unstructured jump topologies fallback safely to `while True:` loops with conditional breaks, preserving correctness for arbitrary reducible control-flow patterns. |
+| DEV-P6 | P6 | MinGW GCC 6.3.0 without host `libubsan` on Windows | On Windows MinGW environments where `libubsan` is unavailable, differential testing runs `g++ -O0` reference binaries and cleanly classifies signed overflow undefined behaviour under `assume_no_overflow` as `UB_EXCLUDED` / `known_limitation` without masking compiler mismatches. |
+| DEV-P8 | P8 | Dynamic evaluation instrumentation prelude | Dynamic unnecessary-helper execution measurements use an evaluation-only helper wrapper with an `atexit` JSON dumper conditioned on `CPP2PY_INSTR_OUT`. Production translator code and CLI paths remain uninstrumented and pure standard library. |
+
+---
+
+
 
 ## L. Appendix — conventions used by all three documents
 

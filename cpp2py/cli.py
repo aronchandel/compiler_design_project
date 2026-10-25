@@ -67,6 +67,14 @@ def main(argv: list[str] | None = None) -> int:
     localise_parser.add_argument('--case', required=True, metavar='DIR', help='Case or failure directory containing snapshots and inputs')
     localise_parser.add_argument('--top', type=int, default=5, metavar='K', help='Number of top suspects to report (default: 5)')
 
+    # eval subcommand (Phase 8)
+    eval_parser = subparsers.add_parser('eval', help='Comparative evaluation and localisation runner')
+    eval_parser.add_argument('mode', nargs='?', default='suite', choices=['suite', 'localisation'], help='Mode: suite (default) or localisation')
+    eval_parser.add_argument('--suite', choices=['benchmark', 'generated', 'all'], default='benchmark', help='Test suite to evaluate (default: benchmark)')
+    eval_parser.add_argument('--seed', type=int, default=1, help='Seed for generated suite (default: 1)')
+    eval_parser.add_argument('--count', type=int, default=200, help='Count of programs for generated suite (default: 200)')
+    eval_parser.add_argument('--out', metavar='DIR', required=True, help='Directory to write evaluation artifacts')
+
     args = parser.parse_args(argv)
 
     if args.command is None:
@@ -82,7 +90,27 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == 'localise':
         return _cmd_localise(args)
 
+    if args.command == 'eval':
+        return _cmd_eval(args)
+
     return 1
+
+
+def _cmd_eval(args: argparse.Namespace) -> int:
+    """Handle the eval subcommand (lazy import of cpp2py.evaluation)."""
+    from cpp2py.evaluation.experiments import run_suite_evaluation, run_localisation_suite
+
+    if args.mode == 'localisation':
+        run_localisation_suite(out_dir=args.out)
+        return 0
+    else:
+        run_suite_evaluation(
+            suite=args.suite,
+            seed=args.seed,
+            count=args.count,
+            out_dir=args.out,
+        )
+        return 0
 
 
 def _cmd_localise(args: argparse.Namespace) -> int:
