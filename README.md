@@ -1,97 +1,286 @@
 # cpp2py
 
-A source‑to‑source translator that converts a restricted subset of C++ into readable Python.
+A source‑to‑source translator that converts a restricted subset of C++ into readable Python — now with a **web IDE** powered by a FastAPI backend.
 
-**Status:** Phase 8 complete (comparative baseline evaluation across B0/B1/E presets, curated benchmark corpus & ground-truth labels, evaluation metrics, dynamic helper instrumentation, fault injection catalogue, reproducible tables, and limitations documentation; all acceptance criteria AC8.1–AC8.11 verified; see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)).
+**Compiler Status:** Phase 8 complete (comparative baseline evaluation across B0/B1/E presets, curated benchmark corpus & ground-truth labels, evaluation metrics, dynamic helper instrumentation, fault injection catalogue, reproducible tables, and limitations documentation; all acceptance criteria AC8.1–AC8.11 verified).
 
-## Usage
+**Web App Status:** FastAPI backend + Stitch-designed IDE frontend integrated; all 659 tests pass (621 compiler + 38 API).
 
-Translate a C++ source file to Python:
-```bash
-python -m cpp2py translate path/to/input.cpp -o path/to/output.py
+---
+
+## Architecture
+
+```
+.
+├── cpp2py/            # Compiler package (Phases 0–8)
+│   ├── frontend/      # Lexer, parser, AST nodes
+│   ├── semantics/     # Semantic analyser
+│   ├── ir/            # IR model, builder, verifier, printer, snapshots
+│   ├── transforms/    # Constant folding, dead-temp elim, transform log
+│   ├── analysis/      # Range analysis
+│   ├── compat/        # Compatibility plan & policy
+│   ├── codegen/       # Python code generator
+│   ├── testing/       # Phase 6 differential testing
+│   ├── reporting/     # Phase 7 fidelity reports
+│   ├── localisation/  # Phase 7 fault localisation
+│   ├── evaluation/    # Phase 8 evaluation experiments
+│   ├── compiler.py    # compile_source() — main entry point
+│   └── cli.py         # CLI entry point
+│
+├── api/               # FastAPI backend (web layer only)
+│   ├── main.py        # FastAPI app, CORS, router registration
+│   └── routers/
+│       ├── health.py  # GET /api/health
+│       ├── translate.py   # POST /api/translate
+│       ├── difftest.py    # GET/POST /api/difftest/*
+│       └── reporting.py   # GET/POST /api/report/*
+│
+├── frontend/
+│   ├── DESIGN.md      # Google Stitch design specification
+│   ├── code.html      # Original Stitch-generated prototype
+│   ├── screen.png     # Design screenshot
+│   └── dist/
+│       └── index.html # Integrated, functional single-page IDE
+│
+├── tests/
+│   ├── unit/          # 61 unit test files (lexer → evaluation)
+│   ├── integration/   # Integration tests
+│   ├── differential/  # Differential test fixtures
+│   ├── regression/    # Regression suite
+│   ├── test_api.py    # Backend API tests (38 tests)
+│   └── ...
+│
+├── examples/          # Phase example programs
+├── benchmarks/        # Phase 8 benchmarks
+├── docs/              # LIMITATIONS.md, etc.
+├── pyproject.toml
+├── .env.example       # Example environment variables
+├── ARCHITECTURE.md
+├── IMPLEMENTATION_PLAN.md
+└── AGENTS.md
 ```
 
-Compatibility modes and overflow policies:
+---
+
+## Quick Start
+
+### 1. Install dependencies
+
 ```bash
-python -m cpp2py translate path/to/input.cpp --compat range_guided --overflow assume_no_overflow -o path/to/output.py
+# Compiler (standard library only at runtime — no extra deps needed)
+pip install -e .
+
+# API layer (FastAPI + uvicorn)
+pip install fastapi "uvicorn[standard]" httpx
+# or:
+pip install -e ".[api]"
+
+# Development / test extras
+pip install pytest
 ```
 
-Dump the AST without generating Python:
+### 2. Start the backend
+
 ```bash
-python -m cpp2py translate --dump-ast path/to/input.cpp
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Dump the IR without generating Python:
+The API docs are available at:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc:       http://localhost:8000/redoc
+
+### 3. Open the web IDE
+
+Navigate to **http://localhost:8000** in your browser.
+
+The frontend is served as a static file directly by the FastAPI backend — no separate build step required.
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and adjust:
+
+| Variable | Default | Description |
+|---|---|---|
+| `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS-allowed frontend origin |
+| `API_HOST` | `0.0.0.0` | Uvicorn bind host |
+| `API_PORT` | `8000` | Uvicorn bind port |
+
+---
+
+## API Endpoints
+
+### GET `/api/health`
+
+Returns API status and version.
+
 ```bash
-python -m cpp2py translate --dump-ir path/to/input.cpp
+curl http://localhost:8000/api/health
+```
+```json
+{"status":"ok","service":"cpp2py","version":"0.0.0","uptime_seconds":42.1}
 ```
 
-Save compilation snapshots to a directory:
+### POST `/api/translate`
+
+Translate C++ source to Python using the real compiler.
+
 ```bash
-python -m cpp2py translate path/to/input.cpp --snapshots path/to/snapshots/ -o path/to/output.py
+curl -X POST http://localhost:8000/api/translate \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "source_code": "int add(int a, int b) { return a + b; }\nint main() { return 0; }",
+    "compat": "range_guided",
+    "overflow": "assume_no_overflow"
+  }'
 ```
 
-Generate a translation fidelity report (JSON and Markdown):
-```bash
-python -m cpp2py translate path/to/input.cpp --fidelity-report out/fidelity_dir -o path/to/output.py
+**Request fields:**
+- `source_code` (required) — C++ source, max 256 KB
+- `filename` — logical filename for diagnostics (default: `input.cpp`)
+- `compat` — `naive` | `always` | `range_guided` (default)
+- `overflow` — `assume_no_overflow` (default) | `wrap` | `trap`
+- `fold_constants` — boolean (default: `true`)
+- `idiomatic_loops` — boolean (default: `false`)
+
+**Response:**
+```json
+{
+  "success": true,
+  "python_source": "# Generated by cpp2py...\ndef add(a: int, b: int) -> int:\n    return a + b\n",
+  "diagnostics": [],
+  "error_count": 0,
+  "warning_count": 0,
+  "duration_ms": 12.4,
+  "function_count": 2,
+  "line_count_cpp": 2,
+  "line_count_py": 4
+}
 ```
 
-### Differential Testing
+### GET `/api/difftest/status` (Phase 6)
 
-Run differential testing against the reference C++ compiler (`g++`):
+Probe whether `g++` is available for differential testing.
+
 ```bash
-python -m cpp2py difftest --suite curated --compat range_guided --out out/dt_rg
-python -m cpp2py difftest --suite curated --compat naive --out out/dt_naive
-python -m cpp2py difftest --suite generated --seed 1 --count 200 --compat range_guided --out out/dt_gen
+curl http://localhost:8000/api/difftest/status
 ```
 
-Generate differential testing fidelity reports:
+### POST `/api/difftest/run` (Phase 6)
+
+Run a differential test suite (requires `g++`).
+
 ```bash
-python -m cpp2py difftest --suite curated --compat range_guided --fidelity-report out/fid_dt --out out/dt
+curl -X POST http://localhost:8000/api/difftest/run \
+  -H 'Content-Type: application/json' \
+  -d '{"suite": "curated", "compat": "range_guided", "count": 10}'
 ```
 
-### Failure Localisation
+### GET `/api/report/semantic-differences` (Phase 7)
 
-Localise the root-cause stage and rank suspect operations for a differential test failure:
+Return known C++ → Python semantic differences.
+
+### POST `/api/report/fidelity` (Phase 7)
+
+Generate a structured fidelity report for submitted C++ source.
+
 ```bash
-python -m cpp2py localise --case out/dt_naive/failures/case_01_div_neg_pos --top 5
+curl -X POST http://localhost:8000/api/report/fidelity \
+  -H 'Content-Type: application/json' \
+  -d '{"source_code": "int main() { return 0; }"}'
 ```
 
-### Comparative Evaluation (Phase 8)
+---
 
-Run comparative baseline evaluation across B0 (naive), B1 (always-protect), and E (range-guided):
+## CLI Usage
+
+### Translate a file
+
+```bash
+python -m cpp2py translate path/to/input.cpp -o out/output.py
+```
+
+### Compatibility modes and overflow policies
+
+```bash
+python -m cpp2py translate input.cpp --compat range_guided --overflow assume_no_overflow -o out.py
+```
+
+### Dump AST / IR
+
+```bash
+python -m cpp2py translate --dump-ast input.cpp
+python -m cpp2py translate --dump-ir input.cpp
+```
+
+### Generate fidelity report
+
+```bash
+python -m cpp2py translate input.cpp --fidelity-report out/fidelity_dir -o out.py
+```
+
+### Differential testing (Phase 6, requires g++)
+
+```bash
+python -m cpp2py difftest --suite curated --compat range_guided --out out/dt
+python -m cpp2py difftest --suite generated --seed 1 --count 200 --out out/dt_gen
+```
+
+### Fault localisation (Phase 7)
+
+```bash
+python -m cpp2py localise --case out/dt/failures/case_01 --top 5
+```
+
+### Comparative evaluation (Phase 8)
+
 ```bash
 python -m cpp2py eval --suite benchmark --seed 1 --out out/eval1
-python -m cpp2py eval --suite generated --seed 7 --count 200 --out out/eval_gen
-```
-
-Run seeded fault failure localisation evaluation:
-```bash
 python -m cpp2py eval localisation --out out/eval_loc
 ```
 
-Check the version:
-```bash
-python -m cpp2py --version
-```
+---
 
-## Running the tests
+## Running the Tests
 
-Run all tests:
 ```bash
+# All tests (621 compiler + 38 API = 659 total)
 python -m pytest -q
-```
 
-Run compiler-dependent tests (differential tests against `g++` and localisation faults):
-```bash
+# API tests only
+python -m pytest tests/test_api.py -v
+
+# Tests requiring g++
 python -m pytest -q -m requires_cxx
+
+# All compiler tests (no g++ required)
+python -m pytest -q -m "not requires_cxx"
 ```
 
-The test suite contains unit and integration tests verifying the lexer, parser, semantic analyzer, IR builder, verifier, printer, transforms, range analysis, compatibility plan, code generator, differential testing runners, comparator, corpus, automated generator, regression store, IR serialization, reference IR interpreter, dynamic slicing, suspect ranking, fault localisation, fidelity reports, evaluation presets, metrics, benchmark label validation, fault injection catalogue, and table reproducibility.
+---
 
-## Project documentation
+## Known Limitations
+
+The compiler supports a restricted C++ subset. Constructs outside this subset produce `E4xxx` diagnostics and are rejected (never approximated).
+
+**Supported:** basic types (`int`, `long long`, `bool`, `void`), arithmetic, comparisons, `if`/`else`, `while`, `for`, functions, simple `return`, `std::cout` (limited), arrays (limited).
+
+**Not supported:** templates, lambdas, STL containers/algorithms, classes/structs, exceptions, `new`/`delete`, multiple inheritance, virtual functions, `auto` type deduction in complex contexts, and more. See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for the full specification.
+
+**Differential testing** requires `g++` (or another C++17 compiler). The web endpoint gracefully reports unavailability.
+
+**C++ vs Python semantic differences** (known, inherent):
+1. C++ signed integer overflow is undefined; Python uses arbitrary precision.
+2. Integer division/remainder differ for negative operands.
+3. Python recursion is stack-limited (~1000 frames).
+4. Stream I/O error handling differs (`failbit` vs `ValueError`).
+
+---
+
+## Project Documentation
 
 - [Architecture](ARCHITECTURE.md)
-- [Implementation plan](IMPLEMENTATION_PLAN.md)
+- [Implementation Plan](IMPLEMENTATION_PLAN.md)
 - [Limitations & Threats to Validity](docs/LIMITATIONS.md)
-- [Agent rules](AGENTS.md)
+- [Agent Rules](AGENTS.md)

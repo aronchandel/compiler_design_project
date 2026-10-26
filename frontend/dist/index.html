@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta name="description" content="cpp2py — C++ to Python compiler playground. Translate C++ source code to readable Python using a real compiler with range analysis and compatibility planning."/>
+  <title>cpp2py — C++ to Python Translator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#0D1117", "surface-dim": "#0D1117", "surface-bright": "#30363D",
+            "surface-container-lowest": "#010409", "surface-container-low": "#161B22",
+            "surface-container": "#21262D", "surface-container-high": "#30363D",
+            "surface-container-highest": "#3D444D",
+            "on-surface": "#F0F6FC", "on-surface-variant": "#8B949E",
+            "outline": "#484F58", "outline-variant": "#30363D",
+            "primary": "#8B5CF6", "on-primary": "#ffffff",
+            "primary-container": "#7C3AED", "on-primary-container": "#F3E8FF",
+            "primary-fixed": "#EDE9FE", "primary-fixed-dim": "#DDD6FE",
+            "on-primary-fixed": "#4C1D95", "on-primary-fixed-variant": "#6D28D9",
+            "inverse-primary": "#6D28D9",
+            "secondary": "#22D3EE", "on-secondary": "#083344",
+            "secondary-container": "#0E7490", "on-secondary-container": "#CFFAFE",
+            "secondary-fixed": "#A5F3FC", "secondary-fixed-dim": "#67E8F9",
+            "on-secondary-fixed": "#0C4A6E", "on-secondary-fixed-variant": "#0369A1",
+            "tertiary": "#10B981", "on-tertiary": "#ffffff",
+            "tertiary-container": "#065F46", "on-tertiary-container": "#A7F3D0",
+            "tertiary-fixed": "#6EE7B7", "tertiary-fixed-dim": "#34D399",
+            "on-tertiary-fixed": "#064E3B", "on-tertiary-fixed-variant": "#047857",
+            "error": "#EF4444", "on-error": "#ffffff",
+            "error-container": "#7F1D1D", "on-error-container": "#FCA5A5",
+            "background": "#0D1117", "on-background": "#F0F6FC",
+            "surface-variant": "#21262D", "inverse-surface": "#F0F6FC",
+            "inverse-on-surface": "#1C2128", "surface-tint": "#8B5CF6"
+          },
+          fontFamily: {
+            "code-lg": ["JetBrains Mono"], "code-md": ["JetBrains Mono"], "code-sm": ["JetBrains Mono"],
+            "body-lg": ["Inter"], "body-md": ["Inter"], "body-sm": ["Inter"],
+            "headline-xl": ["Inter"], "headline-lg": ["Inter"], "headline-md": ["Inter"],
+            "headline-sm": ["Inter"], "label-md": ["JetBrains Mono"], "label-sm": ["JetBrains Mono"]
+          },
+          fontSize: {
+            "code-lg": ["14px", {lineHeight:"22px",fontWeight:"400"}],
+            "code-md": ["13px", {lineHeight:"20px",fontWeight:"400"}],
+            "code-sm": ["11px", {lineHeight:"16px",fontWeight:"400"}],
+            "body-lg": ["14px", {lineHeight:"20px",fontWeight:"400"}],
+            "body-md": ["13px", {lineHeight:"18px",fontWeight:"400"}],
+            "body-sm": ["12px", {lineHeight:"16px",fontWeight:"400"}],
+            "headline-xl": ["24px", {lineHeight:"32px",letterSpacing:"-0.02em",fontWeight:"600"}],
+            "headline-lg": ["18px", {lineHeight:"24px",letterSpacing:"-0.015em",fontWeight:"600"}],
+            "headline-md": ["15px", {lineHeight:"20px",letterSpacing:"-0.01em",fontWeight:"600"}],
+            "headline-sm": ["13px", {lineHeight:"18px",letterSpacing:"-0.005em",fontWeight:"600"}],
+            "label-md": ["12px", {lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"500"}],
+            "label-sm": ["11px", {lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"500"}]
+          },
+          spacing: {
+            "space-xs": "0.25rem", "space-sm": "0.375rem", "space-md": "0.5rem",
+            "space-lg": "0.75rem", "space-xl": "1rem",
+            "gutter": "0.5rem", "gutter-split": "0.25rem", "margin": "0.75rem"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0D1117; }
+    ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #484F58; }
+
+    /* textarea override for code editors */
+    textarea.code-editor {
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      resize: none;
+      width: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 20px;
+      color: #F0F6FC;
+      caret-color: #8B5CF6;
+      tab-size: 4;
+      padding: 8px 12px;
+      min-height: 100%;
+    }
+    textarea.code-editor::selection { background: rgba(139,92,246,0.25); }
+
+    /* Syntax-highlighted pre display for Python output */
+    .python-output {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 20px;
+      white-space: pre;
+      padding: 8px 12px;
+      color: #F0F6FC;
+    }
+    /* Line numbers */
+    .line-nums {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 20px;
+      color: #484F58;
+      text-align: right;
+      padding: 8px 8px 8px 4px;
+      user-select: none;
+      min-width: 40px;
+    }
+
+    /* Spinning animation */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 0.8s linear infinite; }
+
+    /* Pulse for status indicator */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+
+    /* Nav active indicator */
+    .nav-active { background: #21262D; color: #8B5CF6; border-radius: 0.5rem; }
+
+    /* Tab underline */
+    .tab-active { color: #8B5CF6; border-bottom: 2px solid #8B5CF6; }
+    .tab-inactive { color: #8B949E; border-bottom: 2px solid transparent; }
+
+    /* Diagnostic chips */
+    .chip-error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #EF4444; }
+    .chip-warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #F59E0B; }
+    .chip-note { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: #22D3EE; }
+
+    /* Page sections */
+    .page { display: none; }
+    .page.active { display: flex; }
+  </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface min-h-screen select-none">
+
+<!-- SIDEBAR -->
+<aside class="fixed left-0 top-0 bottom-0 w-56 bg-surface-container-low z-50 flex flex-col justify-between border-r border-outline-variant">
+  <div class="flex flex-col">
+    <!-- Logo -->
+    <div class="h-12 px-space-lg flex items-center gap-space-sm border-b border-outline-variant">
+      <div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-on-primary" style="font-size:16px">terminal</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-on-surface">cpp2py</span>
+      <span id="versionBadge" class="font-label-sm text-label-sm text-secondary bg-surface-container px-1 py-0.5 rounded ml-auto">v0.0.0</span>
+    </div>
+    <!-- Nav -->
+    <nav class="px-space-sm py-space-md flex flex-col gap-0.5">
+      <a href="#" class="nav-item nav-active flex items-center gap-space-md px-space-md py-space-sm rounded-lg transition-colors" data-page="playground">
+        <span class="material-symbols-outlined" style="font-size:18px">code</span>
+        <span class="font-body-md text-body-md">Playground</span>
+      </a>
+      <a href="#" class="nav-item flex items-center gap-space-md px-space-md py-space-sm rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-on-surface" data-page="history">
+        <span class="material-symbols-outlined" style="font-size:18px">history</span>
+        <span class="font-body-md text-body-md">History</span>
+      </a>
+      <a href="#" class="nav-item flex items-center justify-between px-space-md py-space-sm rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-on-surface" data-page="difftest">
+        <div class="flex items-center gap-space-md">
+          <span class="material-symbols-outlined" style="font-size:18px">call_split</span>
+          <span class="font-body-md text-body-md">Differential Testing</span>
+        </div>
+        <span class="font-label-sm text-label-sm bg-surface-container text-secondary px-1 py-0.5 rounded">P6</span>
+      </a>
+      <a href="#" class="nav-item flex items-center justify-between px-space-md py-space-sm rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-on-surface" data-page="fidelity">
+        <div class="flex items-center gap-space-md">
+          <span class="material-symbols-outlined" style="font-size:18px">verified</span>
+          <span class="font-body-md text-body-md">Fidelity Reports</span>
+        </div>
+        <span class="font-label-sm text-label-sm bg-surface-container text-primary px-1 py-0.5 rounded">P7</span>
+      </a>
+      <a href="#" class="nav-item flex items-center justify-between px-space-md py-space-sm rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-on-surface" data-page="semantic">
+        <div class="flex items-center gap-space-md">
+          <span class="material-symbols-outlined" style="font-size:18px">psychology</span>
+          <span class="font-body-md text-body-md">Semantic Diff</span>
+        </div>
+        <span class="font-label-sm text-label-sm bg-surface-container text-tertiary px-1 py-0.5 rounded">P7</span>
+      </a>
+    </nav>
+  </div>
+  <!-- API Status -->
+  <div class="p-space-md">
+    <div class="p-space-sm bg-surface-container rounded-lg flex items-center gap-space-xs" id="apiStatusBar">
+      <div class="w-2 h-2 rounded-full bg-outline animate-pulse" id="apiDot"></div>
+      <span class="font-label-sm text-label-sm text-on-surface-variant" id="apiStatusText">Connecting…</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="pl-56 flex flex-col min-h-screen">
+
+  <!-- HEADER -->
+  <header class="fixed top-0 left-56 right-0 h-12 bg-surface-container-low/95 backdrop-blur-xl z-40 px-space-lg flex items-center justify-between border-b border-outline-variant">
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-space-xs font-code-sm text-code-sm text-on-surface-variant" id="breadcrumb">
+        <span class="text-outline">workspace</span>
+        <span class="text-outline">/</span>
+        <span class="text-on-surface" id="currentFilename">input.cpp</span>
+      </div>
+      <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-0.5 rounded-full" id="connStatus">
+        <span class="w-1.5 h-1.5 rounded-full bg-outline" id="connDot"></span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant" id="connText">…</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-0.5 rounded" id="durationBadge" style="display:none!important">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:14px">bolt</span>
+        <span class="font-code-sm text-code-sm text-tertiary" id="durationText">0ms</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="pt-12 pb-7 flex-1">
+
+    <!-- ===== PAGE: PLAYGROUND ===== -->
+    <div id="page-playground" class="page active flex-col w-full text-on-surface">
+
+      <!-- Action Bar -->
+      <div class="h-11 bg-surface-container-low px-space-md flex items-center justify-between border-b border-outline-variant">
+        <div class="flex items-center gap-space-sm">
+          <!-- Example Dropdown -->
+          <div class="relative group">
+            <button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container hover:bg-surface-container-high rounded text-on-surface text-label-md font-label-md transition-colors" id="exampleBtn">
+              <span class="material-symbols-outlined text-primary" style="font-size:15px">code_blocks</span>
+              <span id="currentExampleLabel">hello_world.cpp</span>
+              <span class="material-symbols-outlined text-outline" style="font-size:14px">expand_more</span>
+            </button>
+            <div class="absolute left-0 top-full mt-1 w-72 bg-surface-container-high rounded-lg shadow-xl py-1 hidden group-hover:block group-focus-within:block z-50 border border-outline-variant">
+              <div class="px-space-md py-1 text-label-sm font-label-sm text-outline uppercase tracking-wider">Preset Programs</div>
+              <button class="example-btn w-full text-left px-space-md py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-highest flex items-center justify-between" data-example="hello">
+                <span>Hello World</span><span class="text-label-sm font-label-sm text-tertiary">Simple</span>
+              </button>
+              <button class="example-btn w-full text-left px-space-md py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-highest flex items-center justify-between" data-example="fibonacci">
+                <span>Fibonacci</span><span class="text-label-sm font-label-sm text-secondary">Recursion</span>
+              </button>
+              <button class="example-btn w-full text-left px-space-md py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-highest flex items-center justify-between" data-example="arithmetic">
+                <span>Arithmetic Functions</span><span class="text-label-sm font-label-sm text-secondary">Math</span>
+              </button>
+              <button class="example-btn w-full text-left px-space-md py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-highest flex items-center justify-between" data-example="loops">
+                <span>For Loops &amp; Counters</span><span class="text-label-sm font-label-sm text-outline">C++11</span>
+              </button>
+              <button class="example-btn w-full text-left px-space-md py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-highest flex items-center justify-between" data-example="gcd">
+                <span>GCD &amp; LCM</span><span class="text-label-sm font-label-sm text-outline">Number Theory</span>
+              </button>
+              <button class="example-btn w-full text-left px-space-md py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-highest flex items-center justify-between" data-example="sorting">
+                <span>Bubble Sort</span><span class="text-label-sm font-label-sm text-outline">Arrays</span>
+              </button>
+            </div>
+          </div>
+          <div class="h-4 w-px bg-outline-variant"></div>
+          <button class="flex items-center gap-space-xs px-space-sm py-1 hover:bg-surface-container rounded text-on-surface-variant hover:text-on-surface text-label-md font-label-md transition-colors" onclick="clearEditor()" title="Clear Buffer">
+            <span class="material-symbols-outlined" style="font-size:15px">clear_all</span>
+            <span>Clear</span>
+          </button>
+          <button class="flex items-center gap-space-xs px-space-sm py-1 hover:bg-surface-container rounded text-on-surface-variant hover:text-on-surface text-label-md font-label-md transition-colors" onclick="copyCpp()" title="Copy Source">
+            <span class="material-symbols-outlined" style="font-size:15px">content_copy</span>
+            <span>Copy C++</span>
+          </button>
+          <div class="h-4 w-px bg-outline-variant"></div>
+          <!-- Compat selector -->
+          <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
+            <span class="material-symbols-outlined text-tertiary" style="font-size:15px">tune</span>
+            <span class="text-label-sm font-label-sm text-outline">Mode:</span>
+            <select id="compatSelect" class="bg-transparent text-label-sm font-label-sm text-on-surface outline-none cursor-pointer">
+              <option value="range_guided">Range Guided</option>
+              <option value="naive">Naïve</option>
+              <option value="always">Always Protect</option>
+            </select>
+          </div>
+        </div>
+        <!-- Run button -->
+        <div class="flex items-center gap-space-md">
+          <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded text-label-sm font-label-sm text-on-surface-variant" id="backendStatusIndicator">
+            <span class="w-1.5 h-1.5 rounded-full bg-outline animate-pulse" id="backendDot"></span>
+            <span class="font-code-sm text-code-sm" id="backendStatusLabel">Connecting</span>
+          </div>
+          <button class="flex items-center gap-space-sm px-space-md py-1.5 bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50" id="transpileBtn" onclick="runTranspile()">
+            <span class="material-symbols-outlined" style="font-size:16px" id="transpileIcon">play_arrow</span>
+            <span id="transpileLabel">Translate to Python</span>
+            <span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.5 rounded opacity-70">Ctrl+Enter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dual Pane Editors -->
+      <div class="flex w-full bg-surface-container-lowest" style="height: calc(100vh - 275px); min-height: 400px;">
+
+        <!-- LEFT: C++ Editor -->
+        <div class="flex-1 flex flex-col min-w-0">
+          <div class="h-8 bg-surface-container-low px-space-md flex items-center justify-between border-b border-outline-variant">
+            <div class="flex items-center gap-space-sm">
+              <span class="font-label-sm text-label-sm text-primary bg-surface-container px-1 py-0.5 rounded">C++17</span>
+              <span class="font-code-sm text-code-sm text-on-surface font-medium" id="cppFilename">input.cpp</span>
+              <span class="font-label-sm text-label-sm text-outline" id="cppLineCount">1 line</span>
+            </div>
+            <div class="flex items-center gap-space-xs">
+              <div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+            </div>
+          </div>
+          <div class="flex-1 flex overflow-hidden">
+            <div class="line-nums py-2" id="cppLineNums">1</div>
+            <div class="flex-1 overflow-auto">
+              <textarea class="code-editor h-full" id="cppEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="// Enter C++ code here…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="w-px bg-outline-variant hover:bg-primary cursor-col-resize flex items-center justify-center relative group transition-colors" style="width:5px">
+          <div class="absolute z-30 opacity-70 group-hover:opacity-100 transition-opacity">
+            <button class="w-6 h-6 rounded-full bg-surface-container-high hover:bg-primary text-primary hover:text-on-primary shadow-md flex items-center justify-center transition-all" onclick="runTranspile()" title="Translate">
+              <span class="material-symbols-outlined" style="font-size:13px">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Python Output -->
+        <div class="flex-1 flex flex-col min-w-0">
+          <div class="h-8 bg-surface-container-low px-space-md flex items-center justify-between border-b border-outline-variant">
+            <div class="flex items-center gap-space-sm">
+              <span class="font-label-sm text-label-sm text-secondary bg-surface-container px-1 py-0.5 rounded">Python 3</span>
+              <span class="font-code-sm text-code-sm text-on-surface font-medium" id="pyFilename">output.py</span>
+              <span class="font-label-sm text-label-sm text-outline" id="pyLineCount"></span>
+            </div>
+            <div class="flex items-center gap-space-xs">
+              <button class="px-1 py-1 hover:bg-surface-container text-outline hover:text-on-surface rounded flex items-center gap-1 transition-colors text-label-sm font-label-sm" onclick="copyPython()" id="copyPyBtn" style="display:none">
+                <span class="material-symbols-outlined" style="font-size:14px">content_copy</span>
+                <span>Copy</span>
+              </button>
+              <button class="px-1 py-1 hover:bg-surface-container text-outline hover:text-on-surface rounded flex items-center gap-1 transition-colors text-label-sm font-label-sm" onclick="downloadPython()" id="downloadPyBtn" style="display:none">
+                <span class="material-symbols-outlined" style="font-size:14px">download</span>
+                <span>Export</span>
+              </button>
+            </div>
+          </div>
+          <!-- Output states -->
+          <div class="flex-1 overflow-auto relative">
+            <!-- Empty state -->
+            <div class="absolute inset-0 flex items-center justify-center flex-col gap-space-md" id="pyEmpty">
+              <span class="material-symbols-outlined text-outline" style="font-size:48px">arrow_back</span>
+              <p class="text-on-surface-variant font-body-md text-body-md text-center">Write C++ code and click<br><span class="text-primary font-headline-sm text-headline-sm">Translate to Python</span></p>
+            </div>
+            <!-- Loading state -->
+            <div class="absolute inset-0 flex items-center justify-center flex-col gap-space-md hidden" id="pyLoading">
+              <span class="material-symbols-outlined text-primary animate-spin" style="font-size:36px">refresh</span>
+              <p class="text-on-surface-variant font-body-md text-body-md">Compiling…</p>
+            </div>
+            <!-- Error state -->
+            <div class="absolute inset-0 p-space-lg overflow-auto hidden" id="pyError">
+              <div class="flex items-center gap-space-sm mb-space-md">
+                <span class="material-symbols-outlined text-error" style="font-size:20px">error</span>
+                <span class="font-headline-sm text-headline-sm text-error">Translation Failed</span>
+              </div>
+              <div id="pyErrorDetail" class="font-code-sm text-code-sm text-on-surface-variant"></div>
+            </div>
+            <!-- Success state -->
+            <div class="hidden" id="pySuccess">
+              <div class="flex">
+                <div class="line-nums py-2" id="pyLineNums">1</div>
+                <pre class="python-output flex-1" id="pyOutput"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Diagnostics Panel -->
+      <div class="bg-surface-container-low flex flex-col border-t border-outline-variant" style="height:220px">
+        <!-- Tab Strip -->
+        <div class="h-8 bg-surface-container px-space-md flex items-center justify-between border-b border-outline-variant">
+          <div class="flex items-center gap-0 h-full">
+            <button class="tab-btn tab-active px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="overview" onclick="selectTab('overview')">
+              <span class="material-symbols-outlined" style="font-size:15px">analytics</span>
+              <span>Overview</span>
+            </button>
+            <button class="tab-btn tab-inactive px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="diagnostics" onclick="selectTab('diagnostics')">
+              <span class="material-symbols-outlined text-tertiary" style="font-size:15px">notifications_active</span>
+              <span>Diagnostics</span>
+              <span class="w-4 h-4 rounded-full bg-surface-container-highest text-secondary text-label-sm font-label-sm flex items-center justify-center" id="diagCount">0</span>
+            </button>
+            <button class="tab-btn tab-inactive px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="ir" onclick="selectTab('ir')">
+              <span class="material-symbols-outlined" style="font-size:15px">account_tree</span>
+              <span>IR Dump</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-space-sm">
+            <span class="font-code-sm text-code-sm" id="statusLabel"></span>
+          </div>
+        </div>
+
+        <!-- TAB PANELS -->
+        <div class="flex-1 overflow-y-auto">
+          <!-- Overview -->
+          <div id="panel-overview" class="p-space-md">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-space-md" id="metricsGrid">
+              <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Status</span>
+                <div id="metStatus" class="font-headline-xl text-headline-xl text-on-surface-variant font-bold">—</div>
+                <span class="font-code-sm text-code-sm text-on-surface-variant">awaiting input</span>
+              </div>
+              <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Duration</span>
+                <div class="flex items-baseline gap-space-xs">
+                  <span class="font-headline-xl text-headline-xl text-primary font-bold" id="metDuration">—</span>
+                  <span class="font-code-sm text-code-sm text-outline" id="metDurationUnit"></span>
+                </div>
+                <span class="font-code-sm text-code-sm text-on-surface-variant">compile time</span>
+              </div>
+              <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Lines</span>
+                <div class="flex items-baseline gap-space-xs">
+                  <span class="font-headline-xl text-headline-xl text-secondary font-bold" id="metLines">—</span>
+                </div>
+                <span class="font-code-sm text-code-sm text-on-surface-variant" id="metLinesDetail">input → output</span>
+              </div>
+              <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Functions</span>
+                <div class="flex items-baseline gap-space-xs">
+                  <span class="font-headline-xl text-headline-xl text-tertiary font-bold" id="metFuncs">—</span>
+                </div>
+                <span class="font-code-sm text-code-sm text-on-surface-variant">translated</span>
+              </div>
+              <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Diagnostics</span>
+                <div class="flex items-baseline gap-space-xs">
+                  <span class="font-headline-xl text-headline-xl font-bold" id="metDiags">—</span>
+                </div>
+                <span class="font-code-sm text-code-sm text-on-surface-variant" id="metDiagsDetail">errors · warnings</span>
+              </div>
+            </div>
+          </div>
+          <!-- Diagnostics -->
+          <div id="panel-diagnostics" class="p-space-md hidden">
+            <div id="diagList" class="space-y-space-sm">
+              <p class="text-on-surface-variant font-body-sm text-body-sm">No diagnostics yet. Translate some code.</p>
+            </div>
+          </div>
+          <!-- IR -->
+          <div id="panel-ir" class="p-space-md hidden">
+            <pre id="irDump" class="font-code-sm text-code-sm text-on-surface-variant whitespace-pre-wrap">No IR available. Translate first.</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: HISTORY ===== -->
+    <div id="page-history" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
+      <div class="flex items-center gap-space-md mb-space-md">
+        <span class="material-symbols-outlined text-primary" style="font-size:24px">history</span>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface">Translation History</h1>
+      </div>
+      <div id="historyList" class="flex flex-col gap-space-md">
+        <p class="text-on-surface-variant font-body-md text-body-md">No translations yet. Go to the Playground and translate some code.</p>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: DIFFERENTIAL TESTING ===== -->
+    <div id="page-difftest" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
+      <div class="flex items-center gap-space-md mb-2">
+        <span class="material-symbols-outlined text-secondary" style="font-size:24px">call_split</span>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface">Differential Testing</h1>
+        <span class="font-label-sm text-label-sm bg-surface-container text-secondary px-space-sm py-0.5 rounded">Phase 6</span>
+      </div>
+
+      <!-- Capability -->
+      <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg" id="difftestCapabilityBox">
+        <div class="flex items-center gap-space-md">
+          <span class="material-symbols-outlined" style="font-size:20px" id="difftestCapIcon">help</span>
+          <div>
+            <div class="font-headline-sm text-headline-sm text-on-surface" id="difftestCapTitle">Checking g++ availability…</div>
+            <div class="font-body-sm text-body-sm text-on-surface-variant" id="difftestCapDetail"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run controls -->
+      <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg flex flex-wrap gap-space-lg items-end">
+        <div>
+          <label class="font-label-sm text-label-sm text-outline block mb-1">Suite</label>
+          <select id="dtSuite" class="bg-surface-container border border-outline-variant text-on-surface font-body-sm text-body-sm px-space-sm py-1 rounded outline-none focus:border-primary">
+            <option value="curated">Curated</option>
+            <option value="generated">Generated</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-outline block mb-1">Compat Mode</label>
+          <select id="dtCompat" class="bg-surface-container border border-outline-variant text-on-surface font-body-sm text-body-sm px-space-sm py-1 rounded outline-none focus:border-primary">
+            <option value="range_guided">Range Guided</option>
+            <option value="naive">Naïve</option>
+            <option value="always">Always</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-outline block mb-1">Count (generated)</label>
+          <input type="number" id="dtCount" value="10" min="1" max="50" class="bg-surface-container border border-outline-variant text-on-surface font-body-sm text-body-sm px-space-sm py-1 rounded outline-none focus:border-primary w-20"/>
+        </div>
+        <button onclick="runDifftest()" id="dtRunBtn" class="flex items-center gap-space-sm px-space-lg py-1.5 bg-secondary/20 hover:bg-secondary/30 text-secondary border border-secondary/40 font-headline-sm text-headline-sm rounded transition-colors">
+          <span class="material-symbols-outlined" style="font-size:16px">play_arrow</span>
+          <span>Run Differential Test</span>
+        </button>
+      </div>
+
+      <!-- Results -->
+      <div id="dtResults" class="hidden bg-surface-container-low border border-outline-variant rounded-lg p-space-lg">
+        <h2 class="font-headline-md text-headline-md text-on-surface mb-space-md">Results</h2>
+        <div id="dtResultsContent" class="font-code-sm text-code-sm text-on-surface-variant"></div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: FIDELITY REPORTS ===== -->
+    <div id="page-fidelity" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
+      <div class="flex items-center gap-space-md mb-2">
+        <span class="material-symbols-outlined text-primary" style="font-size:24px">verified</span>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface">Fidelity Report</h1>
+        <span class="font-label-sm text-label-sm bg-surface-container text-primary px-space-sm py-0.5 rounded">Phase 7</span>
+      </div>
+      <p class="font-body-md text-body-md text-on-surface-variant">
+        Generate a structured fidelity report for the C++ code currently in the Playground editor. The report shows helper insertion decisions, range analysis results, and known semantic risks.
+      </p>
+      <button onclick="generateFidelityReport()" id="fidBtn" class="self-start flex items-center gap-space-sm px-space-lg py-1.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 font-headline-sm text-headline-sm rounded transition-colors">
+        <span class="material-symbols-outlined" style="font-size:16px">description</span>
+        <span>Generate Fidelity Report</span>
+      </button>
+      <div id="fidResult" class="hidden"></div>
+    </div>
+
+    <!-- ===== PAGE: SEMANTIC DIFFERENCES ===== -->
+    <div id="page-semantic" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
+      <div class="flex items-center gap-space-md mb-2">
+        <span class="material-symbols-outlined text-tertiary" style="font-size:24px">psychology</span>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface">Semantic Differences</h1>
+        <span class="font-label-sm text-label-sm bg-surface-container text-tertiary px-space-sm py-0.5 rounded">Phase 7</span>
+      </div>
+      <p class="font-body-md text-body-md text-on-surface-variant">
+        Known semantic differences between C++ behavior and the generated Python code. These are inherent to the language translation and cannot always be automatically resolved.
+      </p>
+      <div id="semanticList" class="flex flex-col gap-space-md">
+        <p class="text-on-surface-variant font-body-sm text-body-sm">Loading…</p>
+      </div>
+      <div id="semanticDisclaimer" class="hidden mt-space-md p-space-md bg-surface-container border border-outline-variant rounded-lg">
+        <div class="font-label-sm text-label-sm text-outline uppercase mb-1">Disclaimer</div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="semanticDisclaimerText"></p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="fixed bottom-0 left-56 right-0 h-7 bg-surface-container-lowest z-40 px-space-md flex items-center justify-between border-t border-outline-variant">
+    <div class="flex items-center gap-space-md">
+      <div class="flex items-center gap-space-xs text-tertiary">
+        <span class="material-symbols-outlined" style="font-size:14px" id="footerIcon">radio_button_unchecked</span>
+        <span class="font-label-sm text-label-sm" id="footerStatus">Initializing</span>
+      </div>
+      <span class="text-outline font-label-sm text-label-sm">|</span>
+      <div class="flex items-center gap-space-xs text-on-surface-variant">
+        <span class="font-code-sm text-code-sm">C++17</span>
+        <span class="material-symbols-outlined" style="font-size:12px">arrow_forward</span>
+        <span class="font-code-sm text-code-sm text-secondary">Python 3</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-space-md">
+      <span class="font-code-sm text-code-sm text-outline">UTF-8</span>
+      <span class="font-code-sm text-code-sm text-outline">LF</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+const API_BASE = (window.CPP2PY_API_BASE || '').replace(/\/$/, '') ||
+                 window.location.origin.replace(/:\d+$/, ':8000');
+
+// ---------------------------------------------------------------------------
+// Sample programs
+// ---------------------------------------------------------------------------
+const EXAMPLES = {
+  hello: {
+    name: 'hello_world.cpp',
+    code: `int main() {
+    int x = 42;
+    int y = 8;
+    int sum = x + y;
+    return 0;
+}`
+  },
+  fibonacci: {
+    name: 'fibonacci.cpp',
+    code: `int fib(int n) {
+    if (n <= 1) return n;
+    return fib(n - 1) + fib(n - 2);
+}
+
+int main() {
+    int a = fib(10);
+    int b = fib(0);
+    int c = fib(1);
+    return 0;
+}`
+  },
+  arithmetic: {
+    name: 'arithmetic.cpp',
+    code: `int add(int a, int b) {
+    return a + b;
+}
+
+int sub(int a, int b) {
+    return a - b;
+}
+
+int mul(int a, int b) {
+    return a * b;
+}
+
+int divide(int a, int b) {
+    return a / b;
+}
+
+int main() {
+    int x = add(10, 5);
+    int y = sub(10, 3);
+    int z = mul(4, 6);
+    int w = divide(20, 4);
+    return 0;
+}`
+  },
+  loops: {
+    name: 'loops.cpp',
+    code: `int sum_range(int n) {
+    int total = 0;
+    for (int i = 0; i < n; i++) {
+        total = total + i;
+    }
+    return total;
+}
+
+int countdown(int start) {
+    int x = start;
+    while (x > 0) {
+        x = x - 1;
+    }
+    return x;
+}
+
+int main() {
+    int s = sum_range(10);
+    int c = countdown(5);
+    return 0;
+}`
+  },
+  gcd: {
+    name: 'gcd.cpp',
+    code: `int gcd(int a, int b) {
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+int lcm(int a, int b) {
+    return a / gcd(a, b) * b;
+}
+
+int main() {
+    int g = gcd(48, 18);
+    int l = lcm(4, 6);
+    return 0;
+}`
+  },
+  sorting: {
+    name: 'bubble_sort.cpp',
+    code: `void bubble_sort(int arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                int temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+int main() {
+    int arr[5] = {64, 34, 25, 12, 22};
+    bubble_sort(arr, 5);
+    return 0;
+}`
+  }
+};
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let lastPythonSource = null;
+let lastFilename = 'output.py';
+let translationHistory = [];
+
+// ---------------------------------------------------------------------------
+// DOM helpers
+// ---------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+
+function show(el) { el.classList.remove('hidden'); }
+function hide(el) { el.classList.add('hidden'); }
+function showId(id) { show($(id)); }
+function hideId(id) { hide($(id)); }
+
+// ---------------------------------------------------------------------------
+// Navigation
+// ---------------------------------------------------------------------------
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  const target = $(`page-${page}`);
+  if (target) { target.style.display = 'flex'; target.classList.add('active'); }
+
+  document.querySelectorAll('.nav-item').forEach(a => {
+    a.classList.remove('nav-active', 'text-primary');
+    a.classList.add('text-on-surface-variant');
+  });
+  const navItem = document.querySelector(`[data-page="${page}"]`);
+  if (navItem) {
+    navItem.classList.add('nav-active', 'text-primary');
+    navItem.classList.remove('text-on-surface-variant');
+  }
+
+  // Load page-specific data
+  if (page === 'difftest') loadDifftestStatus();
+  if (page === 'semantic') loadSemanticDifferences();
+  if (page === 'history') renderHistory();
+}
+
+document.querySelectorAll('.nav-item').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault(); navigateTo(a.dataset.page); });
+});
+
+// ---------------------------------------------------------------------------
+// Example switcher
+// ---------------------------------------------------------------------------
+document.querySelectorAll('.example-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.example;
+    const ex = EXAMPLES[key];
+    if (!ex) return;
+    $('cppEditor').value = ex.code;
+    $('currentExampleLabel').textContent = ex.name;
+    $('cppFilename').textContent = ex.name;
+    updateLineNums();
+    resetOutput();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Line number sync
+// ---------------------------------------------------------------------------
+function updateLineNums() {
+  const text = $('cppEditor').value;
+  const lines = text.split('\n').length;
+  $('cppLineCount').textContent = `${lines} line${lines !== 1 ? 's' : ''}`;
+  $('cppLineNums').innerHTML = Array.from({length: lines}, (_, i) => i+1).join('<br>');
+}
+
+$('cppEditor').addEventListener('input', updateLineNums);
+$('cppEditor').addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = $('cppEditor').selectionStart;
+    const val = $('cppEditor').value;
+    $('cppEditor').value = val.substring(0, s) + '    ' + val.substring($('cppEditor').selectionEnd);
+    $('cppEditor').selectionStart = $('cppEditor').selectionEnd = s + 4;
+    updateLineNums();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Clear / copy helpers
+// ---------------------------------------------------------------------------
+function clearEditor() {
+  $('cppEditor').value = '';
+  updateLineNums();
+  resetOutput();
+}
+
+function copyCpp() {
+  navigator.clipboard?.writeText($('cppEditor').value);
+  flashButton('transpileBtn');
+}
+
+function copyPython() {
+  if (lastPythonSource) {
+    navigator.clipboard?.writeText(lastPythonSource);
+  }
+}
+
+function downloadPython() {
+  if (!lastPythonSource) return;
+  const blob = new Blob([lastPythonSource], {type: 'text/x-python'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = lastFilename;
+  a.click();
+}
+
+function flashButton(id) {
+  const btn = $(id);
+  btn.style.opacity = '0.6';
+  setTimeout(() => btn.style.opacity = '', 200);
+}
+
+// ---------------------------------------------------------------------------
+// Tab system
+// ---------------------------------------------------------------------------
+function selectTab(tab) {
+  ['overview', 'diagnostics', 'ir'].forEach(t => {
+    const btn = document.querySelector(`[data-tab="${t}"]`);
+    const panel = $(`panel-${t}`);
+    if (!btn || !panel) return;
+    if (t === tab) {
+      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
+      show(panel);
+    } else {
+      btn.classList.remove('tab-active'); btn.classList.add('tab-inactive');
+      hide(panel);
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Reset output panel
+// ---------------------------------------------------------------------------
+function resetOutput() {
+  lastPythonSource = null;
+  showId('pyEmpty'); hideId('pyLoading'); hideId('pyError'); hideId('pySuccess');
+  hideId('copyPyBtn'); hideId('downloadPyBtn');
+  $('pyLineCount').textContent = '';
+  $('statusLabel').textContent = '';
+  $('statusLabel').className = 'font-code-sm text-code-sm';
+  $('metStatus').textContent = '—'; $('metStatus').className = 'font-headline-xl text-headline-xl text-on-surface-variant font-bold';
+  $('metDuration').textContent = '—'; $('metDurationUnit').textContent = '';
+  $('metLines').textContent = '—'; $('metLinesDetail').textContent = 'input → output';
+  $('metFuncs').textContent = '—';
+  $('metDiags').textContent = '—'; $('metDiags').className = 'font-headline-xl text-headline-xl font-bold text-on-surface-variant';
+  $('metDiagsDetail').textContent = 'errors · warnings';
+  $('diagList').innerHTML = '<p class="text-on-surface-variant font-body-sm text-body-sm">No diagnostics yet.</p>';
+  $('diagCount').textContent = '0';
+  $('irDump').textContent = 'No IR available. Translate first.';
+  $('durationBadge').style.display = 'none !important';
+  $('durationBadge').style.cssText = 'display:none!important';
+}
+
+// ---------------------------------------------------------------------------
+// Main translate action
+// ---------------------------------------------------------------------------
+async function runTranspile() {
+  const source = $('cppEditor').value;
+  if (!source.trim()) return;
+
+  const compat = $('compatSelect').value;
+  const filename = $('cppFilename').textContent || 'input.cpp';
+
+  // UI: loading
+  hideId('pyEmpty'); hideId('pyError'); hideId('pySuccess');
+  showId('pyLoading');
+  hideId('copyPyBtn'); hideId('downloadPyBtn');
+
+  const btn = $('transpileBtn');
+  btn.disabled = true;
+  $('transpileIcon').textContent = 'refresh';
+  $('transpileIcon').classList.add('animate-spin');
+  $('transpileLabel').textContent = 'Compiling…';
+
+  const t0 = performance.now();
+  let data;
+  try {
+    const resp = await fetch(`${API_BASE}/api/translate`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        source_code: source,
+        filename: filename,
+        compat: compat,
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    data = await resp.json();
+  } catch (err) {
+    hideId('pyLoading');
+    showId('pyError');
+    $('pyErrorDetail').innerHTML = `<span class="text-error">${escHtml(err.message)}</span>`;
+    $('statusLabel').textContent = 'Connection Error';
+    $('statusLabel').className = 'font-code-sm text-code-sm text-error';
+    resetBtn();
+    return;
+  }
+
+  resetBtn();
+  hideId('pyLoading');
+
+  const clientDur = Math.round(performance.now() - t0);
+  const dur = data.duration_ms ?? clientDur;
+
+  // Update duration badge
+  $('durationBadge').style.cssText = '';
+  $('durationText').textContent = `${dur}ms`;
+
+  // Metrics
+  $('metDuration').textContent = dur;
+  $('metDurationUnit').textContent = 'ms';
+
+  const errCount = data.error_count ?? 0;
+  const warnCount = data.warning_count ?? 0;
+  $('diagCount').textContent = errCount + warnCount;
+
+  if (data.success && data.python_source) {
+    lastPythonSource = data.python_source;
+    lastFilename = filename.replace(/\.cpp$/, '.py');
+    $('pyFilename').textContent = lastFilename;
+
+    showId('pySuccess');
+    $('pyOutput').textContent = data.python_source;
+
+    // Line numbers for Python
+    const pyLines = data.python_source.split('\n').length;
+    $('pyLineNums').innerHTML = Array.from({length: pyLines}, (_, i) => i+1).join('<br>');
+    $('pyLineCount').textContent = `${pyLines} lines`;
+
+    showId('copyPyBtn'); showId('downloadPyBtn');
+
+    // Status
+    $('statusLabel').textContent = `SUCCESS  ${errCount} errors · ${warnCount} warnings`;
+    $('statusLabel').className = 'font-code-sm text-code-sm text-tertiary';
+
+    // Metrics
+    $('metStatus').textContent = '✓ OK';
+    $('metStatus').className = 'font-headline-xl text-headline-xl text-tertiary font-bold';
+    const cppL = data.line_count_cpp ?? source.split('\n').length;
+    const delta = cppL - pyLines;
+    const sign = delta >= 0 ? '-' : '+';
+    $('metLines').textContent = `${cppL} → ${pyLines}`;
+    $('metLinesDetail').textContent = `${sign}${Math.abs(delta)} lines`;
+    $('metFuncs').textContent = data.function_count ?? '?';
+    $('metDiags').textContent = `${errCount} / ${warnCount}`;
+    $('metDiags').className = `font-headline-xl text-headline-xl font-bold ${errCount > 0 ? 'text-error' : warnCount > 0 ? 'text-yellow-400' : 'text-tertiary'}`;
+    $('metDiagsDetail').textContent = 'errors · warnings';
+
+    // History
+    translationHistory.unshift({
+      filename: lastFilename,
+      cppSource: source,
+      pythonSource: data.python_source,
+      duration: dur,
+      errCount,
+      warnCount,
+      timestamp: new Date().toLocaleTimeString(),
+    });
+    if (translationHistory.length > 20) translationHistory.pop();
+
+  } else {
+    showId('pyError');
+    $('statusLabel').textContent = `FAILED  ${errCount} error${errCount !== 1 ? 's' : ''}`;
+    $('statusLabel').className = 'font-code-sm text-code-sm text-error';
+    $('metStatus').textContent = '✗ ERR';
+    $('metStatus').className = 'font-headline-xl text-headline-xl text-error font-bold';
+    $('metDiags').textContent = `${errCount} / ${warnCount}`;
+    $('metDiags').className = 'font-headline-xl text-headline-xl font-bold text-error';
+
+    const errDiags = (data.diagnostics || []).filter(d => d.severity === 'error');
+    $('pyErrorDetail').innerHTML = errDiags.map(d =>
+      `<div class="mb-1"><span class="text-error">[${escHtml(d.code)}]</span> ${escHtml(d.message)}${d.location ? ` <span class="text-outline">${escHtml(d.location)}</span>` : ''}</div>`
+    ).join('') || '<span class="text-on-surface-variant">Translation failed. See diagnostics panel.</span>';
+  }
+
+  // Diagnostics panel
+  renderDiagnostics(data.diagnostics || []);
+}
+
+function resetBtn() {
+  const btn = $('transpileBtn');
+  btn.disabled = false;
+  $('transpileIcon').textContent = 'play_arrow';
+  $('transpileIcon').classList.remove('animate-spin');
+  $('transpileLabel').textContent = 'Translate to Python';
+}
+
+// ---------------------------------------------------------------------------
+// Diagnostics rendering
+// ---------------------------------------------------------------------------
+function renderDiagnostics(diags) {
+  if (!diags || diags.length === 0) {
+    $('diagList').innerHTML = '<p class="text-tertiary font-body-sm text-body-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>No diagnostics.</p>';
+    return;
+  }
+  $('diagList').innerHTML = diags.map(d => {
+    const chipClass = d.severity === 'error' ? 'chip-error' : d.severity === 'warning' ? 'chip-warning' : 'chip-note';
+    const sev = d.severity.toUpperCase();
+    return `
+      <div class="bg-surface-container p-space-md rounded-lg flex items-start justify-between gap-space-md">
+        <div class="flex items-start gap-space-md">
+          <span class="${chipClass} font-label-sm text-label-sm px-space-xs py-0.5 rounded font-mono whitespace-nowrap">${sev} ${escHtml(d.code)}</span>
+          <div class="flex flex-col gap-0.5">
+            <span class="font-code-sm text-code-sm text-on-surface">${escHtml(d.message)}</span>
+            ${d.location ? `<span class="font-label-sm text-label-sm text-outline">${escHtml(d.location)}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// History page
+// ---------------------------------------------------------------------------
+function renderHistory() {
+  if (translationHistory.length === 0) {
+    $('historyList').innerHTML = '<p class="text-on-surface-variant font-body-md text-body-md">No translations yet.</p>';
+    return;
+  }
+  $('historyList').innerHTML = translationHistory.map((h, i) => `
+    <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg cursor-pointer hover:border-primary transition-colors" onclick="loadFromHistory(${i})">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-code-md text-code-md text-primary">${escHtml(h.filename)}</span>
+        <span class="font-label-sm text-label-sm text-outline">${escHtml(h.timestamp)}</span>
+      </div>
+      <div class="flex items-center gap-space-md text-on-surface-variant font-body-sm text-body-sm">
+        <span>${h.duration}ms</span>
+        <span>${h.errCount} errors</span>
+        <span>${h.warnCount} warnings</span>
+      </div>
+    </div>`).join('');
+}
+
+function loadFromHistory(i) {
+  const h = translationHistory[i];
+  if (!h) return;
+  $('cppEditor').value = h.cppSource;
+  updateLineNums();
+  navigateTo('playground');
+  // Repopulate output
+  lastPythonSource = h.pythonSource;
+  lastFilename = h.filename;
+  $('pyFilename').textContent = h.filename;
+  showId('pySuccess'); hideId('pyEmpty'); hideId('pyError'); hideId('pyLoading');
+  $('pyOutput').textContent = h.pythonSource;
+  const pyLines = h.pythonSource.split('\n').length;
+  $('pyLineNums').innerHTML = Array.from({length: pyLines}, (_, i) => i+1).join('<br>');
+  $('pyLineCount').textContent = `${pyLines} lines`;
+  showId('copyPyBtn'); showId('downloadPyBtn');
+}
+
+// ---------------------------------------------------------------------------
+// Differential testing page
+// ---------------------------------------------------------------------------
+async function loadDifftestStatus() {
+  $('difftestCapTitle').textContent = 'Checking g++ availability…';
+  $('difftestCapDetail').textContent = '';
+  $('difftestCapIcon').textContent = 'hourglass_empty';
+  $('difftestCapIcon').className = 'material-symbols-outlined text-outline';
+
+  try {
+    const r = await fetch(`${API_BASE}/api/difftest/status`);
+    const d = await r.json();
+    if (d.cxx_available) {
+      $('difftestCapIcon').textContent = 'check_circle';
+      $('difftestCapIcon').className = 'material-symbols-outlined text-tertiary';
+      $('difftestCapTitle').textContent = 'Differential Testing Available';
+      $('difftestCapDetail').textContent = d.message;
+    } else {
+      $('difftestCapIcon').textContent = 'warning';
+      $('difftestCapIcon').className = 'material-symbols-outlined text-yellow-400';
+      $('difftestCapTitle').textContent = 'g++ Not Available';
+      $('difftestCapDetail').textContent = d.message;
+    }
+  } catch {
+    $('difftestCapIcon').textContent = 'error';
+    $('difftestCapIcon').className = 'material-symbols-outlined text-error';
+    $('difftestCapTitle').textContent = 'Could not connect to API';
+    $('difftestCapDetail').textContent = `API base: ${API_BASE}`;
+  }
+}
+
+async function runDifftest() {
+  const btn = $('dtRunBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="material-symbols-outlined animate-spin" style="font-size:16px">refresh</span><span>Running…</span>`;
+
+  const suite = $('dtSuite').value;
+  const compat = $('dtCompat').value;
+  const count = parseInt($('dtCount').value);
+
+  try {
+    const r = await fetch(`${API_BASE}/api/difftest/run`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({suite, compat, count}),
+    });
+    const d = await r.json();
+    showId('dtResults');
+    if (!d.available) {
+      $('dtResultsContent').innerHTML = `<span class="text-yellow-400">${escHtml(d.message)}</span>`;
+    } else if (d.error) {
+      $('dtResultsContent').innerHTML = `<span class="text-error">Error: ${escHtml(d.error)}</span>`;
+    } else {
+      const mismatch = d.has_mismatches ? '<span class="text-error">MISMATCHES FOUND</span>' : '<span class="text-tertiary">✓ All agree</span>';
+      const countsHtml = d.counts ? Object.entries(d.counts).map(([k,v]) =>
+        `<div class="flex justify-between"><span class="text-on-surface-variant">${escHtml(k)}</span><span class="text-on-surface">${v}</span></div>`
+      ).join('') : '';
+      $('dtResultsContent').innerHTML = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-space-md mb-space-md">
+          <div class="bg-surface-container p-space-md rounded"><div class="font-label-sm text-label-sm text-outline uppercase">Suite</div><div class="font-headline-md text-headline-md text-on-surface">${escHtml(d.suite)}</div></div>
+          <div class="bg-surface-container p-space-md rounded"><div class="font-label-sm text-label-sm text-outline uppercase">Total Runs</div><div class="font-headline-md text-headline-md text-on-surface">${d.total_runs ?? '—'}</div></div>
+          <div class="bg-surface-container p-space-md rounded"><div class="font-label-sm text-label-sm text-outline uppercase">Agreement</div><div class="font-headline-md text-headline-md text-tertiary">${d.agreement_rate != null ? (d.agreement_rate * 100).toFixed(1) + '%' : '—'}</div></div>
+          <div class="bg-surface-container p-space-md rounded"><div class="font-label-sm text-label-sm text-outline uppercase">Verdict</div><div class="font-headline-md text-headline-md">${mismatch}</div></div>
+        </div>
+        ${countsHtml ? `<div class="bg-surface-container p-space-md rounded font-code-sm text-code-sm">${countsHtml}</div>` : ''}`;
+    }
+  } catch (err) {
+    showId('dtResults');
+    $('dtResultsContent').innerHTML = `<span class="text-error">Request failed: ${escHtml(err.message)}</span>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px">play_arrow</span><span>Run Differential Test</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// Fidelity report page
+// ---------------------------------------------------------------------------
+async function generateFidelityReport() {
+  const source = $('cppEditor').value;
+  if (!source.trim()) {
+    $('fidResult').innerHTML = '<p class="text-yellow-400 font-body-sm text-body-sm">Please enter C++ code in the Playground first.</p>';
+    showId('fidResult');
+    return;
+  }
+
+  const btn = $('fidBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="material-symbols-outlined animate-spin" style="font-size:16px">refresh</span><span>Generating…</span>`;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/report/fidelity`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({source_code: source}),
+    });
+    const d = await r.json();
+    showId('fidResult');
+
+    const meta = d.run_metadata || {};
+    const ts = d.translation_summary || {};
+    const helpers = d.compatibility_helpers || {};
+    const risks = d.reported_risks || {};
+    const diffs = (d.potential_semantic_differences || []).map(s => `<li class="mb-1 text-on-surface-variant">${escHtml(s)}</li>`).join('');
+
+    $('fidResult').innerHTML = `
+      <div class="space-y-space-md">
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg">
+          <h3 class="font-headline-md text-headline-md text-on-surface mb-space-md">Run Metadata</h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-space-md font-code-sm text-code-sm">
+            <div><span class="text-outline">Version</span><br><span class="text-on-surface">${escHtml(meta.tool_version||'?')}</span></div>
+            <div><span class="text-outline">Date</span><br><span class="text-on-surface">${escHtml(meta.date||'?')}</span></div>
+            <div><span class="text-outline">Compat Mode</span><br><span class="text-on-surface">${escHtml(meta.config?.compat_mode||'?')}</span></div>
+            <div><span class="text-outline">Overflow Policy</span><br><span class="text-on-surface">${escHtml(meta.config?.overflow_policy||'?')}</span></div>
+            <div><span class="text-outline">Fold Constants</span><br><span class="text-on-surface">${meta.config?.fold_constants??'?'}</span></div>
+            <div><span class="text-outline">C++ Compiler</span><br><span class="text-on-surface">${escHtml(meta.compiler_version||meta.reference_compiler||'not available')}</span></div>
+          </div>
+        </div>
+        ${ts ? `
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg">
+          <h3 class="font-headline-md text-headline-md text-on-surface mb-space-md">Translation Summary</h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-space-md font-code-sm text-code-sm">
+            <div><span class="text-outline">Functions</span><br><span class="text-on-surface">${ts.function_count??'?'}</span></div>
+            <div><span class="text-outline">Helpers Inserted</span><br><span class="text-on-surface">${helpers.inserted_count??0}</span></div>
+            <div><span class="text-outline">Helpers Avoided</span><br><span class="text-tertiary">${helpers.avoided_count??0}</span></div>
+            <div><span class="text-outline">Overflow Risks</span><br><span class="${(risks.overflow_possibilities||[]).length>0?'text-error':'text-tertiary'}">${(risks.overflow_possibilities||[]).length}</span></div>
+            <div><span class="text-outline">Division Risks</span><br><span class="${(risks.possible_division_by_zero||[]).length>0?'text-yellow-400':'text-tertiary'}">${(risks.possible_division_by_zero||[]).length}</span></div>
+            <div><span class="text-outline">Narrowing Risks</span><br><span class="${(risks.lossy_narrowing||[]).length>0?'text-yellow-400':'text-tertiary'}">${(risks.lossy_narrowing||[]).length}</span></div>
+          </div>
+        </div>` : ''}
+        ${diffs ? `
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg">
+          <h3 class="font-headline-md text-headline-md text-on-surface mb-space-md">Known Semantic Differences</h3>
+          <ul class="font-body-sm text-body-sm list-disc list-inside">${diffs}</ul>
+        </div>` : ''}
+        ${d.disclaimer ? `<div class="p-space-md bg-surface-container border border-outline-variant rounded-lg"><p class="font-body-sm text-body-sm text-on-surface-variant">${escHtml(d.disclaimer)}</p></div>` : ''}
+      </div>`;
+
+  } catch (err) {
+    showId('fidResult');
+    $('fidResult').innerHTML = `<p class="text-error font-body-sm text-body-sm">Failed: ${escHtml(err.message)}</p>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px">description</span><span>Generate Fidelity Report</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// Semantic differences page
+// ---------------------------------------------------------------------------
+async function loadSemanticDifferences() {
+  $('semanticList').innerHTML = '<p class="text-on-surface-variant font-body-sm text-body-sm">Loading…</p>';
+  try {
+    const r = await fetch(`${API_BASE}/api/report/semantic-differences`);
+    const d = await r.json();
+    $('semanticList').innerHTML = (d.differences||[]).map((s, i) => `
+      <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg">
+        <div class="flex items-start gap-space-md">
+          <span class="text-yellow-400 font-label-sm text-label-sm font-mono bg-yellow-400/10 border border-yellow-400/30 px-1 py-0.5 rounded mt-0.5">S${i+1}</span>
+          <p class="font-body-md text-body-md text-on-surface">${escHtml(s)}</p>
+        </div>
+      </div>`).join('');
+    if (d.disclaimer) {
+      $('semanticDisclaimerText').textContent = d.disclaimer;
+      showId('semanticDisclaimer');
+    }
+  } catch (err) {
+    $('semanticList').innerHTML = `<p class="text-error font-body-sm text-body-sm">Failed to load: ${escHtml(err.message)}</p>`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// API health probe
+// ---------------------------------------------------------------------------
+async function probeApiHealth() {
+  try {
+    const r = await fetch(`${API_BASE}/api/health`, {signal: AbortSignal.timeout(4000)});
+    const d = await r.json();
+    if (d.status === 'ok') {
+      // Update all status indicators to "connected"
+      $('apiDot').className = 'w-2 h-2 rounded-full bg-tertiary';
+      $('apiStatusText').textContent = `API v${d.version}`;
+      $('connDot').className = 'w-1.5 h-1.5 rounded-full bg-tertiary';
+      $('connText').textContent = `API: Connected (v${d.version})`;
+      $('connText').className = 'font-label-sm text-label-sm text-tertiary';
+      $('backendDot').className = 'w-1.5 h-1.5 rounded-full bg-tertiary';
+      $('backendStatusLabel').textContent = 'Backend Online';
+      $('backendStatusLabel').className = 'font-code-sm text-code-sm text-tertiary';
+      $('footerIcon').textContent = 'check_circle';
+      $('footerStatus').textContent = 'cpp2py backend online';
+      $('footerStatus').className = 'font-label-sm text-label-sm text-tertiary';
+      $('versionBadge').textContent = `v${d.version}`;
+      return true;
+    }
+  } catch {}
+  $('apiDot').className = 'w-2 h-2 rounded-full bg-error';
+  $('apiStatusText').textContent = 'API Offline';
+  $('connDot').className = 'w-1.5 h-1.5 rounded-full bg-error';
+  $('connText').textContent = 'API: Offline';
+  $('connText').className = 'font-label-sm text-label-sm text-error';
+  $('backendDot').className = 'w-1.5 h-1.5 rounded-full bg-error';
+  $('backendStatusLabel').textContent = 'Backend Offline';
+  $('backendStatusLabel').className = 'font-code-sm text-code-sm text-error';
+  $('footerIcon').textContent = 'error';
+  $('footerStatus').textContent = 'Backend offline';
+  $('footerStatus').className = 'font-label-sm text-label-sm text-error';
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// HTML escape
+// ---------------------------------------------------------------------------
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard shortcut
+// ---------------------------------------------------------------------------
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    const pg = document.querySelector('.page.active');
+    if (pg && pg.id === 'page-playground') runTranspile();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Bootstrap
+// ---------------------------------------------------------------------------
+(function init() {
+  // Load default example
+  $('cppEditor').value = EXAMPLES.hello.code;
+  updateLineNums();
+  $('currentExampleLabel').textContent = EXAMPLES.hello.name;
+  $('cppFilename').textContent = EXAMPLES.hello.name;
+
+  // Probe health
+  probeApiHealth().then(ok => {
+    if (!ok) {
+      // Retry once after 2s
+      setTimeout(probeApiHealth, 2000);
+    }
+  });
+
+  // Periodic health re-check every 30s
+  setInterval(probeApiHealth, 30000);
+})();
+</script>
+</body>
+</html>

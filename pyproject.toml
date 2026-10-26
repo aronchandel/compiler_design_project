@@ -5,6 +5,7 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 dev = ["pytest"]
+api = ["fastapi>=0.100", "uvicorn[standard]>=0.22", "httpx>=0.24"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
