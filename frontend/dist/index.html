@@ -279,6 +279,11 @@
               <option value="always">Always Protect</option>
             </select>
           </div>
+          <!-- Fold Constants toggle -->
+          <label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Enable/disable constant folding optimization pass">
+            <input type="checkbox" id="foldConstantsCheck" checked class="accent-primary cursor-pointer"/>
+            <span class="text-label-sm font-label-sm text-on-surface">Fold Constants</span>
+          </label>
         </div>
         <!-- Run button -->
         <div class="flex items-center gap-space-md">
@@ -872,6 +877,7 @@ async function runTranspile() {
   if (!source.trim()) return;
 
   const compat = $('compatSelect').value;
+  const foldConstants = $('foldConstantsCheck') ? $('foldConstantsCheck').checked : true;
   const filename = $('cppFilename').textContent || 'input.cpp';
 
   // UI: loading
@@ -895,6 +901,7 @@ async function runTranspile() {
         source_code: source,
         filename: filename,
         compat: compat,
+        fold_constants: foldConstants,
       }),
     });
     if (!resp.ok) {
@@ -987,6 +994,13 @@ async function runTranspile() {
     $('pyErrorDetail').innerHTML = errDiags.map(d =>
       `<div class="mb-1"><span class="text-error">[${escHtml(d.code)}]</span> ${escHtml(d.message)}${d.location ? ` <span class="text-outline">${escHtml(d.location)}</span>` : ''}</div>`
     ).join('') || '<span class="text-on-surface-variant">Translation failed. See diagnostics panel.</span>';
+  }
+
+  // IR panel
+  if (data && data.ir_source) {
+    $('irDump').textContent = data.ir_source;
+  } else {
+    $('irDump').textContent = 'No IR available for this compilation.';
   }
 
   // Diagnostics panel

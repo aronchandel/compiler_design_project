@@ -137,6 +137,51 @@ class TestTranslateSuccess:
             assert data["function_count"] is not None
             assert data["function_count"] >= 1
 
+    def test_translate_constant_folding_enabled(self):
+        code = "int main() { int x = 2 + 3; return x; }"
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert "x = 5" in data["python_source"]
+        assert "2 + 3" not in data["python_source"]
+        assert data["ir_source"] is not None
+        assert "assign 5" in data["ir_source"]
+
+    def test_translate_constant_folding_disabled(self):
+        code = "int main() { int x = 2 + 3; return x; }"
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": False})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert "x = 2 + 3" in data["python_source"]
+        assert data["ir_source"] is not None
+        assert "add 2, 3" in data["ir_source"]
+
+    def test_translate_constant_folding_complex_arithmetic(self):
+        code = "int main() { int x = (2 + 3) * (10 - 6) / 2; return x; }"
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert "x = 10" in data["python_source"]
+
+    def test_translate_constant_folding_div_zero_preserved(self):
+        code = "int main() { int x = 10 / 0; return x; }"
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert any(d["code"] == "W6004" for d in data["diagnostics"])
+
+    def test_translate_constant_folding_overflow_preserved(self):
+        code = "int main() { int x = 2147483647 + 1; return x; }"
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert any(d["code"] == "W6004" for d in data["diagnostics"])
+
 
 # ===========================================================================
 # Translate endpoint — invalid / malformed requests

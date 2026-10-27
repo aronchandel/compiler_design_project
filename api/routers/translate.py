@@ -81,6 +81,7 @@ class TranslateResponse(BaseModel):
     function_count: int | None = None
     line_count_cpp: int | None = None
     line_count_py: int | None = None
+    ir_source: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -155,8 +156,11 @@ async def translate(req: TranslateRequest) -> TranslateResponse:
     warning_count = sum(1 for d in result.diagnostics if d.severity == Severity.WARNING)
 
     func_count: int | None = None
+    ir_text: str | None = None
     if result.ir:
         func_count = len(result.ir.functions)
+        from cpp2py.ir.printer import format_module
+        ir_text = format_module(result.ir)
 
     py_lines: int | None = None
     if result.python_source:
@@ -174,4 +178,5 @@ async def translate(req: TranslateRequest) -> TranslateResponse:
         function_count=func_count,
         line_count_cpp=cpp_lines,
         line_count_py=py_lines,
+        ir_source=ir_text,
     )
