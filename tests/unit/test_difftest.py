@@ -1,5 +1,3 @@
-"""Unit tests for differential testing orchestration (difftest.py) and CLI difftest."""
-
 import subprocess
 import sys
 from pathlib import Path
@@ -9,9 +7,7 @@ from cpp2py.testing.comparator import DiffResult, Outcome
 from cpp2py.testing.cxx_runner import CxxCapabilities
 from cpp2py.testing.difftest import DiffSummary
 
-
 def test_diff_summary_to_dict_ac6_8_schema():
-    """Verify DiffSummary.to_dict() satisfies AC6.8 JSON schema requirements."""
     caps = CxxCapabilities(
         compiler="g++",
         available=True,
@@ -37,7 +33,6 @@ def test_diff_summary_to_dict_ac6_8_schema():
     )
     d = summary.to_dict()
 
-    # AC6.8: run summary JSON contains: versions, platform capabilities, config, seeds, generator version, per-outcome counts
     assert "tool_version" in d
     assert "python_version" in d
     assert "generator_version" in d
@@ -60,9 +55,7 @@ def test_diff_summary_to_dict_ac6_8_schema():
     assert "mismatches" in d
     assert d["mismatches"] == []
 
-
 def test_diff_summary_has_mismatches_false_when_clean():
-    """Verify has_mismatches returns False when all results are PASS or UB_EXCLUDED."""
     r1 = DiffResult(case_id="c1", outcome=Outcome.PASS, reason="Passed")
     r2 = DiffResult(case_id="c2", outcome=Outcome.UB_EXCLUDED, reason="UB detected")
     caps = CxxCapabilities(compiler="g++", available=True)
@@ -79,9 +72,7 @@ def test_diff_summary_has_mismatches_false_when_clean():
     )
     assert summary.has_mismatches() is False
 
-
 def test_diff_summary_has_mismatches_true_on_failure():
-    """Verify has_mismatches returns True when any result is a mismatch."""
     r1 = DiffResult(case_id="c1", outcome=Outcome.PASS, reason="Passed")
     r2 = DiffResult(case_id="c2", outcome=Outcome.MISMATCH_STDOUT, reason="Stdout mismatch")
     caps = CxxCapabilities(compiler="g++", available=True)
@@ -98,9 +89,7 @@ def test_diff_summary_has_mismatches_true_on_failure():
     )
     assert summary.has_mismatches() is True
 
-
 def test_diff_summary_print_summary(capsys):
-    """Verify print_summary() renders expected table with counts and agreement rate."""
     caps = CxxCapabilities(compiler="g++", available=True, version="6.3.0", sanitizer_available=False)
     summary = DiffSummary(
         suite="curated",
@@ -120,9 +109,7 @@ def test_diff_summary_print_summary(capsys):
     assert "UB_EXCLUDED" in captured.out
     assert "Agreement Rate: 40/40 (100.00%)" in captured.out
 
-
 def test_difftest_cli_help():
-    """Verify CLI difftest subcommand --help exposes all required options."""
     res = subprocess.run(
         [sys.executable, "-m", "cpp2py", "difftest", "--help"],
         capture_output=True,
@@ -137,9 +124,7 @@ def test_difftest_cli_help():
     assert "--seed" in res.stdout
     assert "--count" in res.stdout
 
-
 def test_difftest_cli_invalid_arguments():
-    """Verify CLI rejects invalid suite and compat options with code 2."""
     res = subprocess.run(
         [sys.executable, "-m", "cpp2py", "difftest", "--suite", "nonexistent_suite"],
         capture_output=True,

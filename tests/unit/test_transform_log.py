@@ -1,5 +1,3 @@
-"""Unit tests for transformation log and replay (cpp2py/transforms/log.py)."""
-
 import json
 from pathlib import Path
 import pytest
@@ -16,7 +14,6 @@ from cpp2py.ir.model import (
     IRType,
 )
 from cpp2py.transforms.log import TransformRecord, TransformLog
-
 
 def test_transform_record_to_from_dict():
     span = SourceSpan("test.cpp", Pos(5, 13, 100), Pos(5, 18, 105))
@@ -44,7 +41,6 @@ def test_transform_record_to_from_dict():
     assert d["reason"] == "both operands constant; 6*7=42 within i32"
     assert d["derived_from"] == ["op_0"]
 
-    # Reconstruct from dict
     rec2 = TransformRecord.from_dict(d)
     assert rec2.seq == rec.seq
     assert rec2.pass_name == rec.pass_name
@@ -58,7 +54,6 @@ def test_transform_record_to_from_dict():
     assert rec2.span is not None
     assert rec2.span.file == "test.cpp"
     assert rec2.span.start.line == 5
-
 
 def test_transform_log_jsonl_roundtrip(tmp_path):
     log_file = tmp_path / "transforms.jsonl"
@@ -96,17 +91,8 @@ def test_transform_log_jsonl_roundtrip(tmp_path):
     assert log2.records[1].kind == "DELETE"
     assert log2.records[1].after is None
 
-
 def test_transform_log_replay_matches_final_ir():
-    # Initial IR:
-    #   op_1: t0 = mul 6, 7
-    #   op_2: a = assign t0
-    # Transformations:
-    #   1. REPLACE op_1: t0 = assign 42
-    #   2. REPLACE op_2: a = assign 42 (derived_from: op_1)
-    #   3. DELETE op_1
-    # Expected final IR:
-    #   op_2: a = assign 42 [derived from op_1]
+
     initial_module = IRModule(
         functions=[
             IRFunction(
@@ -172,7 +158,6 @@ def test_transform_log_replay_matches_final_ir():
     assert final_instr.dst == VarRef(1, "a", IRType.I32)
     assert final_instr.operands == (Const(42, IRType.I32),)
     assert final_instr.origin == ("op_1",)
-
 
 def test_transform_log_determinism(tmp_path):
     p1 = tmp_path / "log1.jsonl"

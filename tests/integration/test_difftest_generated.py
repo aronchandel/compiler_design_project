@@ -1,5 +1,3 @@
-"""Integration tests for generated test suite (reproducibility and validity)."""
-
 import pytest
 
 from cpp2py.config import CompilerConfig, CompatMode
@@ -14,9 +12,7 @@ cxx_skip = pytest.mark.skipif(
     reason=f"g++ compiler not available/functional: {capabilities.reason}",
 )
 
-
 def test_generated_suite_reproducibility():
-    """Generating suite with same seed twice must yield byte-identical test cases."""
     suite1 = generate_suite(count=50, base_seed=1)
     suite2 = generate_suite(count=50, base_seed=1)
 
@@ -26,11 +22,9 @@ def test_generated_suite_reproducibility():
         assert c1.program_source == c2.program_source
         assert c1.inputs == c2.inputs
 
-
 @pytest.mark.requires_cxx
 @cxx_skip
 def test_generated_suite_acceptance():
-    """Every generated program must be accepted by cpp2py translator and by g++."""
     suite = generate_suite(count=200, base_seed=1)
     config = CompilerConfig(compat_mode=CompatMode.RANGE_GUIDED)
     cache = CxxBuildCache()

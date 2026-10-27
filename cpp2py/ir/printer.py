@@ -1,8 +1,3 @@
-"""Deterministic textual formatting for the cpp2py Intermediate Representation (IR).
-
-Conforms to ARCH §D.3.7 and §D.4 Stage 3.
-"""
-
 from __future__ import annotations
 
 from cpp2py.ir.model import (
@@ -18,17 +13,13 @@ from cpp2py.ir.model import (
     Operand,
 )
 
-
 def format_module(module: IRModule) -> str:
-    """Format an entire IRModule as text."""
     parts: list[str] = []
     for func in module.functions:
         parts.append(format_function(func))
     return "\n\n".join(parts) + "\n" if parts else ""
 
-
 def format_function(func: IRFunction) -> str:
-    """Format a single IRFunction as text."""
     if func.params:
         param_strs = [f"{p.ir_name} : {p.type}" for p in func.params]
         params_str = ", ".join(param_strs)
@@ -44,15 +35,11 @@ def format_function(func: IRFunction) -> str:
     lines.append("}")
     return "\n".join(lines)
 
-
 def format_instruction(instr: Instruction) -> str:
-    """Format a single Instruction line with column alignment."""
     body = _format_instruction_body(instr)
 
-    # Prefix: 2 spaces indentation + op_id left-justified in 7 chars
     prefix = f"  {instr.op_id:<7}"
 
-    # Pad body to 32 characters for fixed-width alignment
     if len(body) < 32:
         body_padded = body + " " * (32 - len(body))
     else:
@@ -60,7 +47,6 @@ def format_instruction(instr: Instruction) -> str:
 
     line = prefix + body_padded
 
-    # Comment section: spans, metadata, origin
     comment_parts: list[str] = []
 
     if instr.span is not None:
@@ -83,7 +69,6 @@ def format_instruction(instr: Instruction) -> str:
         line += "; " + comment_text
 
     return line.rstrip()
-
 
 def _format_instruction_body(instr: Instruction) -> str:
     opcode = instr.opcode

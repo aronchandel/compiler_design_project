@@ -1,5 +1,3 @@
-"""Python execution runner for differential testing."""
-
 from __future__ import annotations
 
 import os
@@ -10,7 +8,6 @@ from pathlib import Path
 
 from cpp2py.testing.cxx_runner import ExecutionResult, _get_minimal_env
 
-
 def run_python(
     source_or_file: str | Path,
     stdin_text: str = "",
@@ -19,7 +16,6 @@ def run_python(
     is_file: bool = False,
     cwd: str | Path | None = None,
 ) -> ExecutionResult:
-    """Run a Python script under isolated conditions via sys.executable -X utf8."""
     temp_dir_obj: tempfile.TemporaryDirectory | None = None
     if cwd is None:
         temp_dir_obj = tempfile.TemporaryDirectory()

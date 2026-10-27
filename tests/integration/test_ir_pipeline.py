@@ -1,12 +1,9 @@
-"""Integration tests verifying the IR pipeline against .expected files."""
-
 import subprocess
 import sys
 from pathlib import Path
 import pytest
 from cpp2py.compiler import compile_source
 from cpp2py.config import CompilerConfig
-
 
 def test_ir_pipeline_all_phase1_examples(tmp_path, repo_root):
     examples_dir = repo_root / "examples" / "phase1"
@@ -20,19 +17,15 @@ def test_ir_pipeline_all_phase1_examples(tmp_path, repo_root):
 
         cpp_content = cpp_file.read_text(encoding="utf-8")
 
-        # 1. Compile through IR pipeline
         res_ir = compile_source(cpp_content, str(cpp_file), CompilerConfig())
         assert res_ir.success, f"IR pipeline compilation failed for {stem}: {[d.message for d in res_ir.diagnostics]}"
 
-        # Write generated script
         py_ir_file = tmp_path / f"{stem}_ir.py"
         py_ir_file.write_text(res_ir.python_source, encoding="utf-8")
 
-        # Stdin
         in_file = examples_dir / f"{stem}.in"
         stdin_data = in_file.read_bytes() if in_file.exists() else b""
 
-        # Execute IR path
         proc_ir = subprocess.run(
             [sys.executable, str(py_ir_file)],
             input=stdin_data,
@@ -40,12 +33,10 @@ def test_ir_pipeline_all_phase1_examples(tmp_path, repo_root):
         )
         assert proc_ir.returncode == 0, f"Running {py_ir_file} failed with code {proc_ir.returncode}: {proc_ir.stderr.decode()}"
 
-        # Normalise newlines
         actual_ir = proc_ir.stdout.replace(b"\r\n", b"\n")
         expected = exp_file.read_bytes().replace(b"\r\n", b"\n")
 
         assert actual_ir == expected, f"Mismatch with expected in {stem}:\nExpected: {expected!r}\nGot: {actual_ir!r}"
-
 
 def test_fold_demo_execution(tmp_path, repo_root):
     cpp_file = repo_root / "examples" / "worked" / "fold_demo.cpp"

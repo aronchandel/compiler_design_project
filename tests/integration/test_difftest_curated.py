@@ -1,5 +1,3 @@
-"""Integration tests for curated cases, mutation sanity test, and examples cross-validation."""
-
 import pytest
 
 from cpp2py.config import CompilerConfig, CompatMode, OverflowPolicy, TargetModel
@@ -14,22 +12,16 @@ cxx_skip = pytest.mark.skipif(
     reason=f"g++ compiler not available/functional: {capabilities.reason}",
 )
 
-
 @pytest.mark.requires_cxx
 @cxx_skip
 def test_mutation_sanity_negative_operands():
-    """Mutation sanity test: naive mode MUST fail on negative-operand cases,
-
-    while always and range_guided MUST pass.
-    """
     all_curated = load_curated_cases()
-    # Filter negative operand division/mod cases: case_01 to case_06
+
     neg_cases = [c for c in all_curated if any(c.case_id.startswith(f"case_0{i}") for i in range(1, 7))]
     assert len(neg_cases) == 6
 
     cache = CxxBuildCache()
 
-    # 1. Naive mode: must produce at least 1 mismatch
     naive_config = CompilerConfig(compat_mode=CompatMode.NAIVE)
     naive_mismatches = 0
     for c in neg_cases:
@@ -40,45 +32,37 @@ def test_mutation_sanity_negative_operands():
 
     assert naive_mismatches >= 1, f"Expected naive mode to fail on negative division/mod, but got {naive_mismatches} mismatches"
 
-    # 2. Always mode: must pass all of them
     always_config = CompilerConfig(compat_mode=CompatMode.ALWAYS)
     for c in neg_cases:
         results = run_case(c, always_config, capabilities, cache=cache)
         for r in results:
             assert r.outcome == Outcome.PASS, f"Always mode failed on {r.case_id}: {r.reason}"
 
-    # 3. Range-guided mode: must pass all of them
     rg_config = CompilerConfig(compat_mode=CompatMode.RANGE_GUIDED)
     for c in neg_cases:
         results = run_case(c, rg_config, capabilities, cache=cache)
         for r in results:
             assert r.outcome == Outcome.PASS, f"Range-guided mode failed on {r.case_id}: {r.reason}"
 
-
 @pytest.mark.requires_cxx
 @cxx_skip
 def test_curated_suite_range_guided():
-    """All curated boundary cases must pass in range_guided mode."""
     summary = run_suite(suite="curated", compat_mode="range_guided")
     assert not summary.has_mismatches(), f"Mismatches in curated suite: {[r.case_id for r in summary.results if r.is_mismatch()]}"
     assert summary.counts[Outcome.PASS] >= 40
     assert summary.agreement_rate == 1.0
 
-
 @pytest.mark.requires_cxx
 @cxx_skip
 def test_curated_suite_always():
-    """All curated boundary cases must pass in always mode."""
     summary = run_suite(suite="curated", compat_mode="always")
     assert not summary.has_mismatches()
     assert summary.counts[Outcome.PASS] >= 40
     assert summary.agreement_rate == 1.0
 
-
 @pytest.mark.requires_cxx
 @cxx_skip
 def test_examples_cross_validation_against_real_cxx():
-    """Cross-validate every examples/**/*.expected against real C++ output."""
     examples = load_example_cases()
     assert len(examples) > 10
 

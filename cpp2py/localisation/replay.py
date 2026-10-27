@@ -1,8 +1,3 @@
-"""Snapshot replay and bisection against reference C++ execution.
-
-Conforms to ARCH §G.4 and §I.2.
-"""
-
 from __future__ import annotations
 
 import json
@@ -16,10 +11,8 @@ from cpp2py.ir.serialization import module_from_json
 from cpp2py.localisation.ir_interpreter import InterpretationResult, TraceEntry, interpret_module
 from cpp2py.transforms.log import TransformLog
 
-
 @dataclass
 class StageReplay:
-    """Replay outcome for a single IR snapshot stage."""
     stage_name: str
     pass_name: str | None
     agrees_with_cxx: bool
@@ -29,23 +22,18 @@ class StageReplay:
     trace: list[TraceEntry]
     ub_events: list[str] = field(default_factory=list)
 
-
 @dataclass
 class ReplayResult:
-    """Outcome of replaying all snapshots of a case."""
-    stage_verdict: str  # "ir_generation" | "after_<pass>" | "codegen_or_plan" | "none"
+    stage_verdict: str
     first_divergent_stage: str | None
     first_divergent_pass: str | None
     changed_ops_in_pass: list[str]
     stage_replays: list[StageReplay]
     final_stage_replay: StageReplay | None
 
-
 def normalise_output(text: str) -> str:
-    """Normalise CRLF to LF and strip trailing whitespace on each line."""
     lines = text.replace("\r\n", "\n").splitlines()
     return "\n".join(lines).strip()
-
 
 def replay_case_snapshots(
     snapshot_dir: str | Path,
@@ -57,7 +45,6 @@ def replay_case_snapshots(
     target_model: TargetModel | None = None,
     overflow_policy: OverflowPolicy | str | None = None,
 ) -> ReplayResult:
-    """Run reference IR interpreter across all snapshots in order, comparing with C++ output."""
     snap_path = Path(snapshot_dir)
     manifest_path = snap_path / "manifest.json"
 
@@ -77,14 +64,12 @@ def replay_case_snapshots(
         except Exception:
             pass
 
-    # If manifest not found or had no stages, scan directory for *.ir.json
     if not stages:
         json_files = sorted(list(snap_path.glob("*.ir.json")), key=lambda p: p.name)
         for jf in json_files:
             stage_name = jf.name[:-len(".ir.json")]
             stages.append({"name": stage_name, "changed": "after_" in stage_name})
 
-    # Read transform log if present
     log_path = snap_path / "transform_log.jsonl"
     if not log_path.exists():
         log_path = snap_path.parent / "transform_log.jsonl"
@@ -139,7 +124,6 @@ def replay_case_snapshots(
             )
         )
 
-    # Determine verdict by finding first divergent stage
     stage_verdict = "none"
     first_div_stage: str | None = None
     first_div_pass: str | None = None
@@ -153,11 +137,11 @@ def replay_case_snapshots(
             elif sr.pass_name is not None:
                 stage_verdict = f"after_{sr.pass_name}"
                 first_div_pass = sr.pass_name
-                # Find changed ops in this pass from transform_log
+
                 changed_ops = [
                     r.op_id for r in transform_log.records if r.pass_name == sr.pass_name
                 ]
-                # If transform log had no records, compute diff with previous stage
+
                 if not changed_ops and idx > 0:
                     prev_ops = {
                         i.op_id: (i.opcode, str(i.dst), tuple(str(o) for o in i.operands))
@@ -176,7 +160,6 @@ def replay_case_snapshots(
                 stage_verdict = "codegen_or_plan"
             break
 
-    # If all IR stages agreed with C++, but Python output differed from C++:
     if first_div_stage is None:
         if py_stdout is not None:
             norm_py_stdout = normalise_output(py_stdout)

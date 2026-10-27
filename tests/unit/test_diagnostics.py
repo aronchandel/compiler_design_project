@@ -2,7 +2,6 @@ import pytest
 from cpp2py.source import Pos, SourceSpan, SourceFile
 from cpp2py.diagnostics import Severity, Diagnostic, DiagnosticSink, render
 
-
 def test_diagnostic_creation():
     span = SourceSpan("test.cpp", Pos(1, 1), Pos(1, 4))
     diag = Diagnostic(severity=Severity.ERROR, code="E1001", message="invalid character", span=span)
@@ -10,7 +9,6 @@ def test_diagnostic_creation():
     assert diag.message == "invalid character"
     assert diag.severity == Severity.ERROR
     assert diag.span == span
-
 
 def test_diagnostic_sink_recording():
     sink = DiagnosticSink()
@@ -27,7 +25,6 @@ def test_diagnostic_sink_recording():
     assert len(sink.warnings) == 1
     assert len(sink.diagnostics) == 2
 
-
 def test_diagnostic_render_with_caret():
     source = SourceFile(filename="test.cpp", content="int x = @;\nreturn 0;\n")
     span = SourceSpan("test.cpp", Pos(1, 9), Pos(1, 10))
@@ -37,7 +34,6 @@ def test_diagnostic_render_with_caret():
     assert "test.cpp:1:9: error [E1001]: invalid character '@'" in rendered
     assert "int x = @;" in rendered
     assert "^" in rendered
-
 
 def test_diagnostic_render_without_source():
     diag = Diagnostic(severity=Severity.ERROR, code="E9001", message="general failure")

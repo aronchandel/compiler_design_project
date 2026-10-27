@@ -1,5 +1,3 @@
-"""Unit tests for IR cast opcode, builder emission, verifier, and constant folding."""
-
 import pytest
 
 from cpp2py.source import SourceFile, SourceSpan, Pos
@@ -14,7 +12,6 @@ from cpp2py.ir.model import Opcode, IRType, Instruction, Const, TempRef, VarRef,
 from cpp2py.transforms.constant_fold import ConstantFoldPass
 from cpp2py.transforms.manager import IRRewriter, PassContext
 from cpp2py.transforms.log import TransformLog
-
 
 def test_builder_emits_cast_on_mixed_types():
     src = SourceFile("test.cpp", """
@@ -34,8 +31,7 @@ def test_builder_emits_cast_on_mixed_types():
     mod = build_ir(prog, info, cfg)
     assert verify_module(mod, sink)
     cast_instrs = [instr for instr in mod.functions[0].body if instr.opcode == Opcode.CAST]
-    assert len(cast_instrs) >= 2  # a cast to i64 for addition, and b cast to i32 for d
-
+    assert len(cast_instrs) >= 2
 
 def test_verifier_accepts_valid_cast():
     sink = DiagnosticSink()
@@ -51,7 +47,6 @@ def test_verifier_accepts_valid_cast():
     )
     mod = IRModule([func])
     assert verify_module(mod, sink)
-
 
 def test_verifier_rejects_bool_cast():
     sink = DiagnosticSink()
@@ -69,7 +64,6 @@ def test_verifier_rejects_bool_cast():
     mod = IRModule([func])
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
-
 
 def test_constant_fold_cast_widening():
     target = TargetModel()
@@ -94,7 +88,6 @@ def test_constant_fold_cast_widening():
     assert func.body[0].operands[0].value == 42
     assert func.body[0].operands[0].type == IRType.I64
 
-
 def test_constant_fold_cast_narrowing_modular():
     target = TargetModel()
     cfg = CompilerConfig(target=target)
@@ -103,7 +96,7 @@ def test_constant_fold_cast_narrowing_modular():
     log = TransformLog()
     allocator = IdAllocator()
     rw = IRRewriter(log=log, allocator=allocator)
-    # 2^31 wrapped into i32 is -2147483648
+
     func = IRFunction(
         name="main",
         params=(),

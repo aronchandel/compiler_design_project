@@ -1,19 +1,10 @@
-"""Formatting of evaluation tables in Markdown and CSV (ARCH §J.2).
-
-Produces:
-- tables.md and tables.csv: B0 vs B1 vs E comparative results
-- localisation_table.md and localisation_table.csv: seeded fault localisation results
-"""
-
 from __future__ import annotations
 
 import csv
 import io
 from typing import Any
 
-
 def render_comparison_markdown(metrics_data: dict[str, Any]) -> str:
-    """Render comparative evaluation results as Markdown table."""
     translators = metrics_data.get("translators", {})
     b0 = translators.get("B0", {})
     b1 = translators.get("B1", {})
@@ -33,7 +24,6 @@ def render_comparison_markdown(metrics_data: dict[str, Any]) -> str:
         "|---|---|---|---|",
     ]
 
-    # 1. Agreement rate
     def _fmt_rate(d: dict[str, Any]) -> str:
         rate = d.get("agreement_rate")
         num = d.get("numerator", 0)
@@ -44,24 +34,19 @@ def render_comparison_markdown(metrics_data: dict[str, Any]) -> str:
 
     lines.append(f"| **Agreement Rate** | {_fmt_rate(b0)} | {_fmt_rate(b1)} | {_fmt_rate(e)} |")
 
-    # 2. Mismatches
     lines.append(f"| **Mismatch Count** | {b0.get('mismatch_count', 0)} | {b1.get('mismatch_count', 0)} | {e.get('mismatch_count', 0)} |")
 
-    # 3. Excluded cases (UB / unsupported)
     def _fmt_excl(d: dict[str, Any]) -> str:
         ex = d.get("excluded_counts", {})
         return str(sum(ex.values())) if isinstance(ex, dict) else str(ex)
 
     lines.append(f"| **Excluded Cases (UB/Error)** | {_fmt_excl(b0)} | {_fmt_excl(b1)} | {_fmt_excl(e)} |")
 
-    # 4. Helper call sites inserted
     lines.append(f"| **Helper Call Sites Inserted** | {b0.get('helper_sites', 0)} | {b1.get('helper_sites', 0)} | {e.get('helper_sites', 0)} |")
 
-    # 5. Static helper ratio vs B1
     ratio_str = f"{static.get('ratio_e_to_b1', 0):.4f}" if static.get("ratio_e_to_b1") is not None else "N/A"
     lines.append(f"| **Helper Ratio (E / B1)** | 0.0000 | 1.0000 | {ratio_str} |")
 
-    # 6. Static unnecessary helpers (vs ground truth labels)
     prec_str = f"{static.get('precision', 0):.4f}" if static.get("precision") is not None else "N/A"
     rec_str = f"{static.get('recall', 0):.4f}" if static.get("recall") is not None else "N/A"
     unnec_cnt = static.get("unnecessary_helpers_count", 0)
@@ -69,15 +54,12 @@ def render_comparison_markdown(metrics_data: dict[str, Any]) -> str:
     lines.append(f"| **Static Precision vs Labels** | N/A | N/A | {prec_str} |")
     lines.append(f"| **Static Recall vs Labels** | N/A | N/A | {rec_str} |")
 
-    # 7. Dynamic unnecessary helpers
     dyn_ratio = dynamic.get("empirically_unnecessary_ratio")
     dyn_str = f"{dyn_ratio * 100:.2f}%" if dyn_ratio is not None else "N/A"
     lines.append(f"| **Dynamic Unnecessary Ratio** | N/A | N/A | {dyn_str} |")
 
-    # 8. Soundness violations
     lines.append(f"| **Soundness Violations** | N/A | N/A | {len(violations)} |")
 
-    # 9. Size proxy (lines, helpers)
     def _fmt_size(d: dict[str, Any]) -> str:
         sz = d.get("size_proxy", {})
         return f"{sz.get('lines', 0)} lines, {sz.get('helpers', 0)} helpers"
@@ -85,7 +67,6 @@ def render_comparison_markdown(metrics_data: dict[str, Any]) -> str:
     lines.append(f"| **Code Size Proxy** | {_fmt_size(b0)} | {_fmt_size(b1)} | {_fmt_size(e)} |")
     lines.append("")
 
-    # Soundness violations details section
     lines.append("## Soundness Violations")
     lines.append("")
     if not violations:
@@ -99,9 +80,7 @@ def render_comparison_markdown(metrics_data: dict[str, Any]) -> str:
     lines.append("")
     return "\n".join(lines)
 
-
 def render_comparison_csv(metrics_data: dict[str, Any]) -> str:
-    """Render comparative evaluation results as CSV."""
     translators = metrics_data.get("translators", {})
     b0 = translators.get("B0", {})
     b1 = translators.get("B1", {})
@@ -114,7 +93,6 @@ def render_comparison_csv(metrics_data: dict[str, Any]) -> str:
     writer = csv.writer(out)
     writer.writerow(["metric", "B0_naive", "B1_always", "E_range_guided"])
 
-    # Agreement rate
     def _rate(d: dict[str, Any]) -> str:
         r = d.get("agreement_rate")
         return f"{r:.4f}" if r is not None else ""
@@ -133,9 +111,7 @@ def render_comparison_csv(metrics_data: dict[str, Any]) -> str:
 
     return out.getvalue()
 
-
 def render_localisation_markdown(loc_data: dict[str, Any]) -> str:
-    """Render localisation evaluation results as Markdown table."""
     lines: list[str] = [
         "# Failure Localisation Evaluation Report",
         "",
@@ -163,9 +139,7 @@ def render_localisation_markdown(loc_data: dict[str, Any]) -> str:
     lines.append("")
     return "\n".join(lines)
 
-
 def render_localisation_csv(loc_data: dict[str, Any]) -> str:
-    """Render localisation evaluation results as CSV."""
     out = io.StringIO()
     writer = csv.writer(out)
     writer.writerow([

@@ -1,9 +1,6 @@
-"""Unit tests for the Python execution runner."""
-
 import pytest
 
 from cpp2py.testing.py_runner import run_python
-
 
 def test_run_python_simple():
     code = "print(42)"
@@ -12,7 +9,6 @@ def test_run_python_simple():
     assert res.stdout.strip() == "42"
     assert not res.timed_out
     assert not res.output_capped
-
 
 def test_run_python_stdin():
     code = """
@@ -26,12 +22,10 @@ print(a + b)
     assert res.exit_code == 0
     assert res.stdout.strip() == "42"
 
-
 def test_run_python_exit_code():
     code = "import sys; sys.exit(7)"
     res = run_python(code)
     assert res.exit_code == 7
-
 
 def test_run_python_output_cap():
     code = "print('X' * 5000)"
@@ -39,13 +33,11 @@ def test_run_python_output_cap():
     assert res.output_capped is True
     assert len(res.stdout) <= 100
 
-
 def test_run_python_timeout():
     code = "import time; time.sleep(5)"
     res = run_python(code, timeout=0.5)
     assert res.timed_out is True
     assert res.exit_code == -1
-
 
 def test_run_python_utf8():
     code = "print('café résumé — « »')"

@@ -1,5 +1,3 @@
-"""Differential testing comparator and outcome classification."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -8,9 +6,7 @@ from typing import Any
 
 from cpp2py.testing.cxx_runner import ExecutionResult
 
-
 class Outcome(str, Enum):
-    """Outcome classes defined in ARCHITECTURE.md §H.3."""
     PASS = "PASS"
     MISMATCH_STDOUT = "MISMATCH_STDOUT"
     MISMATCH_EXIT = "MISMATCH_EXIT"
@@ -23,15 +19,11 @@ class Outcome(str, Enum):
     TIMEOUT_PY = "TIMEOUT_PY"
     SKIPPED = "SKIPPED"
 
-
 def normalize_newlines(text: str) -> str:
-    """Normalize CRLF to LF. Trailing whitespace is preserved."""
     return text.replace("\r\n", "\n")
-
 
 @dataclass
 class DiffResult:
-    """Result of comparing a single C++ vs Python execution."""
     case_id: str
     outcome: Outcome
     reason: str
@@ -42,7 +34,6 @@ class DiffResult:
     translate_diagnostics: list[str] = field(default_factory=list)
 
     def is_mismatch(self) -> bool:
-        """Return True if this outcome is a disagreement."""
         return self.outcome in {
             Outcome.MISMATCH_STDOUT,
             Outcome.MISMATCH_EXIT,
@@ -63,19 +54,16 @@ class DiffResult:
             "translate_diagnostics": self.translate_diagnostics,
         }
 
-
 def _is_crash_or_uncaught(res: ExecutionResult, is_python: bool = False) -> bool:
-    """Detect if process crashed via fatal signal/exception."""
-    # Negative exit code indicates terminated by signal (POSIX) or Windows crash code
+
     if res.exit_code < 0:
         return True
-    if res.exit_code in (134, 139, 3221225477, 3221225725):  # SIGABRT, SIGSEGV, STATUS_ACCESS_VIOLATION
+    if res.exit_code in (134, 139, 3221225477, 3221225725):
         return True
     if is_python:
         if "Traceback (most recent call last):" in res.stderr:
             return True
     return False
-
 
 def compare_results(
     case_id: str,
@@ -91,7 +79,6 @@ def compare_results(
     overflow_policy: str = "assume_no_overflow",
     expected_failure: bool = False,
 ) -> DiffResult:
-    """Classify the comparison outcome according to ARCHITECTURE.md §H.3."""
     diag_list = list(translate_diagnostics or [])
 
     if skipped:
@@ -142,7 +129,6 @@ def compare_results(
             translate_diagnostics=diag_list,
         )
 
-    # 1. Check for timeouts
     if cxx_result.timed_out and py_result.timed_out:
         return DiffResult(
             case_id=case_id,
@@ -177,7 +163,6 @@ def compare_results(
             translate_diagnostics=diag_list,
         )
 
-    # 2. Check for undefined behavior in sanitizer build
     if ubsan_result is not None:
         if "runtime error:" in ubsan_result.stderr:
             return DiffResult(
@@ -191,13 +176,9 @@ def compare_results(
                 translate_diagnostics=diag_list,
             )
 
-    # 3. Division by zero and integer overflow hardware exception check (UB)
     cxx_crashed = _is_crash_or_uncaught(cxx_result, is_python=False)
     py_crashed = _is_crash_or_uncaught(py_result, is_python=True)
 
-    # 3221225621 = 0xC0000095 (STATUS_INTEGER_OVERFLOW / divide error)
-    # 3221225620 = 0xC0000094 (STATUS_INTEGER_DIVIDE_BY_ZERO)
-    # -8 / 136 = SIGFPE
     if cxx_result.exit_code in (3221225621, 3221225620, -8, 136):
         return DiffResult(
             case_id=case_id,
@@ -222,7 +203,6 @@ def compare_results(
             translate_diagnostics=diag_list,
         )
 
-    # 4. If both failed under trap policy or expected failure
     if cxx_result.exit_code != 0 and py_result.exit_code != 0:
         if overflow_policy == "trap" or expected_failure:
             return DiffResult(
@@ -236,7 +216,6 @@ def compare_results(
                 translate_diagnostics=diag_list,
             )
 
-    # 5. One-sided failure: exactly one program crashes/raises
     if cxx_crashed != py_crashed:
         return DiffResult(
             case_id=case_id,
@@ -249,7 +228,6 @@ def compare_results(
             translate_diagnostics=diag_list,
         )
 
-    # 6. Both finished without crash
     cxx_stdout = normalize_newlines(cxx_result.stdout)
     py_stdout = normalize_newlines(py_result.stdout)
 
@@ -277,7 +255,6 @@ def compare_results(
                 translate_diagnostics=diag_list,
             )
 
-    # Stdout differs
     return DiffResult(
         case_id=case_id,
         outcome=Outcome.MISMATCH_STDOUT,
@@ -289,12 +266,7 @@ def compare_results(
         translate_diagnostics=diag_list,
     )
 
-
 def compute_agreement_rate(counts: dict[Outcome, int]) -> tuple[float | None, int, int]:
-    """Compute agreement rate as defined in ARCHITECTURE.md §H.3:
-    rate = PASS / (PASS + MISMATCH_*)
-    Returns (rate, pass_count, denominator).
-    """
     pass_count = counts.get(Outcome.PASS, 0)
     mismatches = (
         counts.get(Outcome.MISMATCH_STDOUT, 0)

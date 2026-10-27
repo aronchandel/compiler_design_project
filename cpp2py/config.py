@@ -1,5 +1,3 @@
-"""Compiler configuration for cpp2py (Phase 5)."""
-
 from __future__ import annotations
 
 import sys
@@ -7,27 +5,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-
 class OverflowPolicy(Enum):
-    """Signed integer overflow policies per ARCH §E.3."""
     ASSUME_NO_OVERFLOW = "assume_no_overflow"
     WRAP = "wrap"
     TRAP = "trap"
 
-
 class CompatMode(Enum):
-    """Compatibility helper insertion modes per ARCH §E.5."""
     NAIVE = "naive"
     ALWAYS = "always"
     RANGE_GUIDED = "range_guided"
 
-
 _DEFAULT_LONG_BITS = 32 if sys.platform == "win32" else 64
-
 
 @dataclass(frozen=True, slots=True)
 class TargetModel:
-    """Target machine model."""
     char_bits: int = 8
     short_bits: int = 16
     int_bits: int = 32
@@ -109,7 +100,6 @@ class TargetModel:
         return (1 << self.long_long_bits) - 1
 
     def climits_macros(self) -> dict[str, int]:
-        """Return mapping of supported <climits> macro names to their resolved integer values."""
         return {
             "CHAR_BIT": self.char_bit,
             "SCHAR_MIN": self.schar_min,
@@ -129,10 +119,8 @@ class TargetModel:
             "ULLONG_MAX": self.ullong_max,
         }
 
-
 @dataclass(frozen=True, slots=True)
 class CompilerConfig:
-    """Top-level compiler configuration."""
     target: TargetModel = field(default_factory=TargetModel)
     compat_mode: CompatMode = CompatMode.RANGE_GUIDED
     assumed_ranges: dict[str, Any] = field(default_factory=dict)

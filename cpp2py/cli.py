@@ -1,5 +1,3 @@
-"""CLI entry point for the cpp2py compiler."""
-
 from __future__ import annotations
 
 import argparse
@@ -15,9 +13,7 @@ from cpp2py.compiler import compile_source
 from cpp2py.frontend.ast_printer import dump
 from cpp2py.ir.printer import format_module
 
-
 def main(argv: list[str] | None = None) -> int:
-    """Main CLI entry point. Returns exit status."""
     if hasattr(sys.stdout, "reconfigure"):
         try:
             sys.stdout.reconfigure(encoding="utf-8")
@@ -34,7 +30,6 @@ def main(argv: list[str] | None = None) -> int:
 
     subparsers = parser.add_subparsers(dest='command')
 
-    # translate subcommand
     translate_parser = subparsers.add_parser('translate', help='Translate C++ to Python')
     translate_parser.add_argument('input', help='Input C++ file')
     translate_parser.add_argument('-o', '--output', help='Output Python file')
@@ -51,7 +46,6 @@ def main(argv: list[str] | None = None) -> int:
     translate_parser.add_argument('--compat-plan', metavar='FILE', dest='compat_plan', default=None, help='File to write compatibility plan JSON')
     translate_parser.add_argument('--fidelity-report', metavar='DIR', dest='fidelity_report', default=None, help='Directory to write fidelity report (fidelity.json and fidelity.md)')
 
-    # difftest subcommand
     difftest_parser = subparsers.add_parser('difftest', help='Differential testing against C++ compiler')
     difftest_parser.add_argument('--suite', choices=['curated', 'generated', 'all'], default='curated', help='Test suite to run (default: curated)')
     difftest_parser.add_argument('--seed', type=int, default=1, help='Seed for generated suite (default: 1)')
@@ -62,12 +56,10 @@ def main(argv: list[str] | None = None) -> int:
     difftest_parser.add_argument('--out', metavar='DIR', default=None, help='Directory for differential testing summary and artifacts')
     difftest_parser.add_argument('--fidelity-report', metavar='DIR', dest='fidelity_report', default=None, help='Directory to write differential fidelity report')
 
-    # localise subcommand
     localise_parser = subparsers.add_parser('localise', help='Perform failure localisation on a mismatch case directory')
     localise_parser.add_argument('--case', required=True, metavar='DIR', help='Case or failure directory containing snapshots and inputs')
     localise_parser.add_argument('--top', type=int, default=5, metavar='K', help='Number of top suspects to report (default: 5)')
 
-    # eval subcommand (Phase 8)
     eval_parser = subparsers.add_parser('eval', help='Comparative evaluation and localisation runner')
     eval_parser.add_argument('mode', nargs='?', default='suite', choices=['suite', 'localisation'], help='Mode: suite (default) or localisation')
     eval_parser.add_argument('--suite', choices=['benchmark', 'generated', 'all'], default='benchmark', help='Test suite to evaluate (default: benchmark)')
@@ -95,9 +87,7 @@ def main(argv: list[str] | None = None) -> int:
 
     return 1
 
-
 def _cmd_eval(args: argparse.Namespace) -> int:
-    """Handle the eval subcommand (lazy import of cpp2py.evaluation)."""
     from cpp2py.evaluation.experiments import run_suite_evaluation, run_localisation_suite
 
     if args.mode == 'localisation':
@@ -112,9 +102,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         )
         return 0
 
-
 def _cmd_localise(args: argparse.Namespace) -> int:
-    """Handle the localise subcommand."""
     from cpp2py.localisation import localise
 
     try:
@@ -125,9 +113,7 @@ def _cmd_localise(args: argparse.Namespace) -> int:
         sys.stderr.write(f"error: localisation failed on {args.case}: {e}\n")
         return 1
 
-
 def _cmd_difftest(args: argparse.Namespace) -> int:
-    """Handle the difftest subcommand."""
     from cpp2py.testing.difftest import run_suite
 
     summary = run_suite(
@@ -149,9 +135,7 @@ def _cmd_difftest(args: argparse.Namespace) -> int:
 
     return 4 if summary.has_mismatches() else 0
 
-
 def _cmd_translate(args: argparse.Namespace) -> int:
-    """Handle the translate subcommand."""
     input_path = args.input
 
     try:
@@ -198,9 +182,7 @@ def _cmd_translate(args: argparse.Namespace) -> int:
 
     return _do_translate(text, source, config, args.output, getattr(args, 'fidelity_report', None))
 
-
 def _do_dump_ast(text: str, source: SourceFile, config: CompilerConfig) -> int:
-    """Dump the AST and exit."""
     from cpp2py.diagnostics import DiagnosticSink
     from cpp2py.frontend.lexer import tokenize
     from cpp2py.frontend.parser import parse
@@ -223,9 +205,7 @@ def _do_dump_ast(text: str, source: SourceFile, config: CompilerConfig) -> int:
     print(dump(program))
     return 0
 
-
 def _do_dump_ir(text: str, source: SourceFile, config: CompilerConfig) -> int:
-    """Dump the IR and exit."""
     from cpp2py.diagnostics import DiagnosticSink
     from cpp2py.frontend.lexer import tokenize
     from cpp2py.frontend.parser import parse
@@ -272,7 +252,6 @@ def _do_dump_ir(text: str, source: SourceFile, config: CompilerConfig) -> int:
     sys.stdout.write(format_module(module))
     return 0
 
-
 def _do_translate(
     text: str,
     source: SourceFile,
@@ -280,10 +259,8 @@ def _do_translate(
     output_path: str | None,
     fidelity_report_dir: str | None = None,
 ) -> int:
-    """Translate and output."""
     result = compile_source(text, source.name, config)
 
-    # If fidelity report requested, generate it regardless of success/failure
     if fidelity_report_dir:
         from cpp2py.reporting import (
             build_translation_fidelity_report,
@@ -294,11 +271,10 @@ def _do_translate(
         render_fidelity_json(rep, fidelity_report_dir)
         render_fidelity_md(rep, fidelity_report_dir)
 
-    # Print diagnostics to stderr
     _print_diagnostics(result.diagnostics, source)
 
     if not result.success:
-        # Do NOT write output file
+
         return 2
 
     if result.python_source is None:
@@ -319,8 +295,6 @@ def _do_translate(
 
     return 0
 
-
 def _print_diagnostics(diagnostics: tuple, source: SourceFile) -> None:
-    """Print all diagnostics to stderr."""
     for diag in diagnostics:
         print(render(diag, source), file=sys.stderr)

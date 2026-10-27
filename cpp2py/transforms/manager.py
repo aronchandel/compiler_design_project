@@ -1,8 +1,3 @@
-"""Pass manager and IRRewriter for cpp2py transformation passes.
-
-Conforms to ARCH §F.3, §F.4, §G.1, and §G.2.
-"""
-
 from __future__ import annotations
 
 import re
@@ -25,12 +20,7 @@ if TYPE_CHECKING:
     from cpp2py.diagnostics import DiagnosticSink
     from cpp2py.ir.snapshots import SnapshotStore
 
-
 class IRRewriter:
-    """The ONLY path through which transformation passes may mutate the IR.
-
-    Enforces op ID survival rules (ARCH §F.4) and records all changes to TransformLog.
-    """
 
     def __init__(self, log: TransformLog, allocator: IdAllocator) -> None:
         self.log = log
@@ -46,7 +36,6 @@ class IRRewriter:
         reason: str,
         derived_from: list[str] | tuple[str, ...] = (),
     ) -> None:
-        """Replace an instruction in-place (REPLACE rule: keeps op_id and span)."""
         new_instr.op_id = instr.op_id
         new_instr.span = instr.span
         if derived_from:
@@ -81,7 +70,6 @@ class IRRewriter:
         reason: str,
         derived_from: list[str] | tuple[str, ...] = (),
     ) -> None:
-        """Substitute an operand in an instruction (REPLACE record, tracks origin)."""
         before_text = _format_instruction_body(instr)
 
         new_operands: list[Operand] = []
@@ -111,7 +99,6 @@ class IRRewriter:
         self.pass_changed = True
 
     def delete(self, func: IRFunction, instr: Instruction, reason: str) -> None:
-        """Delete an instruction (DELETE rule: retires ID, leaves tombstone record)."""
         before_text = _format_instruction_body(instr)
 
         self.log.add_record(
@@ -136,7 +123,6 @@ class IRRewriter:
         reason: str,
         derived_from: list[str] | tuple[str, ...] = (),
     ) -> None:
-        """Insert an instruction before an anchor (INSERT rule: fresh ID, inherits anchor span)."""
         new_instr.op_id = self.allocator.next_op_id()
         new_instr.span = anchor.span
         if derived_from:
@@ -167,7 +153,6 @@ class IRRewriter:
         reason: str,
         derived_from: list[str] | tuple[str, ...] = (),
     ) -> None:
-        """Insert an instruction after an anchor (INSERT rule: fresh ID, inherits anchor span)."""
         new_instr.op_id = self.allocator.next_op_id()
         new_instr.span = anchor.span
         if derived_from:
@@ -190,24 +175,18 @@ class IRRewriter:
         func.body.insert(idx + 1, new_instr)
         self.pass_changed = True
 
-
 @dataclass
 class PassContext:
-    """Compilation context passed to transformation passes."""
     config: CompilerConfig
     sink: DiagnosticSink
 
-
 class IRPass(Protocol):
-    """Protocol for IR transformation passes."""
     name: str
 
     def run(self, func: IRFunction, rw: IRRewriter, ctx: PassContext) -> None:
         ...
 
-
 def _create_allocator_for_module(module: IRModule) -> IdAllocator:
-    """Create an IdAllocator starting past all IDs present in the module."""
     alloc = IdAllocator()
     max_op = -1
     max_temp = -1
@@ -238,7 +217,6 @@ def _create_allocator_for_module(module: IRModule) -> IdAllocator:
     alloc._region_counter = max_region + 1
     return alloc
 
-
 def run_pipeline(
     module: IRModule,
     passes: list[IRPass],
@@ -249,11 +227,6 @@ def run_pipeline(
     allocator: IdAllocator | None = None,
     max_iterations: int = 10,
 ) -> TransformLog:
-    """Run passes in order to a fixed point (up to max_iterations).
-
-    Verifies IR before each pass and after each pass.
-    Saves snapshots when snapshot_store is provided and IR changed.
-    """
     if log is None:
         log = TransformLog()
     if allocator is None:
@@ -262,7 +235,6 @@ def run_pipeline(
     rw = IRRewriter(log=log, allocator=allocator)
     ctx = PassContext(config=config, sink=sink)
 
-    # Initial verification
     verify_module(module, sink)
     if sink.has_errors():
         return log
@@ -273,18 +245,15 @@ def run_pipeline(
             rw.current_pass = p.name
             rw.pass_changed = False
 
-            # Verify before pass
             errs_before = sink.error_count()
             verify_module(module, sink)
             if sink.error_count() > errs_before:
                 sink.error("E5001", f"IR verification failed before pass '{p.name}'")
                 return log
 
-            # Run pass across all functions
             for func in module.functions:
                 p.run(func, rw, ctx)
 
-            # Verify after pass
             errs_after = sink.error_count()
             verify_module(module, sink)
             if sink.error_count() > errs_after:

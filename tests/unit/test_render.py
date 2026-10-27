@@ -1,8 +1,3 @@
-"""Unit tests for cpp2py/reporting/render.py.
-
-Verifies JSON and Markdown output generation, section headings, and formatting.
-"""
-
 from __future__ import annotations
 
 import json
@@ -12,7 +7,6 @@ import pytest
 from cpp2py.localisation import DISCLAIMER
 from cpp2py.reporting.fidelity import FidelityReport
 from cpp2py.reporting.render import render_fidelity_json, render_fidelity_md
-
 
 def test_render_json_and_md(tmp_path):
     report = FidelityReport(
@@ -49,12 +43,10 @@ def test_render_json_and_md(tmp_path):
     assert json_path.exists()
     assert md_path.exists()
 
-    # Verify JSON content
     data = json.loads(json_path.read_text(encoding="utf-8"))
     assert data["schema_version"] == "1.0"
     assert data["test_results"]["agreement_rate"]["denominator"] == 10
 
-    # Verify Markdown headings and content
     md_text = md_path.read_text(encoding="utf-8")
     headings = [
         "# Fidelity Report",
@@ -72,6 +64,5 @@ def test_render_json_and_md(tmp_path):
     for h in headings:
         assert h in md_text, f"Missing heading '{h}' in fidelity.md"
 
-    # Verbatim disclaimer check
     assert DISCLAIMER in md_text
     assert "8/10 (80.00%)" in md_text

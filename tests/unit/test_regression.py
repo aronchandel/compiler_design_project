@@ -1,5 +1,3 @@
-"""Unit tests for regression case persistence and round-tripping."""
-
 import json
 import tempfile
 from pathlib import Path
@@ -16,7 +14,6 @@ from cpp2py.testing.regression import (
     save_regression_case,
 )
 
-
 def test_compute_case_sha8():
     src = "int main() { return 0; }"
     inp = "123\n"
@@ -24,7 +21,6 @@ def test_compute_case_sha8():
     h2 = compute_case_sha8(src, inp)
     assert h1 == h2
     assert len(h1) == 8
-
 
 def test_regression_round_trip():
     with tempfile.TemporaryDirectory() as td:
@@ -73,19 +69,15 @@ def test_regression_round_trip():
         assert l_case.origin == "regression"
         assert l_case.seed == 777
 
-
 def test_persisted_regression_discovery():
-    """Verify that persisted regression cases in tests/regression can be discovered and reloaded."""
     cases = load_regression_cases()
-    # If any regression cases are persisted in tests/regression, verify their properties
+
     for c in cases:
         assert c.origin == "regression"
         assert len(c.inputs) >= 1
         assert c.program_source.strip()
 
-
 def test_regression_known_limitation_status():
-    """Verify saving a regression case with status known_limitation and written reason."""
     with tempfile.TemporaryDirectory() as td:
         reg_dir = Path(td) / "regression"
         case = TestCase(
@@ -110,4 +102,3 @@ def test_regression_known_limitation_status():
         meta = json.loads((saved / "meta.json").read_text(encoding="utf-8"))
         assert meta["status"] == "known_limitation"
         assert meta["notes"] == "Overflow under assume_no_overflow"
-

@@ -1,16 +1,5 @@
-#!/usr/bin/env python3
-"""
-Convenience startup script for the cpp2py web application.
-
-Usage:
-    python start_api.py [--host HOST] [--port PORT] [--reload]
-
-The web IDE will be available at http://HOST:PORT (default: http://localhost:8000)
-"""
-
 import os
 import sys
-
 
 def main() -> None:
     import argparse
@@ -43,7 +32,6 @@ def main() -> None:
         reload=args.reload,
         log_level=args.log_level,
     )
-
 
 if __name__ == "__main__":
     main()

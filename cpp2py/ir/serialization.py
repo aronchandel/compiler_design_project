@@ -1,9 +1,3 @@
-"""JSON serialization and deserialization for the cpp2py Intermediate Representation (IR).
-
-Conforms to ARCH §D.3, §G.3, and Phase 7 AC7.2.
-Round-trip invariant: format_module(module_from_json(module_to_json(module))) == format_module(module)
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -24,9 +18,7 @@ from cpp2py.ir.model import (
 )
 from cpp2py.source import Pos, SourceSpan
 
-
 def operand_to_json(op: Operand | None) -> dict[str, Any] | None:
-    """Serialize an IR Operand to a JSON-compatible dict."""
     if op is None:
         return None
     if isinstance(op, Const):
@@ -41,9 +33,7 @@ def operand_to_json(op: Operand | None) -> dict[str, Any] | None:
         return {"kind": "label", "name": op.name}
     return {"kind": "unknown", "text": str(op)}
 
-
 def operand_from_json(data: dict[str, Any] | None) -> Operand | None:
-    """Deserialize an IR Operand from a JSON dict."""
     if data is None:
         return None
     kind = data.get("kind")
@@ -65,9 +55,7 @@ def operand_from_json(data: dict[str, Any] | None) -> Operand | None:
         return LabelRef(name=data.get("name", ""))
     return None
 
-
 def span_to_json(span: SourceSpan | None) -> dict[str, Any] | None:
-    """Serialize a SourceSpan to JSON."""
     if span is None:
         return None
     return {
@@ -76,9 +64,7 @@ def span_to_json(span: SourceSpan | None) -> dict[str, Any] | None:
         "end": {"line": span.end.line, "col": span.end.col, "offset": span.end.offset},
     }
 
-
 def span_from_json(data: dict[str, Any] | None) -> SourceSpan | None:
-    """Deserialize a SourceSpan from JSON."""
     if data is None:
         return None
     file = data.get("file", "")
@@ -96,9 +82,7 @@ def span_from_json(data: dict[str, Any] | None) -> SourceSpan | None:
     )
     return SourceSpan(file=file, start=start, end=end)
 
-
 def region_to_json(region: RegionInfo) -> dict[str, Any]:
-    """Serialize a RegionInfo to JSON."""
     res: dict[str, Any] = {
         "region_id": str(region.region_id),
         "kind": region.kind,
@@ -110,9 +94,7 @@ def region_to_json(region: RegionInfo) -> dict[str, Any]:
         res["span"] = span_to_json(region.span)
     return res
 
-
 def region_from_json(data: dict[str, Any]) -> RegionInfo:
-    """Deserialize a RegionInfo from JSON."""
     return RegionInfo(
         region_id=data.get("region_id", ""),
         kind=data.get("kind", ""),
@@ -121,9 +103,7 @@ def region_from_json(data: dict[str, Any]) -> RegionInfo:
         loop_var_declared_in_init=bool(data.get("loop_var_declared_in_init", False)),
     )
 
-
 def instruction_to_json(instr: Instruction) -> dict[str, Any]:
-    """Serialize an Instruction to JSON."""
     res: dict[str, Any] = {
         "op_id": instr.op_id,
         "opcode": instr.opcode.value,
@@ -150,9 +130,7 @@ def instruction_to_json(instr: Instruction) -> dict[str, Any]:
         res["func_name"] = instr.func_name
     return res
 
-
 def instruction_from_json(data: dict[str, Any]) -> Instruction:
-    """Deserialize an Instruction from JSON."""
     op_id = data["op_id"]
     opcode = Opcode(data["opcode"])
 
@@ -189,7 +167,7 @@ def instruction_from_json(data: dict[str, Any]) -> Instruction:
         op_id=op_id,
         opcode=opcode,
         dst=dst,
-        operands=operands,  # type: ignore
+        operands=operands,
         span=span,
         origin=origin,
         label_name=label_name,
@@ -200,9 +178,7 @@ def instruction_from_json(data: dict[str, Any]) -> Instruction:
         func_name=func_name,
     )
 
-
 def function_to_json(func: IRFunction) -> dict[str, Any]:
-    """Serialize an IRFunction to JSON."""
     return {
         "name": func.name,
         "return_type": str(func.return_type),
@@ -212,9 +188,7 @@ def function_to_json(func: IRFunction) -> dict[str, Any]:
         "regions": {str(k): region_to_json(r) for k, r in func.regions.items()},
     }
 
-
 def function_from_json(data: dict[str, Any]) -> IRFunction:
-    """Deserialize an IRFunction from JSON."""
     name = data["name"]
     return_type = IRType(data.get("return_type", "void"))
 
@@ -248,17 +222,13 @@ def function_from_json(data: dict[str, Any]) -> IRFunction:
         regions=regions,
     )
 
-
 def module_to_json(module: IRModule) -> dict[str, Any]:
-    """Serialize an IRModule to a JSON dict."""
     return {
         "source_name": module.source_name,
         "functions": [function_to_json(f) for f in module.functions],
     }
 
-
 def module_from_json(data: dict[str, Any]) -> IRModule:
-    """Deserialize an IRModule from a JSON dict."""
     source_name = data.get("source_name", "")
     functions = [function_from_json(f) for f in data.get("functions", [])]
     return IRModule(functions=functions, source_name=source_name)

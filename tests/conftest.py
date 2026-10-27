@@ -1,4 +1,3 @@
-"""Common test fixtures and helpers for cpp2py tests."""
 import os
 import subprocess
 import sys
@@ -7,10 +6,8 @@ import pytest
 from cpp2py.compiler import compile_source
 from cpp2py.config import CompilerConfig
 
-
 @pytest.fixture
 def run_cli():
-    """Helper fixture to invoke the cpp2py CLI via python -m cpp2py."""
     def _run(*args, **kwargs):
         cmd = [sys.executable, "-m", "cpp2py", *args]
         env = dict(os.environ)
@@ -24,7 +21,6 @@ def run_cli():
             **kwargs,
         )
     return _run
-
 
 @pytest.fixture
 def repo_root():

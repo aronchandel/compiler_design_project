@@ -1,9 +1,3 @@
-"""Failure localisation module for cpp2py.
-
-Conforms to ARCH §I.
-Heuristic diagnosis pointing to suspicious compiler stages and operations.
-"""
-
 from __future__ import annotations
 
 import json
@@ -25,12 +19,10 @@ from cpp2py.testing.py_runner import run_python
 DISCLAIMER: str = "Localisation is heuristic diagnosis, not guaranteed automatic diagnosis or repair."
 DISCLAIMER_SENTENCE: str = DISCLAIMER
 
-
 @dataclass
 class LocalisationReport:
-    """Full localisation diagnostic report."""
     case_dir: str
-    stage_verdict: str  # "ir_generation" | "after_<pass>" | "codegen_or_plan" | "none"
+    stage_verdict: str
     first_divergent_stage: str | None
     first_divergent_pass: str | None
     suspects: list[Suspect]
@@ -57,7 +49,6 @@ class LocalisationReport:
         }
 
     def format_text(self) -> str:
-        """Format a human-readable text summary of the localisation report."""
         lines: list[str] = [
             "=" * 60,
             "Failure Localisation Report",
@@ -90,16 +81,12 @@ class LocalisationReport:
         lines.append("=" * 60)
         return "\n".join(lines)
 
-
 def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
-    """Perform failure localisation on a test case directory."""
     path = Path(case_dir)
     case_id = path.name
 
-    # Find snapshot directory
     snap_dir = path / "snapshots" if (path / "snapshots").exists() else path
 
-    # Stdin text
     stdin_file = path / "input.txt"
     if not stdin_file.exists():
         stdin_file = path / "stdin.txt"
@@ -109,7 +96,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
             stdin_file = curated_input
     stdin_text = stdin_file.read_text(encoding="utf-8") if stdin_file.exists() else ""
 
-    # Obtain reference C++ output
     cxx_stdout: str = ""
     cxx_exit_code: int = 0
 
@@ -127,7 +113,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
         except Exception:
             pass
 
-    # Check summary.json in grand-parent if available (out/dt_naive/summary.json)
     if not cxx_stdout and (path.parent.parent / "summary.json").exists():
         try:
             sum_data = json.loads((path.parent.parent / "summary.json").read_text(encoding="utf-8"))
@@ -139,7 +124,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
         except Exception:
             pass
 
-    # If C++ output still empty, try executing program.cpp with g++ if available
     prog_file = path / "program.cpp"
     if not prog_file.exists():
         curated_prog = Path("tests/differential/cases") / case_id / "program.cpp"
@@ -155,7 +139,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
                 cxx_stdout = cxx_exec.stdout
                 cxx_exit_code = cxx_exec.exit_code
 
-    # Obtain Python output from output.py in snapshots or case dir
     py_stdout: str = ""
     py_exit_code: int = 0
     py_file = snap_dir / "output.py"
@@ -166,7 +149,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
         py_stdout = py_exec.stdout
         py_exit_code = py_exec.exit_code
 
-    # Load plan.json and ranges.json if present
     plan_dict: dict[str, Any] | None = None
     plan_file = snap_dir / "plan.json"
     if plan_file.exists():
@@ -175,7 +157,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
         except Exception:
             pass
 
-    # Replay snapshots
     replay_res: ReplayResult = replay_case_snapshots(
         snapshot_dir=snap_dir,
         stdin_text=stdin_text,
@@ -185,7 +166,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
         py_exit_code=py_exit_code,
     )
 
-    # Find the stage from which to take the execution trace
     trace_stage_replay = None
     if replay_res.first_divergent_stage:
         for sr in replay_res.stage_replays:
@@ -208,7 +188,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
         if out_idx >= 0:
             slice_ops = compute_backward_slice(trace_stage_replay.trace, out_idx)
 
-    # Collect source spans and opcodes
     op_spans: dict[str, Any] = {}
     op_opcodes: dict[str, str] = {}
     if trace_stage_replay:
@@ -219,7 +198,6 @@ def localise(case_dir: str | Path, top_k: int = 5) -> LocalisationReport:
                 if instr.span:
                     op_spans[instr.op_id] = instr.span
 
-    # Rank suspects
     suspects = rank_operations(
         slice_ops=slice_ops,
         first_divergent_pass=replay_res.first_divergent_pass,

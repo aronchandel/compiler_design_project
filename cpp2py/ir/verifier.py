@@ -1,17 +1,3 @@
-"""IR verification pass checking invariants defined in ARCH §D.3.8.
-
-Invariants:
-1. Unique op IDs.
-2. Every TempRef is defined once and before use.
-3. Every VarRef is declared (or a parameter) before use.
-4. Operand and result types agree; bool outside branch rejected; branch on non-bool rejected.
-5. Jump/branch target labels exist exactly once in the same function.
-6. Canonical control-flow shapes (§D.3.6), label role & region consistency, no label region mismatch.
-7. Return operand type matches function return type.
-
-All invariant violations report diagnostic code E5001.
-"""
-
 from __future__ import annotations
 
 import re
@@ -33,13 +19,10 @@ from cpp2py.diagnostics import DiagnosticSink
 
 LABEL_PATTERN = re.compile(r"^(if_then|if_else|if_end|loop_head|loop_body|loop_end)_(r\d+)$")
 
-
 def verify_module(module: IRModule, sink: DiagnosticSink) -> bool:
-    """Verify all functions in the module. Returns True if valid, False if errors found."""
     initial_errors = sink.error_count()
     verifier = IRVerifier(sink)
 
-    # Check module-wide op_id uniqueness
     seen_module_op_ids: set[str] = set()
     for func in module.functions:
         for instr in func.body:
@@ -52,9 +35,7 @@ def verify_module(module: IRModule, sink: DiagnosticSink) -> bool:
 
     return sink.error_count() == initial_errors
 
-
 class IRVerifier:
-    """Verifies a single IRFunction against ARCH §D.3.8 invariants."""
 
     def __init__(self, sink: DiagnosticSink) -> None:
         self._sink = sink
@@ -66,7 +47,6 @@ class IRVerifier:
         var_types: dict[str, IRType] = {p.ir_name: p.type for p in func.params}
         temp_types: dict[str, IRType] = {}
 
-        # First pass: collect labels and check duplicate labels
         label_instrs: dict[str, Instruction] = {}
         for instr in func.body:
             if instr.opcode == Opcode.LABEL:
@@ -76,30 +56,27 @@ class IRVerifier:
                 else:
                     label_instrs[label_name] = instr
 
-        # Second pass: check each instruction
         for instr in func.body:
-            # 1. Op ID uniqueness within function
+
             if instr.op_id in seen_op_ids:
                 self._sink.error("E5001", f"duplicate op_id in function: '{instr.op_id}'", instr.span)
             seen_op_ids.add(instr.op_id)
 
             opcode = instr.opcode
 
-            # 2. Check destination and operands: variables must be declared, temps must be defined before use
             if opcode != Opcode.DECLARE and isinstance(instr.dst, VarRef):
                 if instr.dst.ir_name not in declared_vars:
                     self._sink.error("E5001", f"use of undeclared variable: '{instr.dst.ir_name}'", instr.span)
 
             for op in instr.operands:
                 if isinstance(op, VarRef):
-                    # In DECLARE opcode, the operand is the variable being declared
+
                     if opcode != Opcode.DECLARE and op.ir_name not in declared_vars:
                         self._sink.error("E5001", f"use of undeclared variable: '{op.ir_name}'", instr.span)
                 elif isinstance(op, TempRef):
                     if op.temp_id not in defined_temps:
                         self._sink.error("E5001", f"use of undefined temporary: '{op.temp_id}'", instr.span)
 
-            # 3. Type agreement and opcode semantics
             if opcode == Opcode.DECLARE:
                 var = instr.dst or (instr.operands[0] if instr.operands else None)
                 if isinstance(var, VarRef):
@@ -185,7 +162,6 @@ class IRVerifier:
                 if f_label not in label_instrs:
                     self._sink.error("E5001", f"branch target label missing: '{f_label}'", instr.span)
 
-                # Check label region consistency
                 t_match = LABEL_PATTERN.match(t_label)
                 f_match = LABEL_PATTERN.match(f_label)
                 if t_match and f_match:
@@ -201,7 +177,7 @@ class IRVerifier:
 
             elif opcode == Opcode.LABEL:
                 label_name = instr.label_name or (str(instr.operands[0]) if instr.operands else "")
-                # Validate label naming convention
+
                 match = LABEL_PATTERN.match(label_name)
                 if not match:
                     self._sink.error("E5001", f"non-canonical label name: '{label_name}'", instr.span)
@@ -224,7 +200,6 @@ class IRVerifier:
                 if src_type not in (IRType.I32, IRType.I64) or dst_type not in (IRType.I32, IRType.I64):
                     self._sink.error("E5001", f"cast only supports integer types (i32, i64), got {src_type} to {dst_type}", instr.span)
 
-            # 4. Check destination temp definition (single assignment)
             if instr.dst is not None and isinstance(instr.dst, TempRef):
                 temp_id = instr.dst.temp_id
                 if temp_id in defined_temps:
@@ -232,7 +207,6 @@ class IRVerifier:
                 defined_temps.add(temp_id)
                 temp_types[temp_id] = instr.dst.type
 
-        # 5. Check canonical control flow shapes (§D.3.6)
         self._check_canonical_shapes(func.body)
 
     def _get_type(self, operand: Operand | None, temp_types: dict[str, IRType], var_types: dict[str, IRType]) -> IRType:
@@ -249,8 +223,7 @@ class IRVerifier:
         return IRType.I32
 
     def _check_canonical_shapes(self, body: list[Instruction]) -> None:
-        """Verify that control-flow shapes strictly follow ARCH §D.3.6."""
-        # Find all branch instructions and verify their shape
+
         for i, instr in enumerate(body):
             if instr.opcode == Opcode.BRANCH:
                 t_label = str(instr.operands[1]) if len(instr.operands) > 1 else ""
@@ -265,11 +238,10 @@ class IRVerifier:
                 f_role = f_match.group(1)
 
                 if t_role == "if_then" and f_role == "if_else":
-                    # Canonical if/else: branch c, if_then_rN, if_else_rN
-                    # Must be followed by if_then_rN: ... jump if_end_rN ... if_else_rN: ... if_end_rN:
+
                     self._verify_if_shape(body, i, region)
                 elif t_role == "loop_body" and f_role == "loop_end":
-                    # Canonical loop: branch c, loop_body_rN, loop_end_rN
+
                     self._verify_loop_shape(body, i, region)
                 else:
                     self._sink.error("E5001", f"non-canonical branch shape with targets '{t_label}', '{f_label}'", instr.span)
@@ -279,7 +251,6 @@ class IRVerifier:
         expected_else = f"if_else_{region}"
         expected_end = f"if_end_{region}"
 
-        # Find positions of labels and jumps
         indices: dict[str, int] = {}
         jump_end_idx = -1
         for idx in range(branch_idx + 1, len(body)):
@@ -303,7 +274,6 @@ class IRVerifier:
         else_pos = indices[expected_else]
         end_pos = indices[expected_end]
 
-        # Order must be: then_pos < jump_end_idx < else_pos < end_pos
         if not (branch_idx < then_pos < jump_end_idx < else_pos < end_pos):
             self._sink.error("E5001", f"non-canonical ordering in if-shape for {region}", body[branch_idx].span)
 
@@ -335,6 +305,5 @@ class IRVerifier:
             self._sink.error("E5001", f"incomplete canonical loop-shape for {region}", body[branch_idx].span)
             return
 
-        # Order must be: head < branch < body < jump_head < end
         if not (head_idx < branch_idx < body_idx < jump_head_idx < end_idx):
             self._sink.error("E5001", f"non-canonical ordering in loop-shape for {region}", body[branch_idx].span)

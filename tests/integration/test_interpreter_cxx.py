@@ -1,9 +1,3 @@
-"""Cross-validation tests comparing the reference IR interpreter against g++ execution.
-
-Conforms to AC7.3:
-"On a machine with g++: the interpreter agrees with the C++ output on every non-UB curated case and example (list any disagreement as a bug, none silently skipped)."
-"""
-
 from __future__ import annotations
 
 import json
@@ -18,10 +12,6 @@ from cpp2py.testing.cxx_runner import compile_cxx, probe_cxx_capabilities, run_c
 
 pytestmark = pytest.mark.requires_cxx
 
-# Explicitly documented UB cases:
-# - case_17 & case_18: INT_MIN / -1 and INT_MIN % -1 cause hardware SIGFPE in C++ (CPU trap).
-# - fold_overflow_kept & boundary_int_min: signed arithmetic overflow/underflow under assume_no_overflow
-#   (in C++ this is UB; reference interpreter records UB and continues mathematically).
 KNOWN_UB_CASES = {
     "case_17_int_min_div_neg_one_wrap",
     "case_18_int_min_mod_neg_one_wrap",
@@ -29,14 +19,11 @@ KNOWN_UB_CASES = {
     "phase5_boundary_int_min",
 }
 
-
 def _check_cxx_available() -> bool:
     caps = probe_cxx_capabilities()
     return caps.available
 
-
 def test_interpreter_vs_cxx_curated_cases(tmp_path: Path) -> None:
-    """Verify AC7.3: interpreter agrees with g++ on every non-UB curated case."""
     if not _check_cxx_available():
         pytest.skip("g++ not available")
 
@@ -96,9 +83,7 @@ def test_interpreter_vs_cxx_curated_cases(tmp_path: Path) -> None:
     assert not disagreements, f"Disagreements found in curated cases:\n" + "\n".join(disagreements)
     assert tested_count >= 40, f"Expected at least 40 curated cases tested, got {tested_count}"
 
-
 def test_interpreter_vs_cxx_examples(tmp_path: Path) -> None:
-    """Verify AC7.3: interpreter agrees with g++ on every non-UB positive example."""
     if not _check_cxx_available():
         pytest.skip("g++ not available")
 

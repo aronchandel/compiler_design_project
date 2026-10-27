@@ -1,7 +1,6 @@
 import pytest
 from cpp2py.source import Pos, SourceSpan, SourceFile
 
-
 def test_pos_and_span_creation():
     p1 = Pos(line=1, col=5)
     p2 = Pos(line=1, col=10)
@@ -11,7 +10,6 @@ def test_pos_and_span_creation():
     assert span.end.line == 1
     assert span.end.col == 10
 
-
 def test_source_file_line_text():
     content = "int a = 1;\nint b = 2;\n"
     sf = SourceFile(filename="test.cpp", content=content)
@@ -20,14 +18,12 @@ def test_source_file_line_text():
     assert sf.line_text(3) == ""
     assert sf.line_text(0) == ""
 
-
 def test_source_file_crlf_normalization():
     content = "line1\r\nline2\r\nline3"
     sf = SourceFile(filename="crlf.cpp", content=content)
     assert sf.line_text(1) == "line1"
     assert sf.line_text(2) == "line2"
     assert sf.line_text(3) == "line3"
-
 
 def test_source_file_pos_at():
     content = "abc\ndef"

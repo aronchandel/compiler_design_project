@@ -1,5 +1,3 @@
-"""Regression persistence for failing differential test cases."""
-
 from __future__ import annotations
 
 import hashlib
@@ -14,17 +12,12 @@ from cpp2py.testing.comparator import DiffResult
 from cpp2py.testing.corpus import TestCase, _find_repo_root
 from cpp2py.testing.testgen.programs import GENERATOR_VERSION
 
-
 def get_default_regression_dir() -> Path:
-    """Return default regression directory path (tests/regression)."""
     return _find_repo_root() / "tests" / "regression"
 
-
 def compute_case_sha8(program_source: str, input_text: str) -> str:
-    """Compute 8-character hex SHA-256 for program source and input text."""
     content = program_source + "\n---\n" + input_text
     return hashlib.sha256(content.encode("utf-8")).hexdigest()[:8]
-
 
 def save_regression_case(
     case: TestCase,
@@ -35,19 +28,15 @@ def save_regression_case(
     status: str = "open",
     first_seen: str = "2026-10-25",
 ) -> Path:
-    """Persist a failing case to tests/regression/<sha8>/."""
     base_path = Path(regression_base_dir) if regression_base_dir else get_default_regression_dir()
     sha8 = compute_case_sha8(case.program_source, input_text)
     case_dir = base_path / sha8
     case_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. program.cpp
     (case_dir / "program.cpp").write_text(case.program_source, encoding="utf-8")
 
-    # 2. input.txt
     (case_dir / "input.txt").write_text(input_text, encoding="utf-8")
 
-    # 3. meta.json
     meta_path = case_dir / "meta.json"
     if meta_path.exists():
         try:
@@ -78,7 +67,6 @@ def save_regression_case(
     }
     meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    # 4. snapshots/
     snap_target = case_dir / "snapshots"
     if snapshot_source_dir is not None and snapshot_source_dir.exists():
         if snap_target.exists():
@@ -89,9 +77,7 @@ def save_regression_case(
 
     return case_dir
 
-
 def load_regression_cases(regression_base_dir: str | Path | None = None) -> list[TestCase]:
-    """Load all regression test cases from tests/regression/."""
     base_path = Path(regression_base_dir) if regression_base_dir else get_default_regression_dir()
     if not base_path.exists():
         return []

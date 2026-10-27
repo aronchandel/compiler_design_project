@@ -1,22 +1,11 @@
-"""Interval domain and transfer functions on mathematical integers.
-
-Conforms to ARCH §E.4:
-- Interval(lo, hi) where None represents unbounded on that side.
-- BOTTOM represents unreachable state.
-- Transfer functions: add, sub, mul, neg, div, mod, cast.
-- Join, meet (intersect), and widening to type bounds.
-"""
-
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
 from typing import Self
 
-
 @dataclass(frozen=True, slots=True)
 class Interval:
-    """Interval [lo, hi] over mathematical integers, or BOTTOM."""
     lo: int | None
     hi: int | None
     is_bottom: bool = False
@@ -24,7 +13,7 @@ class Interval:
     def __post_init__(self) -> None:
         if not self.is_bottom and self.lo is not None and self.hi is not None:
             if self.lo > self.hi:
-                # Invariant: empty interval is normalized to BOTTOM
+
                 object.__setattr__(self, "is_bottom", True)
                 object.__setattr__(self, "lo", None)
                 object.__setattr__(self, "hi", None)
@@ -66,7 +55,6 @@ class Interval:
         return True
 
     def join(self, other: Interval) -> Interval:
-        """Interval hull (join / union approximation)."""
         if self.is_bottom:
             return other
         if other.is_bottom:
@@ -76,7 +64,6 @@ class Interval:
         return Interval(new_lo, new_hi)
 
     def intersect(self, other: Interval) -> Interval:
-        """Interval intersection (meet)."""
         if self.is_bottom or other.is_bottom:
             return _BOTTOM
         new_lo = other.lo if self.lo is None else (self.lo if other.lo is None else max(self.lo, other.lo))
@@ -86,13 +73,11 @@ class Interval:
         return Interval(new_lo, new_hi)
 
     def widen_to_type_bounds(self, other: Interval, type_min: int, type_max: int) -> Interval:
-        """Widening at loop heads: bounds that grow jump straight to type bounds."""
         if self.is_bottom:
             return other
         if other.is_bottom:
             return self
 
-        # If a bound grew, jump to type bound
         if other.lo is None or self.lo is None:
             new_lo = None
         elif other.lo < self.lo:
@@ -121,10 +106,8 @@ class Interval:
         hi_str = "+inf" if self.hi is None else str(self.hi)
         return f"[{lo_str}, {hi_str}]"
 
-
 _BOTTOM = Interval(None, None, is_bottom=True)
 BOTTOM = _BOTTOM
-
 
 def add(a: Interval, b: Interval) -> Interval:
     if a.is_bottom or b.is_bottom:
@@ -133,14 +116,12 @@ def add(a: Interval, b: Interval) -> Interval:
     hi = None if (a.hi is None or b.hi is None) else a.hi + b.hi
     return Interval(lo, hi)
 
-
 def sub(a: Interval, b: Interval) -> Interval:
     if a.is_bottom or b.is_bottom:
         return _BOTTOM
     lo = None if (a.lo is None or b.hi is None) else a.lo - b.hi
     hi = None if (a.hi is None or b.lo is None) else a.hi - b.lo
     return Interval(lo, hi)
-
 
 def mul(a: Interval, b: Interval) -> Interval:
     if a.is_bottom or b.is_bottom:
@@ -154,7 +135,6 @@ def mul(a: Interval, b: Interval) -> Interval:
         return Interval(min(corners), max(corners))
     return Interval(None, None)
 
-
 def neg(a: Interval) -> Interval:
     if a.is_bottom:
         return _BOTTOM
@@ -162,20 +142,12 @@ def neg(a: Interval) -> Interval:
     hi = None if a.lo is None else -a.lo
     return Interval(lo, hi)
 
-
 def div(a: Interval, b: Interval) -> Interval:
-    """C++ integer division truncating toward zero.
-    
-    Split divisor at 0 into [b.lo, -1] and [1, b.hi] (dropping 0 as UB).
-    Min/max of truncating quotients of the corners.
-    Empty split yields unconstrained Interval(None, None).
-    """
     if a.is_bottom or b.is_bottom:
         return _BOTTOM
 
     parts: list[tuple[int | None, int | None]] = []
 
-    # Negative divisor region
     if b.lo is None:
         hi_bound = -1 if (b.hi is None or b.hi >= 0) else b.hi
         parts.append((None, hi_bound))
@@ -183,7 +155,6 @@ def div(a: Interval, b: Interval) -> Interval:
         hi_bound = -1 if (b.hi is None or b.hi >= 0) else b.hi
         parts.append((b.lo, hi_bound))
 
-    # Positive divisor region
     if b.hi is None:
         lo_bound = 1 if (b.lo is None or b.lo <= 0) else b.lo
         parts.append((lo_bound, None))
@@ -192,7 +163,7 @@ def div(a: Interval, b: Interval) -> Interval:
         parts.append((lo_bound, b.hi))
 
     if not parts:
-        # b can only be 0: UB / unconstrained
+
         return Interval(None, None)
 
     if a.lo is None or a.hi is None:
@@ -211,19 +182,10 @@ def div(a: Interval, b: Interval) -> Interval:
 
     return Interval(min(quotients), max(quotients))
 
-
 def mod(a: Interval, b: Interval) -> Interval:
-    """C++ integer remainder (result sign follows dividend a).
-    
-    ARCH §E.4:
-    if a.lo >= 0: [0, min(a.hi, max|b| - 1)]
-    if a.hi <= 0: [-min(|a.lo|, max|b| - 1), 0]
-    otherwise: [-min(|a.lo|, max|b| - 1), min(a.hi, max|b| - 1)]
-    """
     if a.is_bottom or b.is_bottom:
         return _BOTTOM
 
-    # Check non-zero divisor values
     if b.lo == 0 and b.hi == 0:
         return Interval(None, None)
 
@@ -249,9 +211,7 @@ def mod(a: Interval, b: Interval) -> Interval:
         hi = min(a.hi, bound) if a.hi is not None else bound
         return Interval(lo, hi)
 
-
 def cast(a: Interval, target_min: int, target_max: int) -> Interval:
-    """Integer cast: exact if range fits target bounds, otherwise target bounds."""
     if a.is_bottom:
         return _BOTTOM
     if a.lo is not None and a.hi is not None and a.lo >= target_min and a.hi <= target_max:

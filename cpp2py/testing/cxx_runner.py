@@ -1,5 +1,3 @@
-"""C++ compilation and execution runner for differential testing."""
-
 from __future__ import annotations
 
 import hashlib
@@ -21,10 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 @dataclass
 class CxxCapabilities:
-    """Probed capabilities of the C++ compiler."""
     compiler: str
     available: bool
     version: str = ""
@@ -44,19 +40,15 @@ class CxxCapabilities:
             "sanitizer_reason": self.sanitizer_reason,
         }
 
-
 _CAPABILITIES_CACHE: dict[str, CxxCapabilities] = {}
 
-
 def probe_cxx_capabilities(compiler: str | None = None, force_refresh: bool = False) -> CxxCapabilities:
-    """Probe the compiler capabilities (version, C++17 support, sanitizer availability)."""
     if compiler is None:
         compiler = os.environ.get("CXX", "g++")
 
     if not force_refresh and compiler in _CAPABILITIES_CACHE:
         return _CAPABILITIES_CACHE[compiler]
 
-    # Test 1: Can we run the compiler binary?
     try:
         proc = subprocess.run(
             [compiler, "--version"],
@@ -82,7 +74,6 @@ def probe_cxx_capabilities(compiler: str | None = None, force_refresh: bool = Fa
         _CAPABILITIES_CACHE[compiler] = caps
         return caps
 
-    # Test 2: Can we compile a C++17 minimal program?
     cxx17_supported = False
     cxx17_reason = None
     sanitizer_available = False
@@ -107,7 +98,6 @@ def probe_cxx_capabilities(compiler: str | None = None, force_refresh: bool = Fa
         except (OSError, subprocess.SubprocessError) as exc:
             cxx17_reason = f"C++17 compilation execution error: {exc}"
 
-        # Test 3: Can we compile with UBSan?
         if cxx17_supported:
             san_exe = Path(td) / ("probe_san.exe" if sys.platform == "win32" else "probe_san")
             try:
@@ -145,10 +135,8 @@ def probe_cxx_capabilities(compiler: str | None = None, force_refresh: bool = Fa
     _CAPABILITIES_CACHE[compiler] = caps
     return caps
 
-
 @dataclass
 class ExecutionResult:
-    """Result of running a C++ or Python process."""
     stdout: str
     stderr: str
     exit_code: int
@@ -164,18 +152,14 @@ class ExecutionResult:
             "output_capped": self.output_capped,
         }
 
-
 @dataclass
 class BuildResult:
-    """Result of compiling a C++ program."""
     success: bool
     binary_path: Path | None = None
     compile_error: str | None = None
     flags: list[str] = field(default_factory=list)
 
-
 class CxxBuildCache:
-    """Build cache keyed by SHA-256 of source code and compiler flags."""
 
     def __init__(self, cache_dir: str | Path | None = None) -> None:
         if cache_dir is None:
@@ -202,7 +186,6 @@ class CxxBuildCache:
             shutil.copy2(binary_path, target)
         return target
 
-
 def compile_cxx(
     source_code: str,
     overflow_policy: str = "assume_no_overflow",
@@ -211,7 +194,6 @@ def compile_cxx(
     compiler: str | None = None,
     build_dir: Path | None = None,
 ) -> BuildResult:
-    """Compile C++ source code with g++ -std=c++17 -O0 and policy flags."""
     if compiler is None:
         compiler = os.environ.get("CXX", "g++")
 
@@ -294,7 +276,6 @@ def compile_cxx(
 
     return BuildResult(success=True, binary_path=bin_file, flags=flags)
 
-
 def compile_cxx_ubsan(
     source_code: str,
     overflow_policy: str = "assume_no_overflow",
@@ -302,7 +283,6 @@ def compile_cxx_ubsan(
     compiler: str | None = None,
     build_dir: Path | None = None,
 ) -> BuildResult:
-    """Compile C++ source code with undefined behavior sanitizers."""
     san_flags = [
         "-fsanitize=signed-integer-overflow,integer-divide-by-zero",
         "-fno-sanitize-recover=all",
@@ -316,15 +296,12 @@ def compile_cxx_ubsan(
         build_dir=build_dir,
     )
 
-
 def _get_minimal_env() -> dict[str, str]:
-    """Minimal environment for subprocess isolation."""
     env: dict[str, str] = {}
     for var in ("SYSTEMROOT", "PATH", "TEMP", "TMP"):
         if var in os.environ:
             env[var] = os.environ[var]
     return env
-
 
 def run_cxx(
     binary_path: str | Path,
@@ -333,7 +310,6 @@ def run_cxx(
     output_cap: int = 1048576,
     cwd: str | Path | None = None,
 ) -> ExecutionResult:
-    """Run a compiled C++ binary under isolated conditions with stdin and resource limits."""
     temp_dir_obj: tempfile.TemporaryDirectory | None = None
     if cwd is None:
         temp_dir_obj = tempfile.TemporaryDirectory()

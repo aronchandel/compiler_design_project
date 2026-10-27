@@ -1,16 +1,11 @@
-"""AST pretty-printer for --dump-ast."""
-
 from __future__ import annotations
 
 from cpp2py.frontend import ast_nodes as ast
 
-
 def dump(program: ast.Program) -> str:
-    """Return a human-readable tree dump of the AST."""
     lines: list[str] = []
     _dump_program(program, lines, "")
     return '\n'.join(lines)
-
 
 def _dump_program(prog: ast.Program, lines: list[str], prefix: str) -> None:
     lines.append(f"Program uses_std={prog.uses_std}")
@@ -20,11 +15,9 @@ def _dump_program(prog: ast.Program, lines: list[str], prefix: str) -> None:
         child_prefix = prefix + ("   " if is_last else "\u2502  ")
         _dump_function(func, lines, prefix + connector, child_prefix)
 
-
 def _dump_function(func: ast.FunctionDef, lines: list[str], prefix: str, child_prefix: str) -> None:
     lines.append(f"{prefix}FunctionDef {func.name} -> {func.return_type.name}")
     _dump_block(func.body, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
-
 
 def _dump_block(block: ast.Block, lines: list[str], prefix: str, child_prefix: str) -> None:
     lines.append(f"{prefix}Block")
@@ -33,7 +26,6 @@ def _dump_block(block: ast.Block, lines: list[str], prefix: str, child_prefix: s
         connector = "\u2514\u2500 " if is_last else "\u251c\u2500 "
         next_prefix = child_prefix + ("   " if is_last else "\u2502  ")
         _dump_stmt(stmt, lines, child_prefix + connector, next_prefix)
-
 
 def _dump_stmt(stmt: ast.Stmt, lines: list[str], prefix: str, child_prefix: str) -> None:
     if isinstance(stmt, ast.Block):
@@ -116,12 +108,10 @@ def _dump_stmt(stmt: ast.Stmt, lines: list[str], prefix: str, child_prefix: str)
         else:
             lines.append(f"{prefix}ReturnStmt")
 
-
 def _dump_condition(cond: ast.Condition, lines: list[str], prefix: str, child_prefix: str) -> None:
     lines.append(f"{prefix}Condition {cond.op}")
     _dump_expr(cond.left, lines, child_prefix + "\u251c\u2500 ", child_prefix + "\u2502  ")
     _dump_expr(cond.right, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
-
 
 def _dump_expr(expr: ast.Expr | ast.InitializerList, lines: list[str], prefix: str, child_prefix: str) -> None:
     if isinstance(expr, ast.IntLiteral):

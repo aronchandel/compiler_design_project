@@ -7,7 +7,7 @@ int main() {
     if (flag > 0) {
         x = 10;
     } else {
-        // x is not initialized on this path
+
     }
     cout << x << endl;
     return 0;

@@ -1,5 +1,3 @@
-"""Unit tests for intra-procedural interval range analysis."""
-
 import pytest
 
 from cpp2py.source import SourceFile
@@ -13,7 +11,6 @@ from cpp2py.analysis.intervals import Interval
 from cpp2py.analysis.range_analysis import analyze_ranges
 from cpp2py.analysis.risk import Risk
 from cpp2py.ir.model import Opcode
-
 
 def test_loop_counter_stays_non_negative():
     src = SourceFile("test.cpp", """
@@ -38,11 +35,10 @@ def test_loop_counter_stays_non_negative():
     div_ops = [op for op in ranges.by_op.values() if op.opcode == Opcode.DIV]
     assert len(div_ops) == 1
     d_op = div_ops[0]
-    # In range_guided, loop counter i is >= 0, divisor 2 is >= 1 -> NO risks
+
     assert d_op.operand_ranges[0].lo is not None and d_op.operand_ranges[0].lo >= 0
     assert d_op.operand_ranges[1].lo == 2 and d_op.operand_ranges[1].hi == 2
     assert Risk.DIV_TRUNC_DIFFERS not in d_op.risks
-
 
 def test_read_without_assumed_range_needs_helper():
     src = SourceFile("test.cpp", """
@@ -67,9 +63,8 @@ def test_read_without_assumed_range_needs_helper():
     div_ops = [op for op in ranges.by_op.values() if op.opcode == Opcode.DIV]
     assert len(div_ops) == 1
     d_op = div_ops[0]
-    # x has full type range -> DIV_TRUNC_DIFFERS
-    assert Risk.DIV_TRUNC_DIFFERS in d_op.risks
 
+    assert Risk.DIV_TRUNC_DIFFERS in d_op.risks
 
 def test_read_with_assumed_range():
     src = SourceFile("test.cpp", """
@@ -97,7 +92,6 @@ def test_read_with_assumed_range():
     assert Risk.DIV_TRUNC_DIFFERS not in d_op.risks
     assert ("main.x", Interval(0, 1000)) in ranges.assumptions
 
-
 def test_branch_refinement_positive():
     src = SourceFile("test.cpp", """
     #include <iostream>
@@ -123,10 +117,9 @@ def test_branch_refinement_positive():
     div_ops = [op for op in ranges.by_op.values() if op.opcode == Opcode.DIV]
     assert len(div_ops) == 1
     d_op = div_ops[0]
-    # Inside x >= 0 branch, x range has lo >= 0 -> no risk
+
     assert d_op.operand_ranges[0].lo is not None and d_op.operand_ranges[0].lo >= 0
     assert Risk.DIV_TRUNC_DIFFERS not in d_op.risks
-
 
 def test_widening_terminates():
     src = SourceFile("test.cpp", """

@@ -1,5 +1,3 @@
-"""Fidelity reporting package for cpp2py."""
-
 from cpp2py.reporting.fidelity import (
     FidelityReport,
     build_translation_fidelity_report,

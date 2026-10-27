@@ -5,7 +5,6 @@ import pytest
 from cpp2py.compiler import compile_source
 from cpp2py.config import CompilerConfig, CompatMode
 
-
 def test_phase1_examples(tmp_path, repo_root):
     examples_dir = repo_root / "examples" / "phase1"
     expected_files = list(examples_dir.glob("*.expected"))
@@ -23,11 +22,9 @@ def test_phase1_examples(tmp_path, repo_root):
         py_file = tmp_path / f"{stem}.py"
         py_file.write_text(res.python_source, encoding="utf-8")
 
-        # Prepare stdin if .in exists
         in_file = examples_dir / f"{stem}.in"
         stdin_data = in_file.read_bytes() if in_file.exists() else b""
 
-        # Run generated Python file
         proc = subprocess.run(
             [sys.executable, str(py_file)],
             input=stdin_data,
@@ -44,26 +41,23 @@ def test_phase1_examples(tmp_path, repo_root):
             f"Got:      {actual_normalized!r}"
         )
 
-
 def test_neg_division_warning_example(tmp_path, repo_root):
     cpp_file = repo_root / "examples" / "phase1" / "neg_division_warning.cpp"
     assert cpp_file.exists()
 
     cpp_content = cpp_file.read_text(encoding="utf-8")
-    # In naive mode, emits W6001
+
     res_naive = compile_source(cpp_content, str(cpp_file), CompilerConfig(compat_mode=CompatMode.NAIVE))
     assert res_naive.success
     assert any(w.code == "W6001" for w in res_naive.diagnostics)
     assert "# WARNING W6001" in res_naive.python_source
 
-    # In default range_guided mode, negative dividend gets helper
     res_rg = compile_source(cpp_content, str(cpp_file), CompilerConfig())
     assert res_rg.success
     assert "_cpp_div" in res_rg.python_source
 
-
 def test_ac1_10_precedence_execution(tmp_path):
-    # AC1.10: 20-5-3 -> 12, 20-(5-3) -> 18, -(17+3) -> -20, 100/(5/2) -> 50 when executed
+
     cxx_code = """#include <iostream>
 using namespace std;
 int main() {

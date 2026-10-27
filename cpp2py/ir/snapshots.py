@@ -1,8 +1,3 @@
-"""Snapshot store for saving deterministic IR and compilation artifacts.
-
-Conforms to ARCH §G.3.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -28,9 +23,7 @@ if TYPE_CHECKING:
     from cpp2py.config import CompilerConfig
     from cpp2py.diagnostics import Diagnostic
 
-
 class SnapshotStore:
-    """Manages saving intermediate compiler artifacts and snapshots."""
 
     def __init__(self, out_dir: str | Path) -> None:
         self.out_dir = Path(out_dir)
@@ -38,7 +31,6 @@ class SnapshotStore:
         self._stages: list[dict[str, Any]] = []
 
     def save_initial_ir(self, module: IRModule) -> None:
-        """Save the 00_ir_initial snapshot."""
         self.out_dir.mkdir(parents=True, exist_ok=True)
         stage_name = f"{self._stage_idx:02d}_ir_initial"
         self._write_ir_stage(stage_name, module)
@@ -46,7 +38,6 @@ class SnapshotStore:
         self._stage_idx += 1
 
     def save_pass_snapshot(self, pass_name: str, module: IRModule) -> None:
-        """Save a snapshot after a pass that modified the IR."""
         self.out_dir.mkdir(parents=True, exist_ok=True)
         stage_name = f"{self._stage_idx:02d}_after_{pass_name}"
         self._write_ir_stage(stage_name, module)
@@ -54,7 +45,6 @@ class SnapshotStore:
         self._stage_idx += 1
 
     def save_final_ir(self, module: IRModule) -> None:
-        """Save the NN_ir_final snapshot."""
         self.out_dir.mkdir(parents=True, exist_ok=True)
         stage_name = f"{self._stage_idx:02d}_ir_final"
         self._write_ir_stage(stage_name, module)
@@ -62,7 +52,6 @@ class SnapshotStore:
         self._stage_idx += 1
 
     def save_ranges_and_plan(self, ranges: Any, plan: Any) -> None:
-        """Save ranges.json and plan.json."""
         self.out_dir.mkdir(parents=True, exist_ok=True)
         ranges_file = self.out_dir / "ranges.json"
         ranges_file.write_text(json.dumps(ranges.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -76,7 +65,6 @@ class SnapshotStore:
         config: CompilerConfig,
         diagnostics: tuple[Diagnostic, ...] = (),
     ) -> None:
-        """Save the generated Python output and manifest.json."""
         self.out_dir.mkdir(parents=True, exist_ok=True)
         output_file = self.out_dir / "output.py"
         output_file.write_text(python_source, encoding="utf-8")
@@ -115,7 +103,6 @@ class SnapshotStore:
         config: CompilerConfig,
         diagnostics: tuple[Diagnostic, ...] = (),
     ) -> None:
-        """Legacy helper for Phase 2 snapshot tests."""
         self.save_initial_ir(initial_ir)
         self.save_final_ir(final_ir)
         self.save_output_and_manifest(source_text, python_source, config, diagnostics)
@@ -128,7 +115,6 @@ class SnapshotStore:
         json_data = _serialize_module(module)
         json_text = json.dumps(json_data, indent=2, sort_keys=True) + "\n"
         json_file.write_text(json_text, encoding="utf-8")
-
 
 def _serialize_module(module: IRModule) -> dict[str, Any]:
     return module_to_json(module)

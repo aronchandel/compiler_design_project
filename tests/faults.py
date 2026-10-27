@@ -1,14 +1,3 @@
-"""Test-only fault injection context managers for Phase 7 failure localisation verification.
-
-Conforms to Phase 7 specification: lives in tests/ only, never in cpp2py/.
-Implements faults F1 through F5:
-  F1: constant_fold uses floor division (stage: after_constant_fold, suspect: div)
-  F2: range transfer for mod ignores dividend sign (stage: codegen_or_plan, suspect: mod)
-  F3: generator ignores plan for % (stage: codegen_or_plan, suspect: mod)
-  F4: builder swaps operands of sub (stage: ir_generation, suspect: sub)
-  F5: constant_fold folds mul as add (stage: after_constant_fold, suspect: mul)
-"""
-
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -24,10 +13,8 @@ from cpp2py.compat.plan import CompatAction, CompatDecision
 from cpp2py.frontend import ast_nodes as ast
 from cpp2py.ir.model import Const, Instruction, IRType, Opcode, TempRef
 
-
 @contextmanager
 def patch_fault_f1_floor_div() -> Iterator[None]:
-    """F1: constant_fold uses floor division (a // b) instead of C++ truncating division."""
     orig_run = fold_mod.ConstantFoldPass.run
 
     def patched_run(self: Any, func: Any, rw: Any, ctx: Any) -> None:
@@ -56,10 +43,8 @@ def patch_fault_f1_floor_div() -> Iterator[None]:
     finally:
         fold_mod.ConstantFoldPass.run = orig_run
 
-
 @contextmanager
 def patch_fault_f2_mod_plan_native() -> Iterator[None]:
-    """F2: range transfer for mod causes plan to wrongly pick NATIVE while having risk."""
     orig_decide = policy_mod.decide
 
     def faulty_decide(
@@ -72,7 +57,7 @@ def patch_fault_f2_mod_plan_native() -> Iterator[None]:
     ) -> CompatDecision:
         dec = orig_decide(instr, risks, config, operand_ranges, result_range, sink)
         if instr.opcode == Opcode.MOD:
-            # Fault F2: wrongly pick NATIVE while retaining non-NONE risk
+
             risks_set = set(dec.risks)
             risks_set.add(Risk.MOD_SIGN_DIFFERS)
             return CompatDecision(
@@ -95,15 +80,13 @@ def patch_fault_f2_mod_plan_native() -> Iterator[None]:
     finally:
         policy_mod.decide = orig_decide
 
-
 @contextmanager
 def patch_fault_f3_generator_mod() -> Iterator[None]:
-    """F3: generator ignores plan for % and always emits native Python %."""
     orig_build = pygen_mod.IRToPythonGenerator._build_ast_for_instr
 
     def faulty_build(self: Any, instr: Any) -> Any:
         if instr.opcode == Opcode.MOD:
-            # Emit native % regardless of plan
+
             dummy_span = instr.span
             left = self._build_ast_expr(instr.operands[0])
             right = self._build_ast_expr(instr.operands[1])
@@ -116,10 +99,8 @@ def patch_fault_f3_generator_mod() -> Iterator[None]:
     finally:
         pygen_mod.IRToPythonGenerator._build_ast_for_instr = orig_build
 
-
 @contextmanager
 def patch_fault_f4_builder_swap_sub() -> Iterator[None]:
-    """F4: builder swaps operands of sub (emits right, left instead of left, right)."""
     orig_lower_expr = builder_mod.IRBuilder._lower_expr
 
     def faulty_lower_expr(self: Any, expr: Any) -> Any:
@@ -133,7 +114,7 @@ def patch_fault_f4_builder_swap_sub() -> Iterator[None]:
             right_val = self._emit_cast_if_needed(right_val, common_type, expr.right.span)
 
             temp = TempRef(self._allocator.next_temp_id(), common_type)
-            # Fault F4: swapped operands (right_val, left_val)
+
             self._instructions.append(
                 Instruction(
                     op_id=self._allocator.next_op_id(),
@@ -152,10 +133,8 @@ def patch_fault_f4_builder_swap_sub() -> Iterator[None]:
     finally:
         builder_mod.IRBuilder._lower_expr = orig_lower_expr
 
-
 @contextmanager
 def patch_fault_f5_fold_mul_as_add() -> Iterator[None]:
-    """F5: constant_fold folds mul as add."""
     orig_run = fold_mod.ConstantFoldPass.run
 
     def patched_run(self: Any, func: Any, rw: Any, ctx: Any) -> None:
@@ -165,7 +144,7 @@ def patch_fault_f5_fold_mul_as_add() -> Iterator[None]:
                 if len(instr.operands) == 2 and isinstance(instr.operands[0], Const) and isinstance(instr.operands[1], Const):
                     a = instr.operands[0].value
                     b = instr.operands[1].value
-                    # Fault F5: compute a + b instead of a * b
+
                     res = a + b
                     res_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
                     new_instr = Instruction(

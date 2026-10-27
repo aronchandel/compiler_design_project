@@ -1,5 +1,3 @@
-"""Unit tests for dead temporary elimination pass (cpp2py/transforms/dead_temps.py)."""
-
 import pytest
 from cpp2py.config import CompilerConfig
 from cpp2py.diagnostics import DiagnosticSink
@@ -17,7 +15,6 @@ from cpp2py.transforms.dead_temps import DeadTempsPass
 from cpp2py.transforms.manager import IRRewriter, PassContext, _create_allocator_for_module
 from cpp2py.transforms.log import TransformLog
 
-
 def run_dead_temps(func: IRFunction) -> tuple[IRFunction, TransformLog]:
     sink = DiagnosticSink()
     log = TransformLog()
@@ -28,7 +25,6 @@ def run_dead_temps(func: IRFunction) -> tuple[IRFunction, TransformLog]:
     ctx = PassContext(config=CompilerConfig(), sink=sink)
     DeadTempsPass().run(func, rw, ctx)
     return func, log
-
 
 @pytest.mark.parametrize(
     "op",
@@ -64,7 +60,6 @@ def test_dead_temp_deleted_for_allowed_opcodes(op):
     assert log.records[0].after is None
     assert "t0 has no remaining uses" in log.records[0].reason
 
-
 @pytest.mark.parametrize(
     "op",
     [
@@ -92,9 +87,8 @@ def test_dead_temp_never_deleted_for_disallowed_opcodes(op):
     assert len(func.body) == 1
     assert len(log.records) == 0
 
-
 def test_dead_temps_never_deletes_variable_writes():
-    # Variable writes must NEVER be deleted even with 0 subsequent uses
+
     func = IRFunction(
         name="test",
         params=(),
@@ -112,9 +106,8 @@ def test_dead_temps_never_deletes_variable_writes():
     assert len(func.body) == 1
     assert len(log.records) == 0
 
-
 def test_temp_with_use_not_deleted():
-    # t0 is used by op_2 -> NOT deleted
+
     func = IRFunction(
         name="test",
         params=(),
@@ -138,7 +131,6 @@ def test_temp_with_use_not_deleted():
     assert len(func.body) == 2
     assert len(log.records) == 0
 
-
 def test_dead_temps_idempotent():
     func = IRFunction(
         name="test",
@@ -161,6 +153,6 @@ def test_dead_temps_idempotent():
     )
     run_dead_temps(func)
     assert len(func.body) == 0
-    # Second run does nothing
+
     _, log2 = run_dead_temps(func)
     assert len(log2.records) == 0

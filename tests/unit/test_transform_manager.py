@@ -1,5 +1,3 @@
-"""Unit tests for transformation manager and IRRewriter (cpp2py/transforms/manager.py)."""
-
 import pytest
 from cpp2py.config import CompilerConfig
 from cpp2py.diagnostics import DiagnosticSink
@@ -25,7 +23,6 @@ from cpp2py.transforms.manager import (
 from cpp2py.transforms.constant_fold import ConstantFoldPass
 from cpp2py.transforms.dead_temps import DeadTempsPass
 
-
 def test_rewriter_replace_preserves_id_and_span():
     span = SourceSpan("test.cpp", Pos(5, 5, 50), Pos(5, 10, 55))
     instr = Instruction("op_42", Opcode.MUL, TempRef("t0"), (Const(2), Const(3)), span=span)
@@ -46,7 +43,6 @@ def test_rewriter_replace_preserves_id_and_span():
     assert log.records[0].kind == "REPLACE"
     assert log.records[0].op_id == "op_42"
 
-
 def test_rewriter_delete_retires_id_and_leaves_tombstone():
     span = SourceSpan("test.cpp", Pos(5, 5, 50), Pos(5, 10, 55))
     instr = Instruction("op_10", Opcode.ASSIGN, TempRef("t0"), (Const(6),), span=span)
@@ -65,7 +61,6 @@ def test_rewriter_delete_retires_id_and_leaves_tombstone():
     assert log.records[0].op_id == "op_10"
     assert log.records[0].after is None
     assert log.records[0].span == span
-
 
 def test_rewriter_insert_allocates_fresh_id_and_inherits_span():
     span = SourceSpan("test.cpp", Pos(5, 5, 50), Pos(5, 10, 55))
@@ -89,9 +84,8 @@ def test_rewriter_insert_allocates_fresh_id_and_inherits_span():
     assert log.records[0].kind == "INSERT"
     assert log.records[0].op_id == "op_100"
 
-
 def test_run_pipeline_idempotent():
-    # Running constant_fold + dead_temps twice changes nothing on the second run
+
     module = IRModule(
         functions=[
             IRFunction(
@@ -117,20 +111,18 @@ def test_run_pipeline_idempotent():
     recs_count_run1 = len(log1.records)
     assert recs_count_run1 > 0
 
-    # Second run on the already folded module
     sink2 = DiagnosticSink()
     log2 = run_pipeline(module, passes, config, sink2)
     assert not sink2.has_errors()
     assert len(log2.records) == 0
 
-
 def test_run_pipeline_catches_invalid_pass_with_e5001():
-    # AC4.6: A deliberately invalid pass is rejected with E5001 naming the pass
+
     class BrokenPass:
         name = "bad_pass_broken_branch"
 
         def run(self, func: IRFunction, rw: IRRewriter, ctx: PassContext) -> None:
-            # Introduce a branch pointing to a non-existent label, violating invariant (5)
+
             rw.current_pass = self.name
             broken_branch = Instruction(
                 op_id="op_broken",
@@ -159,9 +151,8 @@ def test_run_pipeline_catches_invalid_pass_with_e5001():
     assert len(e5001) > 0
     assert any("bad_pass_broken_branch" in e.message for e in e5001)
 
-
 def test_run_pipeline_exceeding_iteration_limit_emits_warning():
-    # Dummy pass that always alternates a value, causing non-convergence
+
     class AlternatingPass:
         name = "alternating_pass"
 

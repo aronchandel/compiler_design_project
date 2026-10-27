@@ -1,5 +1,3 @@
-"""Unit tests for cpp2py/codegen/python_gen.py."""
-
 import pytest
 from cpp2py.compiler import compile_source
 from cpp2py.config import CompilerConfig, CompatMode
@@ -16,7 +14,6 @@ from cpp2py.ir.model import (
 from cpp2py.codegen.python_gen import generate
 from cpp2py.diagnostics import DiagnosticSink
 
-
 def test_python_gen_layout_and_header():
     res = compile_source("int main() { return 0; }", "test.cpp")
     assert res.success
@@ -26,30 +23,26 @@ def test_python_gen_layout_and_header():
     assert 'if __name__ == "__main__":' in res.python_source
     assert "    sys.exit(main())" in res.python_source
 
-
 def test_python_gen_input_prelude_present_when_reading():
     res = compile_source("using namespace std; int main() { int x; cin >> x; return 0; }", "test.cpp")
     assert res.success
     assert "_tokens = iter(sys.stdin.read().split())" in res.python_source
     assert "x = int(next(_tokens))" in res.python_source
 
-
 def test_python_gen_input_prelude_absent_when_no_reading():
     res = compile_source("int main() { int x = 1; return 0; }", "test.cpp")
     assert res.success
     assert "_tokens" not in res.python_source
 
-
 def test_python_gen_inline_single_use_temp():
-    # int a = 6 * 7; inlines t0 into a = 6 * 7 when not constant-folded
+
     res = compile_source("int main() { int a = 6 * 7; return 0; }", "test.cpp", CompilerConfig(fold_constants=False))
     assert res.success
     assert "    a = 6 * 7" in res.python_source
     assert "t0 =" not in res.python_source
 
-
 def test_python_gen_do_not_inline_across_variable_write():
-    # If an intervening instruction writes to a variable, temp must not be inlined across it
+
     func = IRFunction(
         name="main",
         params=(),
@@ -59,11 +52,11 @@ def test_python_gen_do_not_inline_across_variable_write():
             Instruction("op_1", Opcode.DECLARE, dst=VarRef(2, "y")),
             Instruction("op_2", Opcode.DECLARE, dst=VarRef(3, "z")),
             Instruction("op_3", Opcode.ASSIGN, dst=VarRef(1, "x"), operands=(Const(5),)),
-            # t0 = x + 1
+
             Instruction("op_4", Opcode.ADD, dst=TempRef("t0"), operands=(VarRef(1, "x"), Const(1))),
-            # Intervening write: x = 10
+
             Instruction("op_5", Opcode.ASSIGN, dst=VarRef(1, "x"), operands=(Const(10),)),
-            # Use of t0: z = t0 + 2
+
             Instruction("op_6", Opcode.ADD, dst=TempRef("t1"), operands=(TempRef("t0"), Const(2))),
             Instruction("op_7", Opcode.ASSIGN, dst=VarRef(3, "z"), operands=(TempRef("t1"),)),
             Instruction("op_8", Opcode.RETURN, operands=(Const(0),)),
@@ -72,13 +65,12 @@ def test_python_gen_do_not_inline_across_variable_write():
     mod = IRModule([func], "test.cpp")
     sink = DiagnosticSink()
     py_code = generate(mod, sink, CompilerConfig())
-    # t0 should NOT be inlined into z
+
     assert "t0 = x + 1" in py_code
     assert "x = 10" in py_code
 
-
 def test_python_gen_do_not_inline_multi_use_temp():
-    # A temp used twice cannot be inlined
+
     func = IRFunction(
         name="main",
         params=(),
@@ -99,7 +91,6 @@ def test_python_gen_do_not_inline_multi_use_temp():
     assert "a = t0" in py_code
     assert "b = t0" in py_code
 
-
 def test_python_gen_w6001_warning_on_div_and_mod():
     res = compile_source(
         "using namespace std; int main() { int a = 10; cout << a / 2 << a % 3; return 0; }",
@@ -110,13 +101,11 @@ def test_python_gen_w6001_warning_on_div_and_mod():
     assert any(w.code == "W6001" for w in res.diagnostics)
     assert "# WARNING W6001" in res.python_source
 
-
 def test_python_gen_name_mangling():
     res = compile_source("int main() { int lambda = 1; int print = 2; return 0; }", "test.cpp")
     assert res.success
     assert "lambda_ = 1" in res.python_source
     assert "print_ = 2" in res.python_source
-
 
 def test_python_gen_compile_success():
     res = compile_source("int main() { int x = 42; return 0; }", "test.cpp")

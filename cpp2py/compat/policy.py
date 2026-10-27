@@ -1,5 +1,3 @@
-"""Decision policy rules constructing a CompatPlan per ARCH §E.5."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -15,7 +13,6 @@ if TYPE_CHECKING:
     from cpp2py.diagnostics import DiagnosticSink
     from cpp2py.analysis.range_analysis import RangeResult
 
-
 def decide(
     instr: Instruction,
     risks: set[Risk] | frozenset[Risk],
@@ -24,7 +21,6 @@ def decide(
     result_range: Interval | None = None,
     sink: DiagnosticSink | None = None,
 ) -> CompatDecision:
-    """Decide compatibility action, helper, reason, and warnings for an instruction per ARCH §E.5."""
     mode = config.compat_mode
     target = config.target
     policy = target.overflow_policy
@@ -42,7 +38,6 @@ def decide(
         if sink is not None:
             sink.warning(code, msg, instr.span)
 
-    # ---------- 1. NAIVE MODE ----------
     if mode == CompatMode.NAIVE:
         action = CompatAction.NATIVE
         helper = None
@@ -54,7 +49,6 @@ def decide(
                 f"'{op_sym}' is emitted as Python floor division; the result differs from C++ when an operand is negative",
             )
 
-    # ---------- 2. ALWAYS MODE ----------
     elif mode == CompatMode.ALWAYS:
         if opcode == Opcode.DIV:
             action = CompatAction.HELPER
@@ -89,7 +83,6 @@ def decide(
                 helper = None
                 reason = "always mode: widening cast is native"
 
-    # ---------- 3. RANGE_GUIDED MODE ----------
     elif mode == CompatMode.RANGE_GUIDED:
         if opcode == Opcode.DIV:
             if Risk.DIV_BY_ZERO_CERTAIN in risks:
@@ -182,7 +175,6 @@ def decide(
         warning=warning_code,
     )
 
-
 def decide_compat(
     instr: Instruction,
     left_range: Interval | None,
@@ -190,7 +182,6 @@ def decide_compat(
     config: CompilerConfig,
     sink: DiagnosticSink | None = None,
 ) -> CompatDecision:
-    """Helper for testing and single-op decision making."""
     target = config.target
     op_ranges = tuple(r for r in [left_range, right_range] if r is not None)
     res_range = op_ranges[0] if op_ranges else Interval(0, 0)
@@ -213,14 +204,12 @@ def decide_compat(
     risks = classify_risks(instr, op_ranges, res_range, target)
     return decide(instr, risks, config, op_ranges, res_range, sink)
 
-
 def build_plan(
     module: IRModule,
     range_result: RangeResult,
     config: CompilerConfig,
     sink: DiagnosticSink,
 ) -> CompatPlan:
-    """Build a CompatPlan for the module by consulting range analysis results and active policy."""
     mode = config.compat_mode
     target = config.target
     policy = target.overflow_policy
@@ -228,7 +217,6 @@ def build_plan(
     decisions: dict[str, CompatDecision] = {}
     counts: dict[str, int] = {"native": 0, "helper": 0}
 
-    # Warn if assumptions influenced decisions
     if range_result.assumptions:
         sink.warning("W6005", "an assumed input range influenced a decision", None)
 
@@ -236,7 +224,6 @@ def build_plan(
         for instr in func.body:
             opcode = instr.opcode
 
-            # Only arithmetic, div, mod, neg, and cast are candidate operations
             if opcode not in (Opcode.DIV, Opcode.MOD, Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.NEG, Opcode.CAST):
                 continue
 

@@ -1,8 +1,3 @@
-"""Rendering of Fidelity Reports to JSON and Markdown.
-
-Conforms to ARCH §I.4 and AC7.5, AC7.6.
-"""
-
 from __future__ import annotations
 
 import json
@@ -12,9 +7,7 @@ from typing import Any
 from cpp2py.localisation import DISCLAIMER
 from cpp2py.reporting.fidelity import FidelityReport
 
-
 def render_fidelity_json(report: FidelityReport, out_dir: str | Path) -> Path:
-    """Render fidelity report to fidelity.json."""
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     json_file = out_path / "fidelity.json"
@@ -22,9 +15,7 @@ def render_fidelity_json(report: FidelityReport, out_dir: str | Path) -> Path:
     json_file.write_text(content, encoding="utf-8")
     return json_file
 
-
 def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
-    """Render fidelity report to fidelity.md."""
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     md_file = out_path / "fidelity.md"
@@ -54,7 +45,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
         lines.append("*(No metadata provided)*")
     lines.append("")
 
-    # Translation Summary
     lines.append("## Translation Summary")
     lines.append("")
     summary = report.translation_summary
@@ -72,7 +62,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
         lines.append("*(No translation summary available)*")
     lines.append("")
 
-    # Compatibility Helpers
     lines.append("## Compatibility Helpers")
     lines.append("")
     helpers = report.compatibility_helpers
@@ -94,7 +83,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
         lines.append("*(No compatibility helpers section)*")
         lines.append("")
 
-    # Reported Risks
     lines.append("## Reported-not-handled Risks")
     lines.append("")
     risks = report.reported_risks
@@ -115,7 +103,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
         lines.append("- No unhandled risks identified.")
     lines.append("")
 
-    # Assumptions
     lines.append("## Assumptions")
     lines.append("")
     if report.assumptions:
@@ -125,7 +112,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
         lines.append("- No user-specified range assumptions active.")
     lines.append("")
 
-    # Unsupported Constructs
     lines.append("## Unsupported Constructs")
     lines.append("")
     unsup = report.unsupported_constructs
@@ -139,14 +125,12 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
         lines.append("- None (program is fully within supported subset).")
     lines.append("")
 
-    # Potential Semantic Differences
     lines.append("## Potential Semantic Differences")
     lines.append("")
     for diff in report.potential_semantic_differences:
         lines.append(f"- {diff}")
     lines.append("")
 
-    # Test Results (if present)
     if report.test_results:
         lines.append("## Test Results")
         lines.append("")
@@ -169,7 +153,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
             lines.append(f"- `{k}`: {v}")
         lines.append("")
 
-    # Mismatches & Suspects
     if report.mismatches:
         lines.append("## Mismatches and Localisation Suspects")
         lines.append("")
@@ -193,7 +176,6 @@ def render_fidelity_md(report: FidelityReport, out_dir: str | Path) -> Path:
                             lines.append(f"      - {ev}")
             lines.append("")
 
-    # Limitations
     lines.append("## Limitations")
     lines.append("")
     lines.append(report.limitations)

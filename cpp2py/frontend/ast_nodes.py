@@ -1,5 +1,3 @@
-"""Immutable AST node dataclasses for the cpp2py compiler (Phase 1, extended for Arrays, Pointers, and <climits>)."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,11 +5,7 @@ from typing import Union
 
 from cpp2py.source import SourceSpan
 
-
-# ---------- base ----------
-
 _next_node_id = 0
-
 
 def _alloc_node_id() -> int:
     global _next_node_id
@@ -19,18 +13,13 @@ def _alloc_node_id() -> int:
     _next_node_id += 1
     return nid
 
-
 def reset_node_ids() -> None:
-    """Reset the node ID counter (useful for deterministic tests)."""
     global _next_node_id
     _next_node_id = 0
 
-
-# ---------- types ----------
-
 @dataclass(frozen=True, slots=True)
 class TypeSpec:
-    name: str  # "int", "void", "long long"
+    name: str
     span: SourceSpan
     node_id: int
 
@@ -38,9 +27,6 @@ class TypeSpec:
         object.__setattr__(self, 'name', name)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
-
-# ---------- expressions ----------
 
 @dataclass(frozen=True, slots=True)
 class IntLiteral:
@@ -53,7 +39,6 @@ class IntLiteral:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class NullptrLiteral:
     span: SourceSpan
@@ -63,11 +48,10 @@ class NullptrLiteral:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class StringLiteral:
-    value: str   # already unescaped
-    raw: str     # the original text including quotes
+    value: str
+    raw: str
     span: SourceSpan
     node_id: int
 
@@ -76,7 +60,6 @@ class StringLiteral:
         object.__setattr__(self, 'raw', raw)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class EndlMarker:
@@ -89,7 +72,6 @@ class EndlMarker:
         object.__setattr__(self, 'qualified', qualified)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class NameExpr:
     name: str
@@ -101,10 +83,9 @@ class NameExpr:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class UnaryExpr:
-    op: str  # "-" or "+"
+    op: str
     operand: Expr
     span: SourceSpan
     node_id: int
@@ -114,7 +95,6 @@ class UnaryExpr:
         object.__setattr__(self, 'operand', operand)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class AddressOfExpr:
@@ -127,7 +107,6 @@ class AddressOfExpr:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class DerefExpr:
     operand: Expr
@@ -138,7 +117,6 @@ class DerefExpr:
         object.__setattr__(self, 'operand', operand)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class IndexExpr:
@@ -153,7 +131,6 @@ class IndexExpr:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class InitializerList:
     elements: tuple[Expr, ...]
@@ -165,10 +142,9 @@ class InitializerList:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class BinaryExpr:
-    op: str  # "+" "-" "*" "/" "%"
+    op: str
     left: Expr
     right: Expr
     span: SourceSpan
@@ -180,7 +156,6 @@ class BinaryExpr:
         object.__setattr__(self, 'right', right)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class Param:
@@ -202,7 +177,6 @@ class Param:
         object.__setattr__(self, 'is_array', is_array)
         object.__setattr__(self, 'array_size', array_size)
 
-
 @dataclass(frozen=True, slots=True)
 class CallExpr:
     callee: str
@@ -216,10 +190,9 @@ class CallExpr:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class Condition:
-    op: str  # "<" "<=" ">" ">=" "==" "!="
+    op: str
     left: Expr
     right: Expr
     span: SourceSpan
@@ -232,15 +205,11 @@ class Condition:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 Expr = Union[
     IntLiteral, NullptrLiteral, NameExpr, UnaryExpr, BinaryExpr, CallExpr,
     IndexExpr, DerefExpr, AddressOfExpr
 ]
 OutputItem = Union[Expr, StringLiteral, EndlMarker]
-
-
-# ---------- statements ----------
 
 @dataclass(frozen=True, slots=True)
 class Declarator:
@@ -260,7 +229,6 @@ class Declarator:
         object.__setattr__(self, 'is_pointer', is_pointer)
         object.__setattr__(self, 'array_size', array_size)
 
-
 @dataclass(frozen=True, slots=True)
 class DeclStmt:
     type_spec: TypeSpec
@@ -274,11 +242,10 @@ class DeclStmt:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class AssignStmt:
     target: NameExpr | IndexExpr | DerefExpr
-    op: str  # "="
+    op: str
     value: Expr
     span: SourceSpan
     node_id: int
@@ -289,7 +256,6 @@ class AssignStmt:
         object.__setattr__(self, 'value', value)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class InputStmt:
@@ -304,7 +270,6 @@ class InputStmt:
         object.__setattr__(self, 'qualified', qualified)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class OutputStmt:
     items: tuple[OutputItem, ...]
@@ -318,7 +283,6 @@ class OutputStmt:
         object.__setattr__(self, 'qualified', qualified)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class ReturnStmt:
     value: Expr | None
@@ -330,11 +294,10 @@ class ReturnStmt:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class IncDecStmt:
     target: NameExpr | IndexExpr | DerefExpr
-    op: str  # "++" or "--"
+    op: str
     is_prefix: bool
     span: SourceSpan
     node_id: int
@@ -347,7 +310,6 @@ class IncDecStmt:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class CallStmt:
     call: CallExpr
@@ -359,8 +321,6 @@ class CallStmt:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
-# Forward declaration for Block as a statement
 @dataclass(frozen=True, slots=True)
 class Block:
     statements: tuple[Stmt, ...]
@@ -371,7 +331,6 @@ class Block:
         object.__setattr__(self, 'statements', statements)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class IfStmt:
@@ -389,7 +348,6 @@ class IfStmt:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 @dataclass(frozen=True, slots=True)
 class WhileStmt:
     cond: Condition
@@ -402,7 +360,6 @@ class WhileStmt:
         object.__setattr__(self, 'body', body)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class ForStmt:
@@ -424,14 +381,10 @@ class ForStmt:
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
 
-
 Stmt = Union[
     DeclStmt, AssignStmt, IncDecStmt, InputStmt, OutputStmt,
     IfStmt, WhileStmt, ForStmt, ReturnStmt, CallStmt, Block,
 ]
-
-
-# ---------- top-level ----------
 
 @dataclass(frozen=True, slots=True)
 class FunctionDef:
@@ -450,7 +403,6 @@ class FunctionDef:
         object.__setattr__(self, 'body', body)
         object.__setattr__(self, 'span', span)
         object.__setattr__(self, 'node_id', node_id if node_id is not None else _alloc_node_id())
-
 
 @dataclass(frozen=True, slots=True)
 class Program:

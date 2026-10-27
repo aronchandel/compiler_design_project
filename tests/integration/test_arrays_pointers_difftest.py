@@ -1,5 +1,3 @@
-"""Differential testing of arrays, pointers, and <climits> against the host C++ compiler."""
-
 import subprocess
 import sys
 import tempfile
@@ -22,9 +20,7 @@ cxx_skip = pytest.mark.skipif(
     reason=f"g++ compiler not available/functional: {capabilities.reason}",
 )
 
-
 def run_diff_test(cxx_code: str, input_data: str = "") -> None:
-    """Compile with g++, compile with cpp2py, run both and assert exact stdout match."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         cxx_file = tmp_path / "main.cpp"
@@ -32,11 +28,9 @@ def run_diff_test(cxx_code: str, input_data: str = "") -> None:
 
         cxx_file.write_text(cxx_code, encoding="utf-8")
 
-        # 1. Compile C++ with g++
         compile_cmd = ["g++", "-O2", "-std=c++17", str(cxx_file), "-o", str(exe_file)]
         subprocess.run(compile_cmd, check=True, capture_output=True)
 
-        # Run C++ binary
         cxx_run = subprocess.run(
             [str(exe_file)],
             input=input_data,
@@ -46,7 +40,6 @@ def run_diff_test(cxx_code: str, input_data: str = "") -> None:
         )
         expected_stdout = cxx_run.stdout
 
-        # 2. Translate with cpp2py
         src = SourceFile(str(cxx_file), cxx_code)
         sink = DiagnosticSink()
         tokens = tokenize(src, sink)
@@ -61,7 +54,6 @@ def run_diff_test(cxx_code: str, input_data: str = "") -> None:
         gen_sink = DiagnosticSink()
         py_code = generate(mod, gen_sink, config)
 
-        # Run generated Python
         py_run = subprocess.run(
             [sys.executable, "-c", py_code],
             input=input_data,
@@ -71,9 +63,7 @@ def run_diff_test(cxx_code: str, input_data: str = "") -> None:
         )
         actual_stdout = py_run.stdout
 
-        # 3. Assert exact match
         assert actual_stdout == expected_stdout
-
 
 @pytest.mark.requires_cxx
 @cxx_skip
@@ -91,7 +81,6 @@ def test_difftest_climits():
     }
     """
     run_diff_test(code)
-
 
 @pytest.mark.requires_cxx
 @cxx_skip
@@ -120,7 +109,6 @@ def test_difftest_array_algorithms():
     """
     run_diff_test(code)
 
-
 @pytest.mark.requires_cxx
 @cxx_skip
 def test_difftest_pointer_aliasing_and_mutation():
@@ -148,7 +136,6 @@ def test_difftest_pointer_aliasing_and_mutation():
     }
     """
     run_diff_test(code)
-
 
 @pytest.mark.requires_cxx
 @cxx_skip

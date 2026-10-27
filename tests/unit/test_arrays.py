@@ -1,5 +1,3 @@
-"""Unit tests for C++ 1D array support in cpp2py."""
-
 import sys
 import subprocess
 import pytest
@@ -11,7 +9,6 @@ from cpp2py.frontend.parser import parse
 from cpp2py.semantics.analyzer import analyze
 from cpp2py.ir.builder import build_ir
 from cpp2py.codegen.python_gen import generate
-
 
 def compile_cpp(code: str) -> tuple[str, DiagnosticSink]:
     src = SourceFile("test.cpp", code)
@@ -29,7 +26,6 @@ def compile_cpp(code: str) -> tuple[str, DiagnosticSink]:
     py_code = generate(mod, gen_sink, config)
     return py_code, sink
 
-
 def run_py(py_code: str, input_str: str = "") -> str:
     res = subprocess.run(
         [sys.executable, "-c", py_code],
@@ -39,7 +35,6 @@ def run_py(py_code: str, input_str: str = "") -> str:
         check=True,
     )
     return res.stdout
-
 
 def test_array_declaration_and_init():
     code = """
@@ -56,7 +51,6 @@ def test_array_declaration_and_init():
     out = run_py(py_code).strip()
     assert out == "10 20 30"
 
-
 def test_array_partial_init():
     code = """
     #include <iostream>
@@ -71,7 +65,6 @@ def test_array_partial_init():
     assert not sink.has_errors()
     out = run_py(py_code).strip()
     assert out == "5 6 0 0"
-
 
 def test_array_read_and_modify():
     code = """
@@ -93,7 +86,6 @@ def test_array_read_and_modify():
     out = run_py(py_code).strip()
     assert out == "8 11 20"
 
-
 def test_array_loop_traversal():
     code = """
     #include <iostream>
@@ -112,7 +104,6 @@ def test_array_loop_traversal():
     assert not sink.has_errors()
     out = run_py(py_code).strip()
     assert out == "15"
-
 
 def test_array_passed_to_function():
     code = """
@@ -137,7 +128,6 @@ def test_array_passed_to_function():
     out = run_py(py_code).strip()
     assert out == "20 40 60"
 
-
 def test_array_input():
     code = """
     #include <iostream>
@@ -156,7 +146,6 @@ def test_array_input():
     out = run_py(py_code, input_str="100 200 300\n").strip()
     assert out == "100 200 300"
 
-
 def test_multidimensional_array_rejected():
     code = """
     #include <iostream>
@@ -169,7 +158,6 @@ def test_multidimensional_array_rejected():
     _, sink = compile_cpp(code)
     assert sink.has_errors()
     assert any(d.code == "E4001" for d in sink.diagnostics)
-
 
 def test_excess_initializers_rejected():
     code = """

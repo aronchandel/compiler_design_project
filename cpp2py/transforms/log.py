@@ -1,8 +1,3 @@
-"""Transformation log and replay for cpp2py passes.
-
-Conforms to ARCH §F.4, §G.1, and §D.4.
-"""
-
 from __future__ import annotations
 
 import copy
@@ -27,14 +22,12 @@ from cpp2py.ir.model import (
 )
 from cpp2py.ir.printer import _format_instruction_body
 
-
 @dataclass(slots=True)
 class TransformRecord:
-    """A single record representing an IR transformation."""
     seq: int
     pass_name: str
     op_id: str
-    kind: str  # REPLACE, DELETE, INSERT
+    kind: str
     before: str | None
     after: str | None
     span: SourceSpan | None = None
@@ -47,7 +40,6 @@ class TransformRecord:
             self.line = self.span.start.line
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert record to JSON-serializable dictionary."""
         res: dict[str, Any] = {
             "seq": self.seq,
             "pass": self.pass_name,
@@ -72,7 +64,6 @@ class TransformRecord:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TransformRecord:
-        """Construct a TransformRecord from a dictionary."""
         span = None
         if data.get("span"):
             s_dict = data["span"]
@@ -95,9 +86,7 @@ class TransformRecord:
             line=data.get("line"),
         )
 
-
 class TransformLog:
-    """Manages ordered transformation records and JSONL persistence."""
 
     def __init__(self, records: list[TransformRecord] | None = None) -> None:
         self.records: list[TransformRecord] = list(records) if records else []
@@ -133,7 +122,6 @@ class TransformLog:
         return rec
 
     def write_jsonl(self, path: str | Path) -> None:
-        """Write transformation records to a JSON Lines file."""
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         lines = [json.dumps(r.to_dict(), separators=(",", ":")) + "\n" for r in self.records]
@@ -141,7 +129,6 @@ class TransformLog:
 
     @classmethod
     def read_jsonl(cls, path: str | Path) -> TransformLog:
-        """Read transformation records from a JSON Lines file."""
         p = Path(path)
         lines = p.read_text(encoding="utf-8").splitlines()
         records: list[TransformRecord] = []
@@ -151,11 +138,10 @@ class TransformLog:
         return cls(records)
 
     def replay(self, initial_module: IRModule) -> IRModule:
-        """Replay the transformation log on a copy of initial_module, returning the final IRModule."""
         mod = copy.deepcopy(initial_module)
 
         for rec in self.records:
-            # Find the instruction and function
+
             func_found: IRFunction | None = None
             instr_idx: int = -1
             target_instr: Instruction | None = None
@@ -184,33 +170,28 @@ class TransformLog:
                         target_instr.origin = tuple(rec.derived_from)
 
             elif rec.kind == "INSERT":
-                # Handle inserts if present
+
                 pass
 
         return mod
-
 
 def _parse_operand(token: str, ref_instr: Instruction | None = None) -> Operand:
     token = token.strip()
     if token.endswith(","):
         token = token[:-1].strip()
 
-    # Integer constant
     try:
         val = int(token)
         return Const(val, IRType.I32)
     except ValueError:
         pass
 
-    # String constant
     if token.startswith('"') and token.endswith('"'):
         return StrConst(token[1:-1])
 
-    # Temp reference
     if token.startswith("t") and token[1:].isdigit():
         return TempRef(token, IRType.I32)
 
-    # Label reference
     if (
         token.startswith("loop_head_")
         or token.startswith("loop_body_")
@@ -221,7 +202,6 @@ def _parse_operand(token: str, ref_instr: Instruction | None = None) -> Operand:
     ):
         return LabelRef(token)
 
-    # Var reference
     symbol_id = 0
     var_type = IRType.I32
     if ref_instr is not None:
@@ -236,11 +216,9 @@ def _parse_operand(token: str, ref_instr: Instruction | None = None) -> Operand:
                     break
     return VarRef(symbol_id=symbol_id, ir_name=token, type=var_type)
 
-
 def _parse_instruction_body(
     text: str, ref_instr: Instruction | None = None
 ) -> tuple[Opcode, VarRef | TempRef | None, tuple[Operand, ...]]:
-    """Parse a single instruction body string into (opcode, dst, operands)."""
     text = text.strip()
 
     if " = " in text:
@@ -281,13 +259,12 @@ def _parse_instruction_body(
             operands = tuple(_parse_operand(a, ref_instr) for a in args_str.split(",") if a.strip())
         return opcode, dst, operands
 
-    # Instructions without dst
     parts = text.split(None, 1)
     op_name = parts[0]
     args_str = parts[1] if len(parts) > 1 else ""
 
     if op_name == "declare":
-        # declare a : i32
+
         var_name = args_str.split(":")[0].strip()
         return Opcode.DECLARE, None, (_parse_operand(var_name, ref_instr),)
     elif op_name == "print":

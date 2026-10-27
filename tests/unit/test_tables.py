@@ -1,5 +1,3 @@
-"""Unit tests for Markdown and CSV evaluation table renderers (ARCH §J.2)."""
-
 from __future__ import annotations
 
 import csv
@@ -11,7 +9,6 @@ from cpp2py.evaluation.tables import (
     render_localisation_csv,
     render_localisation_markdown,
 )
-
 
 @pytest.fixture
 def sample_metrics_data() -> dict:
@@ -71,9 +68,7 @@ def sample_metrics_data() -> dict:
         "soundness_violations": [],
     }
 
-
 def test_comparison_markdown_structure(sample_metrics_data: dict) -> None:
-    """Verify that render_comparison_markdown outputs complete table with headers and rows."""
     md = render_comparison_markdown(sample_metrics_data)
     assert "# Evaluation Results: Comparative Summary" in md
     assert "| Metric | B0 (Naive) | B1 (Always-Protect) | E (Range-Guided) |" in md
@@ -85,9 +80,7 @@ def test_comparison_markdown_structure(sample_metrics_data: dict) -> None:
     assert "**Soundness Violations**" in md
     assert "No soundness violations detected." in md
 
-
 def test_comparison_markdown_with_violations(sample_metrics_data: dict) -> None:
-    """Verify that soundness violations are listed in their own table if present."""
     data = dict(sample_metrics_data)
     data["soundness_violations"] = [
         {
@@ -101,9 +94,7 @@ def test_comparison_markdown_with_violations(sample_metrics_data: dict) -> None:
     md = render_comparison_markdown(data)
     assert "| `test_bug` | div | `MISMATCH_STDOUT` | `PASS` | Wrong truncating division |" in md
 
-
 def test_comparison_csv_structure(sample_metrics_data: dict) -> None:
-    """Verify that render_comparison_csv generates valid CSV with correct headers and metrics."""
     csv_str = render_comparison_csv(sample_metrics_data)
     reader = csv.reader(io.StringIO(csv_str))
     rows = list(reader)
@@ -117,9 +108,7 @@ def test_comparison_csv_structure(sample_metrics_data: dict) -> None:
     assert "static_precision" in metric_names
     assert "soundness_violations" in metric_names
 
-
 def test_localisation_markdown_structure() -> None:
-    """Verify that render_localisation_markdown formats top-k, MRR, and per-fault table."""
     loc_data = {
         "n": 2,
         "top1_hits": 2,
@@ -159,9 +148,7 @@ def test_localisation_markdown_structure() -> None:
     assert "| `F01` | floor_div | `after_constant_fold` |" in md
     assert "| `F02` | mod_sign | `codegen_or_plan` |" in md
 
-
 def test_localisation_csv_structure() -> None:
-    """Verify that render_localisation_csv outputs valid CSV columns."""
     loc_data = {
         "n": 1,
         "fault_ranks": [

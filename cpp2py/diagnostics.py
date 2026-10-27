@@ -1,5 +1,3 @@
-"""Diagnostic collection and rendering for the cpp2py compiler."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -9,25 +7,20 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from cpp2py.source import SourceSpan, SourceFile
 
-
 class Severity(Enum):
     ERROR = "error"
     WARNING = "warning"
     NOTE = "note"
 
-
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
-    """A single diagnostic message."""
     severity: Severity
     code: str
     message: str
     span: SourceSpan | None = None
     notes: tuple[str, ...] = ()
 
-
 class DiagnosticSink:
-    """Collects diagnostics during compilation."""
 
     def __init__(self) -> None:
         self._diagnostics: list[Diagnostic] = []
@@ -73,10 +66,7 @@ class DiagnosticSink:
     def diagnostics(self) -> list[Diagnostic]:
         return list(self._diagnostics)
 
-
 def render(diag: Diagnostic, source: SourceFile | None = None) -> str:
-    """Render a diagnostic as 'file:line:col: severity [CODE]: message'
-    followed by the source line and a caret."""
     parts: list[str] = []
     if diag.span is not None:
         loc = f"{diag.span.file}:{diag.span.start.line}:{diag.span.start.col}"

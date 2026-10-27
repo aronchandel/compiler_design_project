@@ -1,5 +1,3 @@
-"""Differential testing orchestration and summary reporting."""
-
 from __future__ import annotations
 
 import json
@@ -34,10 +32,8 @@ from cpp2py.testing.py_runner import run_python
 from cpp2py.testing.regression import save_regression_case
 from cpp2py.testing.testgen.programs import GENERATOR_VERSION, generate_suite
 
-
 @dataclass
 class DiffSummary:
-    """Summary of a differential testing run."""
     suite: str
     total_runs: int
     counts: dict[Outcome, int]
@@ -80,7 +76,6 @@ class DiffSummary:
         }
 
     def print_summary(self) -> None:
-        """Print human-readable summary table to stdout."""
         print("=" * 60)
         print(f"Differential Testing Summary (Suite: {self.suite})")
         print("=" * 60)
@@ -110,7 +105,6 @@ class DiffSummary:
         print(f"Excluded from denominator: {excluded_total}")
         print("=" * 60)
 
-
 def run_case(
     case: TestCase,
     config: CompilerConfig,
@@ -120,10 +114,8 @@ def run_case(
     output_cap: int = 1048576,
     out_dir: Path | None = None,
 ) -> list[DiffResult]:
-    """Run differential testing on a single TestCase across all its inputs."""
     results: list[DiffResult] = []
 
-    # Check compiler availability
     if not capabilities.available:
         for idx, _ in enumerate(case.inputs):
             cid = f"{case.case_id}[{idx}]"
@@ -135,7 +127,6 @@ def run_case(
             results.append(res)
         return results
 
-    # Compile C++ program
     overflow_pol = config.target.overflow_policy.value
     cxx_build = compile_cxx(
         source_code=case.program_source,
@@ -155,7 +146,6 @@ def run_case(
             results.append(res)
         return results
 
-    # Optional UBSan build
     ubsan_build = None
     if capabilities.sanitizer_available:
         ubsan_build = compile_cxx_ubsan(
@@ -165,7 +155,6 @@ def run_case(
             compiler=capabilities.compiler,
         )
 
-    # Translate with cpp2py
     trans_res = compile_source(
         text=case.program_source,
         filename=f"{case.case_id}.cpp",
@@ -186,12 +175,11 @@ def run_case(
 
     py_source = trans_res.python_source or ""
 
-    # Execute both on each input
     for idx, in_text in enumerate(case.inputs):
         cid = f"{case.case_id}[{idx}]" if len(case.inputs) > 1 else case.case_id
 
         cxx_exec = run_cxx(
-            binary_path=cxx_build.binary_path,  # type: ignore
+            binary_path=cxx_build.binary_path,
             stdin_text=in_text,
             timeout=timeout,
             output_cap=output_cap,
@@ -224,7 +212,6 @@ def run_case(
             overflow_policy=overflow_pol,
         )
 
-        # On mismatch, capture snapshots and persist regression case
         if diff_res.is_mismatch():
             snap_dir = None
             if out_dir is not None:
@@ -241,7 +228,6 @@ def run_case(
                 )
                 compile_source(case.program_source, f"{cid}.cpp", snap_config)
 
-                # Save case artifacts in out_dir / "failures" / cid for localisation
                 (case_dir / "program.cpp").write_text(case.program_source, encoding="utf-8")
                 (case_dir / "input.txt").write_text(in_text, encoding="utf-8")
                 if cxx_exec is not None:
@@ -268,7 +254,6 @@ def run_case(
 
     return results
 
-
 def run_suite(
     suite: str = "curated",
     seed: int = 1,
@@ -280,7 +265,6 @@ def run_suite(
     out_dir: str | Path | None = None,
     compiler: str | None = None,
 ) -> DiffSummary:
-    """Run a differential testing suite ('curated', 'generated', or 'all')."""
     out_path = Path(out_dir) if out_dir else None
     if out_path:
         out_path.mkdir(parents=True, exist_ok=True)
@@ -301,7 +285,7 @@ def run_suite(
 
     all_results: list[DiffResult] = []
     for c in cases:
-        # Check if case has config overrides
+
         case_cfg = config
         if c.config_overrides:
             override_pol = c.config_overrides.get("overflow_policy")

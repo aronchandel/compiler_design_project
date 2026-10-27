@@ -1,8 +1,3 @@
-"""Unit tests for cpp2py/ir/serialization.py.
-
-Verifies AC7.2: IR snapshot JSON round-trips for all examples (printed text identical).
-"""
-
 from __future__ import annotations
 
 import json
@@ -35,7 +30,6 @@ from cpp2py.ir.model import (
 )
 from cpp2py.source import Pos, SourceSpan
 
-
 def test_operand_roundtrip():
     operands = [
         Const(42, IRType.I32),
@@ -51,7 +45,6 @@ def test_operand_roundtrip():
         js = operand_to_json(op)
         res = operand_from_json(js)
         assert res == op, f"Failed round-trip for {op}: got {res}"
-
 
 def test_instruction_roundtrip():
     span = SourceSpan("test.cpp", Pos(1, 2, 0), Pos(1, 10, 8))
@@ -74,7 +67,6 @@ def test_instruction_roundtrip():
     assert res.origin == instr.origin
     assert res.cmp_op == instr.cmp_op
 
-
 def test_synthetic_module_roundtrip():
     fn = IRFunction(
         name="main",
@@ -92,16 +84,13 @@ def test_synthetic_module_roundtrip():
     reconstructed = module_from_json(js)
     assert format_module(reconstructed) == format_module(mod)
 
-
 EXAMPLE_FILES = sorted([
     f for f in Path("examples").glob("**/*.cpp")
     if "errors" not in f.parts
 ], key=lambda p: str(p))
 
-
 @pytest.mark.parametrize("cpp_file", EXAMPLE_FILES, ids=lambda p: f"{p.parent.name}_{p.stem}")
 def test_roundtrip_example_cpp_file(cpp_file: Path) -> None:
-    """Verify AC7.2: format_module(module_from_json(module_to_json(ir))) == format_module(ir) across all examples."""
     code = cpp_file.read_text(encoding="utf-8")
     res = compile_source(code, cpp_file.name, CompilerConfig())
     assert res.success, f"Compilation failed for {cpp_file}"

@@ -1,10 +1,3 @@
-"""Evaluation-only fault injection catalogue for failure localisation (ARCH §J.4).
-
-Provides >= 10 deliberate faults applied via context managers that patch
-module attributes inside the evaluation runner and restore them in finally: blocks.
-No hooks exist in production code.
-"""
-
 from __future__ import annotations
 
 import json
@@ -29,10 +22,8 @@ from cpp2py.localisation import LocalisationReport, localise
 from cpp2py.testing.cxx_runner import compile_cxx, probe_cxx_capabilities, run_cxx
 from cpp2py.testing.py_runner import run_python
 
-
 @dataclass(frozen=True)
 class FaultDef:
-    """Definition of a seeded fault for localisation evaluation."""
     id: str
     name: str
     description: str
@@ -43,8 +34,6 @@ class FaultDef:
     expected_cxx_output: str
     patch_manager: Callable[[], Iterator[None]]
 
-
-# --- 1. F01: Constant fold uses floor division ---
 @contextmanager
 def patch_f01_floor_div() -> Iterator[None]:
     orig_run = fold_mod.ConstantFoldPass.run
@@ -75,8 +64,6 @@ def patch_f01_floor_div() -> Iterator[None]:
     finally:
         fold_mod.ConstantFoldPass.run = orig_run
 
-
-# --- 2. F02: Range transfer / plan for mod ignores dividend sign ---
 @contextmanager
 def patch_f02_mod_plan_native() -> Iterator[None]:
     orig_decide = policy_mod.decide
@@ -113,8 +100,6 @@ def patch_f02_mod_plan_native() -> Iterator[None]:
     finally:
         policy_mod.decide = orig_decide
 
-
-# --- 3. F03: Generator drops helper for mod (%) ---
 @contextmanager
 def patch_f03_generator_mod() -> Iterator[None]:
     orig_build = pygen_mod.IRToPythonGenerator._build_ast_for_instr
@@ -133,8 +118,6 @@ def patch_f03_generator_mod() -> Iterator[None]:
     finally:
         pygen_mod.IRToPythonGenerator._build_ast_for_instr = orig_build
 
-
-# --- 4. F04: Builder swaps operands in SUB ---
 @contextmanager
 def patch_f04_builder_swap_sub() -> Iterator[None]:
     orig_lower_expr = builder_mod.IRBuilder._lower_expr
@@ -168,8 +151,6 @@ def patch_f04_builder_swap_sub() -> Iterator[None]:
     finally:
         builder_mod.IRBuilder._lower_expr = orig_lower_expr
 
-
-# --- 5. F05: Constant fold folds MUL as ADD ---
 @contextmanager
 def patch_f05_fold_mul_as_add() -> Iterator[None]:
     orig_run = fold_mod.ConstantFoldPass.run
@@ -199,8 +180,6 @@ def patch_f05_fold_mul_as_add() -> Iterator[None]:
     finally:
         fold_mod.ConstantFoldPass.run = orig_run
 
-
-# --- 6. F06: Generator drops helper for div (/) ---
 @contextmanager
 def patch_f06_generator_div() -> Iterator[None]:
     orig_build = pygen_mod.IRToPythonGenerator._build_ast_for_instr
@@ -219,8 +198,6 @@ def patch_f06_generator_div() -> Iterator[None]:
     finally:
         pygen_mod.IRToPythonGenerator._build_ast_for_instr = orig_build
 
-
-# --- 7. F07: Builder swaps operands in DIV ---
 @contextmanager
 def patch_f07_builder_swap_div() -> Iterator[None]:
     orig_lower_expr = builder_mod.IRBuilder._lower_expr
@@ -254,8 +231,6 @@ def patch_f07_builder_swap_div() -> Iterator[None]:
     finally:
         builder_mod.IRBuilder._lower_expr = orig_lower_expr
 
-
-# --- 8. F08: Builder swaps operands in MOD ---
 @contextmanager
 def patch_f08_builder_swap_mod() -> Iterator[None]:
     orig_lower_expr = builder_mod.IRBuilder._lower_expr
@@ -289,8 +264,6 @@ def patch_f08_builder_swap_mod() -> Iterator[None]:
     finally:
         builder_mod.IRBuilder._lower_expr = orig_lower_expr
 
-
-# --- 9. F09: Constant fold folds SUB as ADD ---
 @contextmanager
 def patch_f09_fold_sub_as_add() -> Iterator[None]:
     orig_run = fold_mod.ConstantFoldPass.run
@@ -320,8 +293,6 @@ def patch_f09_fold_sub_as_add() -> Iterator[None]:
     finally:
         fold_mod.ConstantFoldPass.run = orig_run
 
-
-# --- 10. F10: Range transfer / plan for div picks NATIVE despite risk ---
 @contextmanager
 def patch_f10_div_plan_native() -> Iterator[None]:
     orig_decide = policy_mod.decide
@@ -358,8 +329,6 @@ def patch_f10_div_plan_native() -> Iterator[None]:
     finally:
         policy_mod.decide = orig_decide
 
-
-# --- 11. F11: Helper wrap_i32 off by one ---
 @contextmanager
 def patch_f11_wrap_off_by_one() -> Iterator[None]:
     orig_wrap = helpers_mod._wrap_i32
@@ -373,8 +342,6 @@ def patch_f11_wrap_off_by_one() -> Iterator[None]:
     finally:
         helpers_mod._wrap_i32 = orig_wrap
 
-
-# --- 12. F12: Widening drops upper bound to 0 prematurely ---
 @contextmanager
 def patch_f12_widening_error() -> Iterator[None]:
     orig_widen = Interval.widen_to_type_bounds
@@ -390,9 +357,6 @@ def patch_f12_widening_error() -> Iterator[None]:
         yield
     finally:
         Interval.widen_to_type_bounds = orig_widen
-
-
-# --- Catalogue of seeded faults (>= 10 faults) ---
 
 FAULTS: list[FaultDef] = [
     FaultDef(
@@ -581,21 +545,17 @@ int main() {
     ),
 ]
 
-
 def run_fault_evaluation(
     fault: FaultDef,
     base_dir: Path,
 ) -> dict[str, Any]:
-    """Execute localisation for a single fault under its patched context manager."""
     case_dir = base_dir / fault.id
     case_dir.mkdir(parents=True, exist_ok=True)
     snap_dir = case_dir / "snapshots"
     snap_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Determine reference output
     cxx_out = fault.expected_cxx_output
 
-    # Try running real C++ compiler if available
     caps = probe_cxx_capabilities()
     if caps.available:
         build_res = compile_cxx(fault.sample_program, build_dir=case_dir / "cxx_build")
@@ -604,7 +564,6 @@ def run_fault_evaluation(
             if not cxx_exec.timed_out:
                 cxx_out = cxx_exec.stdout
 
-    # 2. Compile with cpp2py UNDER THE FAULT CONTEXT MANAGER
     cfg = CompilerConfig(
         snapshot_dir=str(snap_dir),
         transform_log_path=str(snap_dir / "transform_log.jsonl"),
@@ -617,7 +576,6 @@ def run_fault_evaluation(
 
     py_source = comp_res.python_source or ""
 
-    # Write case artifacts needed by localise()
     (case_dir / "program.cpp").write_text(fault.sample_program, encoding="utf-8")
     (case_dir / "input.txt").write_text(fault.sample_input, encoding="utf-8")
     (case_dir / "cxx_output.txt").write_text(cxx_out, encoding="utf-8")
@@ -631,10 +589,8 @@ def run_fault_evaluation(
     }
     (case_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
-    # 3. Run failure localisation
     rep = localise(case_dir, top_k=5)
 
-    # Determine rank of expected suspect opcode
     rank: int | None = None
     for idx, suspect in enumerate(rep.suspects, start=1):
         if fault.expected_suspect_opcode in suspect.opcode.lower():

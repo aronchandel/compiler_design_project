@@ -1,5 +1,3 @@
-"""Unit tests for C++ runner, capability probe, and build cache."""
-
 import os
 import subprocess
 import sys
@@ -19,7 +17,6 @@ from cpp2py.testing.cxx_runner import (
     run_cxx,
 )
 
-
 def test_capabilities_to_dict():
     caps = CxxCapabilities(
         compiler="g++",
@@ -34,15 +31,13 @@ def test_capabilities_to_dict():
     assert d["cxx17_supported"] is True
     assert d["sanitizer_available"] is True
 
-
 def test_capabilities_probe_caching():
     c1 = probe_cxx_capabilities("nonexistent_compiler_xyz123")
     assert c1.available is False
     assert "Failed to execute" in (c1.reason or "") or "Compiler exit status" in (c1.reason or "")
 
     c2 = probe_cxx_capabilities("nonexistent_compiler_xyz123")
-    assert c1 is c2  # cached
-
+    assert c1 is c2
 
 def test_build_cache_keying():
     with tempfile.TemporaryDirectory() as td:
@@ -55,7 +50,6 @@ def test_build_cache_keying():
         assert k1 == k2
         assert k1 != k3
         assert k1 != k4
-
 
 def test_build_cache_put_and_get():
     with tempfile.TemporaryDirectory() as td:
@@ -72,9 +66,8 @@ def test_build_cache_put_and_get():
         assert retrieved is not None
         assert retrieved.exists()
 
-
 def test_run_cxx_output_cap():
-    # Test capping on a synthetic large output
+
     huge_text = "A" * 2000
     with tempfile.TemporaryDirectory() as td:
         fake_bin = Path(td) / "fake.bat" if sys.platform == "win32" else Path(td) / "fake.sh"
@@ -88,9 +81,8 @@ def test_run_cxx_output_cap():
         assert res.output_capped is True
         assert len(res.stdout) <= 50
 
-
 def test_run_cxx_timeout():
-    # Test timeout with a slow script
+
     with tempfile.TemporaryDirectory() as td:
         slow_bin = Path(td) / "slow.bat" if sys.platform == "win32" else Path(td) / "slow.sh"
         if sys.platform == "win32":
@@ -104,10 +96,8 @@ def test_run_cxx_timeout():
         assert res.timed_out is True
         assert res.exit_code == -1
 
-
 @pytest.mark.requires_cxx
 def test_cxx_hardware_division_overflow_termination():
-    """Verify that INT_MIN / -1 terminates promptly on hardware fault with STATUS_INTEGER_OVERFLOW / SIGFPE."""
     caps = probe_cxx_capabilities()
     if not caps.available:
         pytest.skip(f"g++ not available: {caps.reason}")
@@ -124,10 +114,7 @@ int main() {
     build = compile_cxx(src, overflow_policy="wrap")
     assert build.success, f"Compilation failed: {build.compile_error}"
 
-    # Execution must terminate promptly (well under 5.0s) and not time out
     res = run_cxx(build.binary_path, timeout=5.0)
     assert not res.timed_out, "Execution timed out on hardware division overflow"
-    # On Windows: STATUS_INTEGER_OVERFLOW (3221225621 / 0xC0000095)
-    # On POSIX: SIGFPE (-8 or 136)
-    assert res.exit_code in (3221225621, -8, 136)
 
+    assert res.exit_code in (3221225621, -8, 136)

@@ -1,5 +1,3 @@
-"""Unit tests for cpp2py/ir/verifier.py."""
-
 import pytest
 from cpp2py.diagnostics import DiagnosticSink
 from cpp2py.ir.model import (
@@ -15,13 +13,11 @@ from cpp2py.ir.model import (
 )
 from cpp2py.ir.verifier import verify_module
 
-
 def make_module(body: list[Instruction], return_type: IRType = IRType.I32, params: tuple = ()) -> tuple[IRModule, DiagnosticSink]:
     func = IRFunction(name="main", params=params, return_type=return_type, body=body)
     mod = IRModule(functions=[func], source_name="test.cpp")
     sink = DiagnosticSink()
     return mod, sink
-
 
 def test_verifier_accepts_valid_ir():
     body = [
@@ -33,7 +29,6 @@ def test_verifier_accepts_valid_ir():
     assert verify_module(mod, sink)
     assert not sink.has_errors()
 
-
 def test_verifier_rejects_duplicate_op_id():
     body = [
         Instruction("op_0", Opcode.DECLARE, dst=VarRef(1, "x")),
@@ -42,7 +37,6 @@ def test_verifier_rejects_duplicate_op_id():
     mod, sink = make_module(body)
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
-
 
 def test_verifier_rejects_temp_used_before_definition():
     body = [
@@ -55,7 +49,6 @@ def test_verifier_rejects_temp_used_before_definition():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_temp_defined_twice():
     body = [
         Instruction("op_0", Opcode.ADD, dst=TempRef("t0"), operands=(Const(1), Const(2))),
@@ -66,7 +59,6 @@ def test_verifier_rejects_temp_defined_twice():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_undeclared_variable():
     body = [
         Instruction("op_0", Opcode.ASSIGN, dst=VarRef(1, "y"), operands=(Const(10),)),
@@ -76,7 +68,6 @@ def test_verifier_rejects_undeclared_variable():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_operand_type_mismatch():
     body = [
         Instruction("op_0", Opcode.ADD, dst=TempRef("t0", IRType.I32), operands=(Const(1, IRType.I32), Const(2, IRType.I64))),
@@ -85,7 +76,6 @@ def test_verifier_rejects_operand_type_mismatch():
     mod, sink = make_module(body)
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
-
 
 def test_verifier_rejects_bool_outside_branch():
     body = [
@@ -97,7 +87,6 @@ def test_verifier_rejects_bool_outside_branch():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_jump_to_missing_label():
     body = [
         Instruction("op_0", Opcode.JUMP, label_name="missing_label_r0"),
@@ -106,7 +95,6 @@ def test_verifier_rejects_jump_to_missing_label():
     mod, sink = make_module(body)
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
-
 
 def test_verifier_rejects_duplicate_label():
     body = [
@@ -118,7 +106,6 @@ def test_verifier_rejects_duplicate_label():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_return_type_mismatch():
     body = [
         Instruction("op_0", Opcode.RETURN, operands=(Const(0, IRType.I64),)),
@@ -126,7 +113,6 @@ def test_verifier_rejects_return_type_mismatch():
     mod, sink = make_module(body, return_type=IRType.I32)
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
-
 
 def test_verifier_rejects_branch_on_non_bool():
     body = [
@@ -140,7 +126,6 @@ def test_verifier_rejects_branch_on_non_bool():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_label_region_mismatch():
     body = [
         Instruction("op_0", Opcode.LABEL, label_name="if_then_r0"),
@@ -153,9 +138,8 @@ def test_verifier_rejects_label_region_mismatch():
     assert not verify_module(mod, sink)
     assert any(e.code == "E5001" for e in sink.errors)
 
-
 def test_verifier_rejects_non_canonical_control_flow_shape():
-    # Targets valid names but not following if/while/for shape
+
     body = [
         Instruction("op_0", Opcode.LABEL, label_name="if_then_r0"),
         Instruction("op_1", Opcode.LABEL, label_name="loop_body_r0"),

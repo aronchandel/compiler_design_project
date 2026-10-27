@@ -1,5 +1,3 @@
-"""Lexer for the cpp2py compiler."""
-
 from __future__ import annotations
 
 from cpp2py.source import SourceFile, SourceSpan
@@ -7,12 +5,9 @@ from cpp2py.diagnostics import DiagnosticSink
 from cpp2py.frontend.tokens import Token, TokenKind, KEYWORDS
 from cpp2py.config import TargetModel
 
-
 def tokenize(source: SourceFile, sink: DiagnosticSink, target: TargetModel | None = None) -> list[Token]:
-    """Tokenize a C++ source file, returning a list of tokens ending with EOF."""
     lexer = _Lexer(source, sink, target or TargetModel())
     return lexer.run()
-
 
 class _Lexer:
     def __init__(self, source: SourceFile, sink: DiagnosticSink, target: TargetModel) -> None:
@@ -31,7 +26,6 @@ class _Lexer:
 
             ch = self._text[self._pos]
 
-            # Skip comments
             if ch == '/' and self._pos + 1 < len(self._text):
                 next_ch = self._text[self._pos + 1]
                 if next_ch == '/':
@@ -41,41 +35,33 @@ class _Lexer:
                     self._skip_block_comment()
                     continue
 
-            # Preprocessor directives
             if ch == '#':
                 self._lex_preprocessor()
                 continue
 
-            # String literals
             if ch == '"':
                 self._lex_string()
                 continue
 
-            # Numbers
             if ch.isdigit():
                 self._lex_number()
                 continue
 
-            # Identifiers and keywords
             if ch.isalpha() or ch == '_':
                 self._lex_identifier()
                 continue
 
-            # Multi-char operators (must check before single-char)
             if self._try_multi_char_op():
                 continue
 
-            # Single-char operators
             if self._try_single_char_op(ch):
                 continue
 
-            # Invalid character
             start = self._pos
             self._pos += 1
             span = self._source.span(start, self._pos)
             self._sink.error("E1001", f"invalid character '{ch}'", span)
 
-        # Add EOF token
         eof_off = len(self._text)
         eof_span = self._source.span(eof_off, eof_off)
         self._tokens.append(Token(TokenKind.EOF, '', eof_span))
@@ -86,20 +72,20 @@ class _Lexer:
             self._pos += 1
 
     def _skip_line_comment(self) -> None:
-        # Skip // to end of line
+
         self._pos += 2
         while self._pos < len(self._text) and self._text[self._pos] != '\n':
             self._pos += 1
 
     def _skip_block_comment(self) -> None:
         start = self._pos
-        self._pos += 2  # skip /*
+        self._pos += 2
         while self._pos + 1 < len(self._text):
             if self._text[self._pos] == '*' and self._text[self._pos + 1] == '/':
                 self._pos += 2
                 return
             self._pos += 1
-        # Reached end of file without closing
+
         if self._pos < len(self._text):
             self._pos += 1
         span = self._source.span(start, self._pos)
@@ -107,24 +93,21 @@ class _Lexer:
 
     def _lex_preprocessor(self) -> None:
         start = self._pos
-        self._pos += 1  # skip #
+        self._pos += 1
 
-        # Skip whitespace after #
         while self._pos < len(self._text) and self._text[self._pos] in ' \t':
             self._pos += 1
 
-        # Read directive word
         word_start = self._pos
         while self._pos < len(self._text) and (self._text[self._pos].isalpha() or self._text[self._pos] == '_'):
             self._pos += 1
         directive = self._text[word_start:self._pos]
 
         if directive == 'include':
-            # Skip whitespace
+
             while self._pos < len(self._text) and self._text[self._pos] in ' \t':
                 self._pos += 1
 
-            # Check for <iostream> or <climits>
             if self._pos < len(self._text) and self._text[self._pos] == '<':
                 angle_start = self._pos
                 self._pos += 1
@@ -143,10 +126,10 @@ class _Lexer:
                         return
                     else:
                         span = self._source.span(start, self._pos)
-                        header_name = header[1:-1]  # strip < >
+                        header_name = header[1:-1]
                         self._sink.error("E4003", f"unsupported header '<{header_name}>'", span)
                         return
-            # Check for "header"
+
             if self._pos < len(self._text) and self._text[self._pos] == '"':
                 self._pos += 1
                 while self._pos < len(self._text) and self._text[self._pos] != '"' and self._text[self._pos] != '\n':
@@ -157,14 +140,13 @@ class _Lexer:
                 self._sink.error("E4003", "unsupported header", span)
                 return
 
-            # Malformed include - skip to end of line
             while self._pos < len(self._text) and self._text[self._pos] != '\n':
                 self._pos += 1
             span = self._source.span(start, self._pos)
             self._sink.error("E4003", "unsupported header", span)
             return
         else:
-            # Any other directive -> E1005
+
             while self._pos < len(self._text) and self._text[self._pos] != '\n':
                 self._pos += 1
             span = self._source.span(start, self._pos)
@@ -172,18 +154,18 @@ class _Lexer:
 
     def _lex_string(self) -> None:
         start = self._pos
-        self._pos += 1  # skip opening "
+        self._pos += 1
         value_chars: list[str] = []
 
         while self._pos < len(self._text):
             ch = self._text[self._pos]
             if ch == '\n' or ch == '\r':
-                # Unterminated string
+
                 span = self._source.span(start, self._pos)
                 self._sink.error("E1002", "unterminated string literal", span)
                 return
             if ch == '"':
-                self._pos += 1  # skip closing "
+                self._pos += 1
                 text = self._text[start:self._pos]
                 span = self._source.span(start, self._pos)
                 self._tokens.append(Token(TokenKind.STRING_LITERAL, text, span))
@@ -211,7 +193,6 @@ class _Lexer:
                 value_chars.append(ch)
                 self._pos += 1
 
-        # Reached EOF without closing quote
         span = self._source.span(start, self._pos)
         self._sink.error("E1002", "unterminated string literal", span)
 
@@ -223,7 +204,6 @@ class _Lexer:
         text = self._text[start:self._pos]
         span = self._source.span(start, self._pos)
 
-        # Check range: literals above the long long range -> E1004
         value = int(text)
         if value > self._target.long_long_max:
             self._sink.error("E1004", f"integer literal {text} does not fit in long long", span)

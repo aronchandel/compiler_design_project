@@ -1,11 +1,8 @@
-"""Unit tests for cpp2py/ir/snapshots.py."""
-
 import json
 from pathlib import Path
 import pytest
 from cpp2py.compiler import compile_source
 from cpp2py.config import CompilerConfig
-
 
 def test_snapshots_files_present(tmp_path):
     cpp_code = "int main() { int x = 42; return 0; }"
@@ -20,7 +17,6 @@ def test_snapshots_files_present(tmp_path):
     assert (snap_dir / "01_ir_final.ir.json").exists()
     assert (snap_dir / "output.py").exists()
     assert (snap_dir / "manifest.json").exists()
-
 
 def test_snapshots_manifest_content_and_no_timestamps(tmp_path):
     cpp_code = "int main() { int x = 42; return 0; }"
@@ -38,12 +34,10 @@ def test_snapshots_manifest_content_and_no_timestamps(tmp_path):
     assert "stages" in manifest_data
     assert "diagnostics" in manifest_data
 
-    # Verify absence of timestamps
     manifest_raw = manifest_path.read_text(encoding="utf-8").lower()
     assert "timestamp" not in manifest_raw
     assert "time" not in manifest_raw
     assert "date" not in manifest_raw
-
 
 def test_snapshots_deterministic_byte_identical(tmp_path):
     cpp_code = "int main() { int a = 1, b = 2; int c = a + b; return 0; }"
@@ -71,7 +65,6 @@ def test_snapshots_deterministic_byte_identical(tmp_path):
         b2 = (dir2 / fname).read_bytes()
         assert b1 == b2, f"Snapshot file {fname} not byte-identical across runs!"
 
-
 def test_snapshots_ir_json_structure(tmp_path):
     cpp_code = "int main() { int x = 10; return 0; }"
     snap_dir = tmp_path / "snap"
@@ -89,7 +82,6 @@ def test_snapshots_ir_json_structure(tmp_path):
     assert "body" in func_data
     assert len(func_data["body"]) >= 2
     assert func_data["body"][0]["opcode"] == "declare"
-
 
 def test_snapshots_output_py_matches_compilation_result(tmp_path):
     cpp_code = "int main() { return 0; }"

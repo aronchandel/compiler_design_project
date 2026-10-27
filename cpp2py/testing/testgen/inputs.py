@@ -1,10 +1,7 @@
-"""Input generation for differential testing with boundary biasing."""
-
 from __future__ import annotations
 
 import random
 
-# Common integer boundary constants
 INT_MAX_32 = 2147483647
 INT_MIN_32 = -2147483648
 
@@ -28,16 +25,13 @@ BOUNDARY_VALUES: list[int] = [
     INT_MIN_32 + 1,
 ]
 
-
 def generate_input_value(
     rng: random.Random,
     assumed_range: tuple[int | None, int | None] | None = None,
 ) -> int:
-    """Generate a single integer value, biased toward boundaries, respecting assumed range."""
     lo = assumed_range[0] if assumed_range is not None and assumed_range[0] is not None else INT_MIN_32
     hi = assumed_range[1] if assumed_range is not None and assumed_range[1] is not None else INT_MAX_32
 
-    # Collect boundary candidates that fall within [lo, hi]
     valid_boundaries = [v for v in BOUNDARY_VALUES if lo <= v <= hi]
     if lo not in valid_boundaries and lo >= INT_MIN_32:
         valid_boundaries.append(lo)
@@ -47,7 +41,6 @@ def generate_input_value(
     if mid not in valid_boundaries:
         valid_boundaries.append(mid)
 
-    # 60% chance boundary candidate, 40% uniform random within a sensible clamp
     if valid_boundaries and rng.random() < 0.6:
         return rng.choice(valid_boundaries)
 
@@ -57,14 +50,12 @@ def generate_input_value(
         return rng.randint(safe_lo, safe_hi)
     return rng.randint(lo, hi)
 
-
 def generate_input_stream(
     rng: random.Random,
     num_inputs: int,
     assumed_ranges: dict[str, tuple[int | None, int | None]] | None = None,
     var_names: list[str] | None = None,
 ) -> str:
-    """Generate space-separated integer input tokens terminated by a newline."""
     tokens: list[str] = []
     assumed = assumed_ranges or {}
 

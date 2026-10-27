@@ -1,5 +1,3 @@
-"""Health check router."""
-
 from __future__ import annotations
 
 import time
@@ -12,17 +10,14 @@ router = APIRouter(tags=["health"])
 
 _START_TIME = time.time()
 
-
 class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
     uptime_seconds: float
 
-
 @router.get("/health", response_model=HealthResponse)
 def health_check() -> HealthResponse:
-    """Return API running status and basic service information."""
     return HealthResponse(
         status="ok",
         service="cpp2py",

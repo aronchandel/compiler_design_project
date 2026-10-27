@@ -144,10 +144,10 @@
 </head>
 <body class="bg-surface font-body-md text-on-surface min-h-screen select-none">
 
-<!-- SIDEBAR -->
+
 <aside class="fixed left-0 top-0 bottom-0 w-56 bg-surface-container-low z-50 flex flex-col justify-between border-r border-outline-variant">
   <div class="flex flex-col">
-    <!-- Logo -->
+    
     <div class="h-12 px-space-lg flex items-center gap-space-sm border-b border-outline-variant">
       <div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
         <span class="material-symbols-outlined text-on-primary" style="font-size:16px">terminal</span>
@@ -155,7 +155,7 @@
       <span class="font-headline-md text-headline-md text-on-surface">cpp2py</span>
       <span id="versionBadge" class="font-label-sm text-label-sm text-secondary bg-surface-container px-1 py-0.5 rounded ml-auto">v0.0.0</span>
     </div>
-    <!-- Nav -->
+    
     <nav class="px-space-sm py-space-md flex flex-col gap-0.5">
       <a href="#" class="nav-item nav-active flex items-center gap-space-md px-space-md py-space-sm rounded-lg transition-colors" data-page="playground">
         <span class="material-symbols-outlined" style="font-size:18px">code</span>
@@ -188,7 +188,7 @@
       </a>
     </nav>
   </div>
-  <!-- API Status -->
+  
   <div class="p-space-md">
     <div class="p-space-sm bg-surface-container rounded-lg flex items-center gap-space-xs" id="apiStatusBar">
       <div class="w-2 h-2 rounded-full bg-outline animate-pulse" id="apiDot"></div>
@@ -197,10 +197,10 @@
   </div>
 </aside>
 
-<!-- MAIN CONTENT -->
+
 <div class="pl-56 flex flex-col min-h-screen">
 
-  <!-- HEADER -->
+  
   <header class="fixed top-0 left-56 right-0 h-12 bg-surface-container-low/95 backdrop-blur-xl z-40 px-space-lg flex items-center justify-between border-b border-outline-variant">
     <div class="flex items-center gap-space-md">
       <div class="flex items-center gap-space-xs font-code-sm text-code-sm text-on-surface-variant" id="breadcrumb">
@@ -221,16 +221,16 @@
     </div>
   </header>
 
-  <!-- MAIN -->
+  
   <main class="pt-12 pb-7 flex-1">
 
-    <!-- ===== PAGE: PLAYGROUND ===== -->
+    
     <div id="page-playground" class="page active flex-col w-full text-on-surface">
 
-      <!-- Action Bar -->
+      
       <div class="h-11 bg-surface-container-low px-space-md flex items-center justify-between border-b border-outline-variant">
         <div class="flex items-center gap-space-sm">
-          <!-- Example Dropdown -->
+          
           <div class="relative group">
             <button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container hover:bg-surface-container-high rounded text-on-surface text-label-md font-label-md transition-colors" id="exampleBtn">
               <span class="material-symbols-outlined text-primary" style="font-size:15px">code_blocks</span>
@@ -269,7 +269,7 @@
             <span>Copy C++</span>
           </button>
           <div class="h-4 w-px bg-outline-variant"></div>
-          <!-- Compat selector -->
+          
           <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
             <span class="material-symbols-outlined text-tertiary" style="font-size:15px">tune</span>
             <span class="text-label-sm font-label-sm text-outline">Mode:</span>
@@ -279,13 +279,13 @@
               <option value="always">Always Protect</option>
             </select>
           </div>
-          <!-- Fold Constants toggle -->
+          
           <label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Enable/disable constant folding optimization pass">
             <input type="checkbox" id="foldConstantsCheck" checked class="accent-primary cursor-pointer"/>
             <span class="text-label-sm font-label-sm text-on-surface">Fold Constants</span>
           </label>
         </div>
-        <!-- Run button -->
+        
         <div class="flex items-center gap-space-md">
           <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded text-label-sm font-label-sm text-on-surface-variant" id="backendStatusIndicator">
             <span class="w-1.5 h-1.5 rounded-full bg-outline animate-pulse" id="backendDot"></span>
@@ -299,10 +299,10 @@
         </div>
       </div>
 
-      <!-- Dual Pane Editors -->
+      
       <div class="flex w-full bg-surface-container-lowest" style="height: calc(100vh - 275px); min-height: 400px;">
 
-        <!-- LEFT: C++ Editor -->
+        
         <div class="flex-1 flex flex-col min-w-0">
           <div class="h-8 bg-surface-container-low px-space-md flex items-center justify-between border-b border-outline-variant">
             <div class="flex items-center gap-space-sm">
@@ -322,7 +322,7 @@
           </div>
         </div>
 
-        <!-- DIVIDER -->
+        
         <div class="w-px bg-outline-variant hover:bg-primary cursor-col-resize flex items-center justify-center relative group transition-colors" style="width:5px">
           <div class="absolute z-30 opacity-70 group-hover:opacity-100 transition-opacity">
             <button class="w-6 h-6 rounded-full bg-surface-container-high hover:bg-primary text-primary hover:text-on-primary shadow-md flex items-center justify-center transition-all" onclick="runTranspile()" title="Translate">
@@ -331,7 +331,7 @@
           </div>
         </div>
 
-        <!-- RIGHT: Python Output -->
+        
         <div class="flex-1 flex flex-col min-w-0">
           <div class="h-8 bg-surface-container-low px-space-md flex items-center justify-between border-b border-outline-variant">
             <div class="flex items-center gap-space-sm">
@@ -350,19 +350,19 @@
               </button>
             </div>
           </div>
-          <!-- Output states -->
+          
           <div class="flex-1 overflow-auto relative">
-            <!-- Empty state -->
+            
             <div class="absolute inset-0 flex items-center justify-center flex-col gap-space-md" id="pyEmpty">
               <span class="material-symbols-outlined text-outline" style="font-size:48px">arrow_back</span>
               <p class="text-on-surface-variant font-body-md text-body-md text-center">Write C++ code and click<br><span class="text-primary font-headline-sm text-headline-sm">Translate to Python</span></p>
             </div>
-            <!-- Loading state -->
+            
             <div class="absolute inset-0 flex items-center justify-center flex-col gap-space-md hidden" id="pyLoading">
               <span class="material-symbols-outlined text-primary animate-spin" style="font-size:36px">refresh</span>
               <p class="text-on-surface-variant font-body-md text-body-md">Compiling…</p>
             </div>
-            <!-- Error state -->
+            
             <div class="absolute inset-0 p-space-lg overflow-auto hidden" id="pyError">
               <div class="flex items-center gap-space-sm mb-space-md">
                 <span class="material-symbols-outlined text-error" style="font-size:20px">error</span>
@@ -370,7 +370,7 @@
               </div>
               <div id="pyErrorDetail" class="font-code-sm text-code-sm text-on-surface-variant"></div>
             </div>
-            <!-- Success state -->
+            
             <div class="hidden" id="pySuccess">
               <div class="flex">
                 <div class="line-nums py-2" id="pyLineNums">1</div>
@@ -381,9 +381,9 @@
         </div>
       </div>
 
-      <!-- Bottom Diagnostics Panel -->
+      
       <div class="bg-surface-container-low flex flex-col border-t border-outline-variant" style="height:220px">
-        <!-- Tab Strip -->
+        
         <div class="h-8 bg-surface-container px-space-md flex items-center justify-between border-b border-outline-variant">
           <div class="flex items-center gap-0 h-full">
             <button class="tab-btn tab-active px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="overview" onclick="selectTab('overview')">
@@ -405,9 +405,9 @@
           </div>
         </div>
 
-        <!-- TAB PANELS -->
+        
         <div class="flex-1 overflow-y-auto">
-          <!-- Overview -->
+          
           <div id="panel-overview" class="p-space-md">
             <div class="grid grid-cols-2 md:grid-cols-5 gap-space-md" id="metricsGrid">
               <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
@@ -446,13 +446,13 @@
               </div>
             </div>
           </div>
-          <!-- Diagnostics -->
+          
           <div id="panel-diagnostics" class="p-space-md hidden">
             <div id="diagList" class="space-y-space-sm">
               <p class="text-on-surface-variant font-body-sm text-body-sm">No diagnostics yet. Translate some code.</p>
             </div>
           </div>
-          <!-- IR -->
+          
           <div id="panel-ir" class="p-space-md hidden">
             <pre id="irDump" class="font-code-sm text-code-sm text-on-surface-variant whitespace-pre-wrap">No IR available. Translate first.</pre>
           </div>
@@ -460,7 +460,7 @@
       </div>
     </div>
 
-    <!-- ===== PAGE: HISTORY ===== -->
+    
     <div id="page-history" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
       <div class="flex items-center gap-space-md mb-space-md">
         <span class="material-symbols-outlined text-primary" style="font-size:24px">history</span>
@@ -471,7 +471,7 @@
       </div>
     </div>
 
-    <!-- ===== PAGE: DIFFERENTIAL TESTING ===== -->
+    
     <div id="page-difftest" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
       <div class="flex items-center gap-space-md mb-2">
         <span class="material-symbols-outlined text-secondary" style="font-size:24px">call_split</span>
@@ -479,7 +479,7 @@
         <span class="font-label-sm text-label-sm bg-surface-container text-secondary px-space-sm py-0.5 rounded">Phase 6</span>
       </div>
 
-      <!-- Capability -->
+      
       <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg" id="difftestCapabilityBox">
         <div class="flex items-center gap-space-md">
           <span class="material-symbols-outlined" style="font-size:20px" id="difftestCapIcon">help</span>
@@ -490,7 +490,7 @@
         </div>
       </div>
 
-      <!-- Run controls -->
+      
       <div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-lg flex flex-wrap gap-space-lg items-end">
         <div>
           <label class="font-label-sm text-label-sm text-outline block mb-1">Suite</label>
@@ -517,14 +517,14 @@
         </button>
       </div>
 
-      <!-- Results -->
+      
       <div id="dtResults" class="hidden bg-surface-container-low border border-outline-variant rounded-lg p-space-lg">
         <h2 class="font-headline-md text-headline-md text-on-surface mb-space-md">Results</h2>
         <div id="dtResultsContent" class="font-code-sm text-code-sm text-on-surface-variant"></div>
       </div>
     </div>
 
-    <!-- ===== PAGE: FIDELITY REPORTS ===== -->
+    
     <div id="page-fidelity" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
       <div class="flex items-center gap-space-md mb-2">
         <span class="material-symbols-outlined text-primary" style="font-size:24px">verified</span>
@@ -541,7 +541,7 @@
       <div id="fidResult" class="hidden"></div>
     </div>
 
-    <!-- ===== PAGE: SEMANTIC DIFFERENCES ===== -->
+    
     <div id="page-semantic" class="page flex-col w-full p-space-lg gap-space-md" style="display:none">
       <div class="flex items-center gap-space-md mb-2">
         <span class="material-symbols-outlined text-tertiary" style="font-size:24px">psychology</span>
@@ -562,7 +562,7 @@
 
   </main>
 
-  <!-- FOOTER -->
+  
   <footer class="fixed bottom-0 left-56 right-0 h-7 bg-surface-container-lowest z-40 px-space-md flex items-center justify-between border-t border-outline-variant">
     <div class="flex items-center gap-space-md">
       <div class="flex items-center gap-space-xs text-tertiary">

@@ -5,7 +5,6 @@ from cpp2py.frontend.lexer import tokenize
 from cpp2py.frontend.parser import parse
 from cpp2py.frontend.ast_printer import dump
 
-
 def test_ast_printer_empty_main():
     source = SourceFile("test.cpp", "int main() {}")
     sink = DiagnosticSink()
@@ -14,7 +13,6 @@ def test_ast_printer_empty_main():
     out = dump(ast)
     assert "Program uses_std=False" in out
     assert "FunctionDef main -> int" in out
-
 
 def test_ast_printer_golden():
     source = SourceFile("test.cpp", "int main() { int x = 42; return 0; }")

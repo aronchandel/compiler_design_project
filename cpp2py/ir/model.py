@@ -1,8 +1,3 @@
-"""Data model for the cpp2py Intermediate Representation (IR).
-
-Strict layering rule: this module must NOT import anything from frontend or semantics.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -11,9 +6,7 @@ from typing import Union
 
 from cpp2py.source import SourceSpan
 
-
 class IdAllocator:
-    """Module-wide monotonic ID allocator for operations, temporaries and regions."""
 
     def __init__(self) -> None:
         self._op_counter: int = 0
@@ -35,11 +28,9 @@ class IdAllocator:
         self._region_counter += 1
         return res
 
-    # Convenient aliases
     alloc_op_id = next_op_id
     alloc_temp_id = next_temp_id
     alloc_region_id = next_region_id
-
 
 class IRType(Enum):
     I32 = "i32"
@@ -52,8 +43,6 @@ class IRType(Enum):
     def __str__(self) -> str:
         return self.value
 
-
-# Short type aliases for convenience
 i32 = IRType.I32
 i64 = IRType.I64
 bool_type = IRType.BOOL
@@ -61,20 +50,16 @@ void_type = IRType.VOID
 str_type = IRType.STR
 ptr_type = IRType.PTR
 
-
 @dataclass(frozen=True, slots=True)
 class Const:
-    """Integer constant operand."""
     value: int
     type: IRType = IRType.I32
 
     def __str__(self) -> str:
         return str(self.value)
 
-
 @dataclass(frozen=True, slots=True)
 class VarRef:
-    """Variable reference operand."""
     symbol_id: int
     ir_name: str
     type: IRType = IRType.I32
@@ -82,20 +67,16 @@ class VarRef:
     def __str__(self) -> str:
         return self.ir_name
 
-
 @dataclass(frozen=True, slots=True)
 class TempRef:
-    """Single-assignment temporary operand."""
     temp_id: str
     type: IRType = IRType.I32
 
     def __str__(self) -> str:
         return self.temp_id
 
-
 @dataclass(frozen=True, slots=True)
 class StrConst:
-    """String constant operand (used only inside print)."""
     text: str
     type: IRType = IRType.STR
 
@@ -103,21 +84,16 @@ class StrConst:
         escaped = self.text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t")
         return f'"{escaped}"'
 
-
 @dataclass(frozen=True, slots=True)
 class LabelRef:
-    """Label reference operand."""
     name: str
 
     def __str__(self) -> str:
         return self.name
 
-
 Operand = Union[Const, VarRef, TempRef, StrConst, LabelRef]
 
-
 class Opcode(Enum):
-    """All opcodes defined in ARCH §D.3.4 (with extensions for cast)."""
     DECLARE = "declare"
     ASSIGN = "assign"
     ADD = "add"
@@ -139,10 +115,8 @@ class Opcode(Enum):
     def __str__(self) -> str:
         return self.value
 
-
 @dataclass(slots=True)
 class Instruction:
-    """Single IR instruction."""
     op_id: str
     opcode: Opcode
     dst: VarRef | TempRef | None = None
@@ -156,29 +130,23 @@ class Instruction:
     cmp_op: str | None = None
     func_name: str | None = None
 
-
 @dataclass(slots=True)
 class RegionInfo:
-    """Loop / if region metadata for structured control-flow recovery."""
     region_id: str
-    kind: str  # "if" | "while" | "for"
+    kind: str
     span: SourceSpan | None = None
     loop_var: int | None = None
     loop_var_declared_in_init: bool = False
 
-
 @dataclass(slots=True)
 class IRFunction:
-    """Function in the intermediate representation."""
     name: str
     params: tuple[VarRef, ...]
     return_type: IRType
     body: list[Instruction] = field(default_factory=list)
     regions: dict[str, RegionInfo] = field(default_factory=dict)
 
-
 @dataclass(slots=True)
 class IRModule:
-    """A collection of IRFunctions representing an entire translation unit."""
     functions: list[IRFunction]
     source_name: str = ""

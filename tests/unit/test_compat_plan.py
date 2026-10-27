@@ -1,5 +1,3 @@
-"""Unit tests for CompatPlan determinism and serialization."""
-
 import json
 from cpp2py.source import SourceFile
 from cpp2py.diagnostics import DiagnosticSink
@@ -10,7 +8,6 @@ from cpp2py.config import CompilerConfig, CompatMode
 from cpp2py.ir.builder import build_ir
 from cpp2py.analysis.range_analysis import analyze_ranges
 from cpp2py.compat.policy import build_plan
-
 
 def test_plan_determinism():
     src_text = """

@@ -1,23 +1,13 @@
-"""Control Flow Graph (CFG) construction and traversal for cpp2py IR.
-
-Conforms to ARCH §D.3 and §E.4:
-- Basic blocks built from labels, jumps, branches, returns, and fallthrough.
-- Identifies loop head blocks (role == "loop_head").
-- Computes Reverse Post-Order (RPO) for worklist iteration.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from cpp2py.ir.model import IRFunction, Instruction, Opcode
 
-
 @dataclass
 class CFGEdge:
     source: BasicBlock
     target: BasicBlock
-    kind: str = "normal"  # "normal", "true", "false"
-
+    kind: str = "normal"
 
 @dataclass
 class BasicBlock:
@@ -39,9 +29,7 @@ class BasicBlock:
     def __repr__(self) -> str:
         return f"Block({self.block_id}, instrs={len(self.instructions)}, loop_head={self.is_loop_head})"
 
-
 class CFG:
-    """Control Flow Graph for a single IRFunction."""
 
     def __init__(self, func: IRFunction) -> None:
         self.func = func
@@ -54,7 +42,6 @@ class CFG:
         if not body:
             return
 
-        # 1. Identify leader instruction indices
         leaders: set[int] = {0}
         label_to_index: dict[str, int] = {}
 
@@ -69,7 +56,6 @@ class CFG:
 
         sorted_leaders = sorted(leaders)
 
-        # 2. Partition into basic blocks
         blocks: list[BasicBlock] = []
         index_to_block: dict[int, BasicBlock] = {}
         label_to_block: dict[str, BasicBlock] = {}
@@ -83,7 +69,7 @@ class CFG:
                 first = block_instrs[0]
                 if first.opcode == Opcode.LABEL:
                     label_name = first.label_name or (str(first.operands[0]) if first.operands else "")
-                    label_to_block[label_name] = None  # placeholder, set below
+                    label_to_block[label_name] = None
                     if first.role == "loop_head" or label_name.startswith("loop_head_"):
                         is_loop_head = True
 
@@ -97,7 +83,6 @@ class CFG:
         self.blocks = blocks
         self.entry = blocks[0]
 
-        # 3. Connect edges
         for b_id, bb in enumerate(blocks):
             if not bb.instructions:
                 continue
@@ -120,11 +105,11 @@ class CFG:
                     self._add_edge(bb, f_block, kind="false")
 
             elif last.opcode == Opcode.RETURN:
-                # No successors
+
                 pass
 
             else:
-                # Fallthrough to next block if exists
+
                 if b_id + 1 < len(blocks):
                     self._add_edge(bb, blocks[b_id + 1], kind="normal")
 
@@ -135,7 +120,6 @@ class CFG:
         target.predecessors.append(source)
 
     def reverse_post_order(self) -> list[BasicBlock]:
-        """Compute reverse post-order traversal from entry block."""
         if self.entry is None:
             return []
 

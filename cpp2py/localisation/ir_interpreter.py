@@ -1,9 +1,3 @@
-"""Reference IR interpreter executing with strict C++ semantics.
-
-Conforms to ARCH §E and §I.2.
-Independent of CompatPlan or compatibility helpers.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -25,10 +19,8 @@ from cpp2py.ir.model import (
 )
 from cpp2py.source import SourceSpan
 
-
 @dataclass(slots=True)
 class TraceEntry:
-    """Single step in the interpreter execution trace."""
     step: int
     op_id: str
     opcode: Opcode
@@ -40,10 +32,8 @@ class TraceEntry:
     output_chunk: str | None = None
     func_name: str = ""
 
-
 @dataclass
 class InterpretationResult:
-    """Result of interpreting an IR module."""
     stdout: str
     exit_code: int
     success: bool
@@ -52,9 +42,7 @@ class InterpretationResult:
     error: str | None = None
     ub_events: list[str] = field(default_factory=list)
 
-
 def wrap_int(val: int, bits: int) -> int:
-    """Reduce integer modulo 2^N into signed two's-complement range [-2^(N-1), 2^(N-1)-1]."""
     mask = (1 << bits) - 1
     val = val & mask
     max_val = (1 << (bits - 1)) - 1
@@ -62,39 +50,29 @@ def wrap_int(val: int, bits: int) -> int:
         val -= (1 << bits)
     return val
 
-
 def in_range(val: int, bits: int) -> bool:
-    """Check if value is within signed range for given bit width."""
     min_val = -(1 << (bits - 1))
     max_val = (1 << (bits - 1)) - 1
     return min_val <= val <= max_val
 
-
 def get_type_bits(ir_type: IRType | str, target: TargetModel) -> int:
-    """Get bit width for integer type from TargetModel."""
     type_str = ir_type.value if isinstance(ir_type, IRType) else str(ir_type)
     if type_str == "i64":
         return target.long_long_bits
     return target.int_bits
 
-
 def cpp_div(a: int, b: int) -> int:
-    """C++ truncating integer division toward zero."""
     if b == 0:
         raise ZeroDivisionError("integer division by zero")
     sign = -1 if (a < 0) ^ (b < 0) else 1
     return sign * (abs(a) // abs(b))
 
-
 def cpp_mod(a: int, b: int) -> int:
-    """C++ integer modulo matching the sign of dividend."""
     if b == 0:
         raise ZeroDivisionError("integer modulo by zero")
     return a - b * cpp_div(a, b)
 
-
 class IRInterpreter:
-    """Executes an IRModule under specified TargetModel and OverflowPolicy."""
 
     def __init__(
         self,
@@ -124,7 +102,6 @@ class IRInterpreter:
         self.step_count = 0
 
     def run(self, stdin_text: str = "") -> InterpretationResult:
-        """Run execution from main() with given stdin string."""
         if "main" not in self.functions:
             return InterpretationResult(
                 stdout="",
@@ -168,7 +145,6 @@ class IRInterpreter:
     ) -> Any:
         func = self.functions[func_name]
 
-        # Build label index map
         labels: dict[str, int] = {}
         for idx, instr in enumerate(func.body):
             if instr.opcode == Opcode.LABEL:
@@ -178,7 +154,6 @@ class IRInterpreter:
         locals_map: dict[str, int] = {}
         temps_map: dict[str, Any] = {}
 
-        # Bind parameters
         for idx, param in enumerate(func.params):
             if idx < len(args):
                 locals_map[param.ir_name] = args[idx]
@@ -252,7 +227,7 @@ class IRInterpreter:
                         raise OverflowError(f"signed overflow in {opcode.value}: {v1}, {v2}")
                     elif self.policy == OverflowPolicy.WRAP:
                         result_val = wrap_int(math_val, bits)
-                    else:  # ASSUME_NO_OVERFLOW
+                    else:
                         self.ub_events.append(f"signed overflow in {opcode.value}: {math_val} exceeds {bits}-bit range")
                         result_val = math_val
 
@@ -474,7 +449,6 @@ class IRInterpreter:
 
         return 0
 
-
 def interpret_module(
     module: IRModule,
     stdin_text: str = "",
@@ -483,7 +457,6 @@ def interpret_module(
     step_limit: int = 200000,
     record_trace: bool = True,
 ) -> InterpretationResult:
-    """Convenience helper to interpret an IRModule."""
     interpreter = IRInterpreter(
         module=module,
         target=target,

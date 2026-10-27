@@ -1,5 +1,3 @@
-"""Unit tests for Interval class methods and edge cases."""
-
 import pytest
 
 from cpp2py.analysis.intervals import (
@@ -13,7 +11,6 @@ from cpp2py.analysis.intervals import (
     mod,
     cast,
 )
-
 
 def test_bottom_invariants():
     assert BOTTOM.is_bottom
@@ -33,13 +30,11 @@ def test_bottom_invariants():
     assert neg(BOTTOM) == BOTTOM
     assert cast(BOTTOM, -10, 10) == BOTTOM
 
-
 def test_intersect_disjoint():
     a = Interval(1, 5)
     b = Interval(6, 10)
     assert a.intersect(b) == BOTTOM
     assert a.intersect(b).is_bottom
-
 
 def test_unbounded_intervals():
     left_unbounded = Interval(None, 5)
@@ -52,7 +47,6 @@ def test_unbounded_intervals():
     met = left_unbounded.intersect(right_unbounded)
     assert met == Interval(0, 5)
 
-
 def test_widening_to_type_bounds():
     prev = Interval(0, 5)
     new_growing_hi = Interval(0, 6)
@@ -64,27 +58,23 @@ def test_widening_to_type_bounds():
     w2 = prev2.widen_to_type_bounds(new_growing_lo, -100, 100)
     assert w2 == Interval(-100, 5)
 
-    # Bound did not grow
     new_smaller = Interval(1, 4)
     w3 = prev.widen_to_type_bounds(new_smaller, -100, 100)
     assert w3 == Interval(0, 5)
-
 
 def test_div_by_zero_only():
     res = div(Interval(1, 10), Interval(0, 0))
     assert res.lo is None and res.hi is None
 
-
 def test_mod_by_zero_only():
     res = mod(Interval(1, 10), Interval(0, 0))
     assert res.lo is None and res.hi is None
 
-
 def test_cast_exact_and_lossy():
     a = Interval(0, 100)
-    # Fits in [-128, 127]
+
     assert cast(a, -128, 127) == a
 
     b = Interval(0, 200)
-    # Does not fit in [-128, 127] -> target bounds
+
     assert cast(b, -128, 127) == Interval(-128, 127)

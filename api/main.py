@@ -1,10 +1,3 @@
-"""
-cpp2py FastAPI backend.
-
-Exposes the cpp2py compiler and Phase 6/7 features over HTTP.
-Invokes the real compiler; never fabricates results.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -20,9 +13,6 @@ from fastapi.staticfiles import StaticFiles
 import cpp2py
 from api.routers import translate, difftest, reporting, health
 
-# ---------------------------------------------------------------------------
-# CORS origins – configure via FRONTEND_ORIGIN env-var
-# ---------------------------------------------------------------------------
 _FRONTEND_ORIGIN = os.environ.get(
     "FRONTEND_ORIGIN", "http://localhost:5173"
 )
@@ -33,16 +23,13 @@ _ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
-    # Also allow null origin (opening file:// in browser)
+
     "null",
 ]
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup / shutdown lifecycle."""
     yield
-
 
 app = FastAPI(
     title="cpp2py API",
@@ -51,9 +38,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ---------------------------------------------------------------------------
-# CORS
-# ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
@@ -63,25 +47,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# Routers
-# ---------------------------------------------------------------------------
 app.include_router(health.router, prefix="/api")
 app.include_router(translate.router, prefix="/api")
 app.include_router(difftest.router, prefix="/api")
 app.include_router(reporting.router, prefix="/api")
 
-# ---------------------------------------------------------------------------
-# Serve the Stitch-generated frontend as static files from /app
-# ---------------------------------------------------------------------------
 _FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.isdir(_FRONTEND_DIR):
     app.mount("/", StaticFiles(directory=_FRONTEND_DIR, html=True), name="frontend")
 
-
-# ---------------------------------------------------------------------------
-# Global exception handler – never leak internal paths or tracebacks
-# ---------------------------------------------------------------------------
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(

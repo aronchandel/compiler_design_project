@@ -1,14 +1,3 @@
-"""Intra-procedural interval range analysis on cpp2py IR.
-
-Conforms to ARCH §E.4 and IMPLEMENTATION_PLAN.md:
-- Forward worklist dataflow per function over CFG basic blocks.
-- Entry state: parameters full type range; reads full type range unless assumed.
-- Join at basic block entries; widening to type bounds at loop heads.
-- Branch refinement on simple comparisons along true/false edges.
-- Transfer functions on mathematical integers; clamping / policy handling for overflow.
-- Produces RangeResult(by_op, assumptions, converged, iterations).
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -43,7 +32,6 @@ from cpp2py.config import OverflowPolicy
 if TYPE_CHECKING:
     from cpp2py.config import CompilerConfig, TargetModel
 
-
 @dataclass(frozen=True, slots=True)
 class OpRangeInfo:
     op_id: str
@@ -62,7 +50,6 @@ class OpRangeInfo:
             "result_range": self.result_range.to_dict(),
             "risks": sorted(r.value for r in self.risks),
         }
-
 
 @dataclass
 class RangeResult:
@@ -85,12 +72,10 @@ class RangeResult:
             },
         }
 
-
 def _type_bounds(t: IRType, target: TargetModel) -> tuple[int, int]:
     if t == IRType.I64:
         return target.long_long_min, target.long_long_max
     return target.int_min, target.int_max
-
 
 def _op_key(op: Operand) -> str:
     if isinstance(op, VarRef):
@@ -99,9 +84,7 @@ def _op_key(op: Operand) -> str:
         return f"temp_{op.temp_id}"
     return str(op)
 
-
 State = dict[str, Interval]
-
 
 def _join_states(s1: State | None, s2: State) -> State:
     if s1 is None:
@@ -114,7 +97,6 @@ def _join_states(s1: State | None, s2: State) -> State:
         res[k] = v1.join(v2)
     return res
 
-
 def _states_equal(s1: State | None, s2: State | None) -> bool:
     if s1 is None or s2 is None:
         return s1 == s2
@@ -125,7 +107,6 @@ def _states_equal(s1: State | None, s2: State | None) -> bool:
             return False
     return True
 
-
 def _refine_comparison(
     cmp_op: str,
     left_key: str | None,
@@ -135,7 +116,6 @@ def _refine_comparison(
     state: State,
     is_true_branch: bool,
 ) -> State:
-    """Refine left and right operand intervals along a branch edge."""
     res = dict(state)
     op = cmp_op
 
@@ -154,41 +134,41 @@ def _refine_comparison(
     new_right = right_int
 
     if op == "lt":
-        # x < y  =>  x <= y.hi - 1,  y >= x.lo + 1
+
         if right_int.hi is not None:
             new_left = new_left.intersect(Interval(None, right_int.hi - 1))
         if left_int.lo is not None:
             new_right = new_right.intersect(Interval(left_int.lo + 1, None))
 
     elif op == "le":
-        # x <= y  =>  x <= y.hi,  y >= x.lo
+
         if right_int.hi is not None:
             new_left = new_left.intersect(Interval(None, right_int.hi))
         if left_int.lo is not None:
             new_right = new_right.intersect(Interval(left_int.lo, None))
 
     elif op == "gt":
-        # x > y  =>  x >= y.lo + 1,  y <= x.hi - 1
+
         if right_int.lo is not None:
             new_left = new_left.intersect(Interval(right_int.lo + 1, None))
         if left_int.hi is not None:
             new_right = new_right.intersect(Interval(None, left_int.hi - 1))
 
     elif op == "ge":
-        # x >= y  =>  x >= y.lo,  y <= x.hi
+
         if right_int.lo is not None:
             new_left = new_left.intersect(Interval(right_int.lo, None))
         if left_int.hi is not None:
             new_right = new_right.intersect(Interval(None, left_int.hi))
 
     elif op == "eq":
-        # x == y  =>  x in x ∩ y,  y in x ∩ y
+
         common = left_int.intersect(right_int)
         new_left = common
         new_right = common
 
     elif op == "ne":
-        # x != y: refine if one operand is a known singleton
+
         if right_int.lo is not None and right_int.lo == right_int.hi:
             c = right_int.lo
             if new_left.lo == c:
@@ -202,7 +182,6 @@ def _refine_comparison(
             elif new_right.hi == c:
                 new_right = new_right.intersect(Interval(None, c - 1))
 
-    # If any operand becomes empty, the entire branch is unreachable
     if new_left.is_bottom or new_right.is_bottom:
         return {k: BOTTOM for k in res}
 
@@ -213,9 +192,7 @@ def _refine_comparison(
 
     return res
 
-
 def analyze_ranges(module: IRModule, config: CompilerConfig) -> RangeResult:
-    """Run range analysis over all functions in the module."""
     all_by_op: dict[str, OpRangeInfo] = {}
     all_assumptions: list[tuple[str, Interval]] = []
     total_iterations = 0
@@ -239,7 +216,6 @@ def analyze_ranges(module: IRModule, config: CompilerConfig) -> RangeResult:
         iterations=total_iterations,
     )
 
-
 def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeResult:
     target = config.target
     overflow_policy = target.overflow_policy
@@ -248,27 +224,22 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
     if not cfg.blocks:
         return RangeResult()
 
-    # Track definition instructions for temps (especially CMP)
     temp_defs: dict[str, Instruction] = {}
     for instr in func.body:
         if instr.dst is not None and isinstance(instr.dst, TempRef):
             temp_defs[instr.dst.temp_id] = instr
 
-    # Initial entry state
     entry_state: State = {}
     for p in func.params:
         t_min, t_max = _type_bounds(p.type, target)
         entry_state[_op_key(p)] = Interval(t_min, t_max)
 
-    # Assumed ranges tracking
     assumptions: list[tuple[str, Interval]] = []
 
-    # Map block_id -> in_state, out_state
     in_states: dict[int, State] = {cfg.entry.block_id: entry_state}
     out_states: dict[int, State] = {}
     edge_out_states: dict[tuple[int, int], State] = {}
 
-    # Worklist using RPO
     rpo = cfg.reverse_post_order()
     worklist: list[BasicBlock] = list(rpo)
     in_worklist: set[int] = {b.block_id for b in worklist}
@@ -283,11 +254,10 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
         bb = worklist.pop(0)
         in_worklist.discard(bb.block_id)
 
-        # 1. Compute in_state
         if bb == cfg.entry:
             cur_in = dict(entry_state)
             if cfg.entry.block_id in in_states:
-                # Merge if loops back to entry (rare)
+
                 cur_in = _join_states(in_states[cfg.entry.block_id], entry_state)
         else:
             merged: State | None = None
@@ -297,13 +267,12 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
                     merged = _join_states(merged, edge_state)
             cur_in = merged if merged is not None else {}
 
-        # If bb is a loop head, apply widening to type bounds
         if bb.is_loop_head and bb.block_id in in_states:
             prev_in = in_states[bb.block_id]
             widened: State = {}
             for k, cur_val in cur_in.items():
                 prev_val = prev_in.get(k, BOTTOM)
-                # Look up variable type bounds if known
+
                 var_t = IRType.I64 if "i64" in k else IRType.I32
                 t_min, t_max = _type_bounds(var_t, target)
                 widened[k] = prev_val.widen_to_type_bounds(cur_val, t_min, t_max)
@@ -311,7 +280,6 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
 
         in_states[bb.block_id] = cur_in
 
-        # 2. Execute block instructions sequentially
         state = dict(cur_in)
 
         def get_op_range(op: Operand) -> Interval:
@@ -331,7 +299,7 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
                 var = instr.dst or instr.operands[0]
                 var_t = getattr(var, "type", IRType.I32)
                 t_min, t_max = _type_bounds(var_t, target)
-                # Before assignment, range is type bounds
+
                 state[_op_key(var)] = Interval(t_min, t_max)
 
             elif opcode == Opcode.ASSIGN:
@@ -343,7 +311,7 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
             elif opcode == Opcode.READ:
                 var = instr.dst or instr.operands[0]
                 var_name = var.ir_name if isinstance(var, VarRef) else str(var)
-                # Check for assumed range: "function.var"
+
                 assumed_key = f"{func.name}.{var_name}"
                 if assumed_key in config.assumed_ranges:
                     assumed_int = config.assumed_ranges[assumed_key]
@@ -382,10 +350,8 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
                     t_min, t_max = _type_bounds(dst_t, target)
                     exact_res = cast(operand_ranges[0], t_min, t_max)
 
-                # Classify risks
                 risks = classify_risks(instr, operand_ranges, exact_res, target)
 
-                # Determine stored result range
                 dst_t = instr.dst.type if instr.dst else IRType.I32
                 t_min, t_max = _type_bounds(dst_t, target)
                 t_range = Interval(t_min, t_max)
@@ -393,16 +359,15 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
                 if t_range.contains_interval(exact_res):
                     stored_res = exact_res
                 else:
-                    # Overflow occurred or possible
+
                     if overflow_policy == OverflowPolicy.ASSUME_NO_OVERFLOW:
                         stored_res = exact_res.intersect(t_range)
-                    else:  # wrap or trap
+                    else:
                         stored_res = t_range
 
                 if instr.dst:
                     state[_op_key(instr.dst)] = stored_res
 
-                # Record by_op information
                 by_op[instr.op_id] = OpRangeInfo(
                     op_id=instr.op_id,
                     opcode=opcode,
@@ -414,7 +379,6 @@ def _analyze_function_ranges(func: IRFunction, config: CompilerConfig) -> RangeR
 
         out_states[bb.block_id] = state
 
-        # 3. Propagate to edges with branch refinement
         for edge in bb.outgoing_edges:
             succ = edge.target
             edge_state = dict(state)

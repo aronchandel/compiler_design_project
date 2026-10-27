@@ -1,5 +1,3 @@
-"""IR transformation passes and framework for cpp2py."""
-
 from cpp2py.transforms.log import TransformRecord, TransformLog
 from cpp2py.transforms.manager import (
     IRRewriter,

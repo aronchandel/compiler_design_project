@@ -1,5 +1,3 @@
-"""Unit tests for constant folding pass (cpp2py/transforms/constant_fold.py)."""
-
 import pytest
 from cpp2py.compiler import compile_source
 from cpp2py.config import CompilerConfig, TargetModel
@@ -23,9 +21,7 @@ from cpp2py.transforms.constant_fold import ConstantFoldPass
 from cpp2py.transforms.manager import IRRewriter, PassContext
 from cpp2py.transforms.log import TransformLog
 
-
 def run_fold(func: IRFunction, config: CompilerConfig | None = None) -> tuple[IRFunction, DiagnosticSink, TransformLog]:
-    """Helper to run ConstantFoldPass on an IRFunction."""
     if config is None:
         config = CompilerConfig()
     sink = DiagnosticSink()
@@ -38,11 +34,6 @@ def run_fold(func: IRFunction, config: CompilerConfig | None = None) -> tuple[IR
     ctx = PassContext(config=config, sink=sink)
     ConstantFoldPass().run(func, rw, ctx)
     return func, sink, log
-
-
-# ---------------------------------------------------------------------------
-# Folding Table Tests (>= 25 cases)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize(
     "a, op, b, expected_val",
@@ -67,9 +58,9 @@ def run_fold(func: IRFunction, config: CompilerConfig | None = None) -> tuple[IR
         (-15, Opcode.MOD, 4, -3),
         (10, Opcode.SUB, 10, 0),
         (5, Opcode.SUB, 10, -5),
-        (-2147483647, Opcode.SUB, 1, -2147483648),  # INT_MIN boundary
+        (-2147483647, Opcode.SUB, 1, -2147483648),
         (-2147483648, Opcode.ADD, 0, -2147483648),
-        (2147483646, Opcode.ADD, 1, 2147483647),   # INT_MAX boundary
+        (2147483646, Opcode.ADD, 1, 2147483647),
     ],
 )
 def test_constant_fold_binops(a, op, b, expected_val):
@@ -93,7 +84,6 @@ def test_constant_fold_binops(a, op, b, expected_val):
     assert len(instr.operands) == 1
     assert isinstance(instr.operands[0], Const)
     assert instr.operands[0].value == expected_val
-
 
 @pytest.mark.parametrize(
     "val, expected_val",
@@ -125,9 +115,8 @@ def test_constant_fold_unop_neg(val, expected_val):
     assert isinstance(instr.operands[0], Const)
     assert instr.operands[0].value == expected_val
 
-
 def test_constant_fold_add_overflow_skipped_w6004():
-    # 2147483647 + 1 not folded + W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -143,12 +132,11 @@ def test_constant_fold_add_overflow_skipped_w6004():
     )
     _, sink, _ = run_fold(func)
     assert any(w.code == "W6004" for w in sink.warnings)
-    # Instruction is kept
+
     assert func.body[0].opcode == Opcode.ADD
 
-
 def test_constant_fold_div_by_zero_skipped_w6004():
-    # 1 / 0 not folded + W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -166,9 +154,8 @@ def test_constant_fold_div_by_zero_skipped_w6004():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.DIV
 
-
 def test_constant_fold_mod_by_zero_skipped_w6004():
-    # 1 % 0 not folded + W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -186,9 +173,8 @@ def test_constant_fold_mod_by_zero_skipped_w6004():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.MOD
 
-
 def test_constant_fold_mul_overflow_skipped_w6004():
-    # mul overflow not folded + W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -206,9 +192,8 @@ def test_constant_fold_mul_overflow_skipped_w6004():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.MUL
 
-
 def test_constant_fold_sub_underflow_skipped_w6004():
-    # INT_MIN - 1 not folded + W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -226,9 +211,8 @@ def test_constant_fold_sub_underflow_skipped_w6004():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.SUB
 
-
 def test_constant_fold_neg_int_min_overflow_skipped_w6004():
-    # -(-2147483648) = 2147483648 > INT_MAX -> W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -246,9 +230,8 @@ def test_constant_fold_neg_int_min_overflow_skipped_w6004():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.NEG
 
-
 def test_constant_fold_div_int_min_neg1_overflow_w6004():
-    # INT_MIN / -1 overflows 32-bit int -> W6004
+
     func = IRFunction(
         name="test",
         params=(),
@@ -266,10 +249,8 @@ def test_constant_fold_div_int_min_neg1_overflow_w6004():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.DIV
 
-
 def test_constant_fold_target_model_16_bit():
-    # TargetModel(int_bits=16) changes in-range decision:
-    # 30000 + 10000 = 40000 > 32767 -> W6004 under 16-bit
+
     cfg16 = CompilerConfig(target=TargetModel(int_bits=16))
     func = IRFunction(
         name="test",
@@ -288,7 +269,6 @@ def test_constant_fold_target_model_16_bit():
     assert any(w.code == "W6004" for w in sink.warnings)
     assert func.body[0].opcode == Opcode.ADD
 
-    # But 100 + 200 folds under 16-bit
     func2 = IRFunction(
         name="test2",
         params=(),
@@ -306,9 +286,8 @@ def test_constant_fold_target_model_16_bit():
     assert func2.body[0].opcode == Opcode.ASSIGN
     assert func2.body[0].operands[0].value == 300
 
-
 def test_constant_fold_substitute_constant_temp():
-    # t0 = assign 42; a = assign t0 -> a = assign 42 [derived from op_1]
+
     func = IRFunction(
         name="test",
         params=(),
@@ -333,9 +312,8 @@ def test_constant_fold_substitute_constant_temp():
     assert func.body[1].origin == ("op_1",)
     assert any(r.kind == "REPLACE" and r.op_id == "op_2" and r.derived_from == ["op_1"] for r in log.records)
 
-
 def test_constant_fold_never_touches_cmp_branch_control_flow():
-    # cmp lt 1, 2 is NEVER folded
+
     func = IRFunction(
         name="test",
         params=(),

@@ -1,8 +1,3 @@
-"""Unit tests for Phase 3 IR builder and IR canonical shapes.
-
-Includes AC3.4 golden IR test matching ARCH §D.4.
-"""
-
 import pytest
 from cpp2py.source import SourceFile
 from cpp2py.diagnostics import DiagnosticSink
@@ -13,7 +8,6 @@ from cpp2py.semantics.analyzer import analyze
 from cpp2py.ir.builder import build_ir
 from cpp2py.ir.printer import format_module, format_instruction
 from cpp2py.ir.model import Opcode, IRType
-
 
 def build_module_from_cpp(code: str):
     source = SourceFile("test.cpp", code)
@@ -27,9 +21,7 @@ def build_module_from_cpp(code: str):
     module = build_ir(ast, info, config)
     return module
 
-
 def test_ac3_4_golden_while_ir():
-    """AC3.4 Golden IR for while loop equals ARCH §D.4 second illustration."""
     code = """
     #include <iostream>
     using namespace std;
@@ -44,8 +36,8 @@ def test_ac3_4_golden_while_ir():
     """
     module = build_module_from_cpp(code)
     func = module.functions[0]
-    # Filter to the instructions before return 0
-    instructions = func.body[:-1]  # Exclude return 0
+
+    instructions = func.body[:-1]
 
     expected_ops = [
         (Opcode.DECLARE, "declare i : i32"),
@@ -65,12 +57,10 @@ def test_ac3_4_golden_while_ir():
     for instr, (expected_opcode, expected_text_prefix) in zip(instructions, expected_ops):
         assert instr.opcode == expected_opcode
         formatted = format_instruction(instr).strip()
-        # Remove op_id and span comment to compare semantic representation
-        # Format is: op_<n>  <content>  ; <comment>
-        parts = formatted.split(maxsplit=1)[1]  # drop op_<n>
+
+        parts = formatted.split(maxsplit=1)[1]
         content = parts.split(";")[0].strip()
         assert content == expected_text_prefix or content.startswith(expected_text_prefix)
-
 
 def test_if_then_ir_canonical_shape():
     code = """
@@ -88,11 +78,10 @@ def test_if_then_ir_canonical_shape():
     assert Opcode.CMP in opcodes
     assert Opcode.BRANCH in opcodes
     assert Opcode.LABEL in opcodes
-    # Verify labels for if_then_r0 and if_end_r0
+
     labels = [instr.label_name for instr in func.body if instr.opcode == Opcode.LABEL]
     assert "if_then_r0" in labels
     assert "if_end_r0" in labels
-
 
 def test_if_then_else_ir_canonical_shape():
     code = """
@@ -113,7 +102,6 @@ def test_if_then_else_ir_canonical_shape():
     assert "if_else_r0" in labels
     assert "if_end_r0" in labels
 
-
 def test_for_loop_ir_canonical_shape():
     code = """
     int main() {
@@ -130,10 +118,9 @@ def test_for_loop_ir_canonical_shape():
     assert "loop_head_r0" in labels
     assert "loop_body_r0" in labels
     assert "loop_end_r0" in labels
-    # Verify jump loop_head_r0 is present
+
     jumps = [instr for instr in func.body if instr.opcode == Opcode.JUMP]
     assert any(j.operands[0].name == "loop_head_r0" for j in jumps)
-
 
 def test_nested_loops_region_ids():
     code = """
@@ -152,7 +139,6 @@ def test_nested_loops_region_ids():
     assert "loop_head_r0" in labels
     assert "loop_head_r1" in labels
 
-
 def test_function_call_ir():
     code = """
     int add(int a, int b) {
@@ -170,7 +156,6 @@ def test_function_call_ir():
     assert len(calls) == 1
     assert calls[0].func_name == "add"
     assert len(calls[0].operands) == 2
-
 
 def test_ir_shadowing_variable_renaming():
     code = """

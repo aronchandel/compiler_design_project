@@ -1,25 +1,11 @@
-"""Evaluation metrics per ARCH §J.2.
-
-Provides pure functions and data structures for:
-- Agreement rate and denominator accounting
-- Static helper precision, recall, and unnecessary helper counts
-- Dynamic unnecessary helper ratio
-- Soundness violations detection
-- Localisation hit rates and Mean Reciprocal Rank (MRR)
-- Code size and readability proxies
-- Runtime timing aggregation
-"""
-
 from __future__ import annotations
 
 import statistics
 from dataclasses import dataclass, field
 from typing import Any
 
-
 @dataclass(frozen=True)
 class StaticHelperMetrics:
-    """Metrics comparing helper insertion decisions against ground truth labels."""
     tp: int
     fp: int
     tn: int
@@ -49,10 +35,8 @@ class StaticHelperMetrics:
             "unnecessary_sites": self.unnecessary_sites,
         }
 
-
 @dataclass(frozen=True)
 class DynamicHelperMetrics:
-    """Metrics measuring helper executions dynamically."""
     total_executions: int
     differs_from_native: int
     equals_native: int
@@ -68,10 +52,8 @@ class DynamicHelperMetrics:
             "label": self.label,
         }
 
-
 @dataclass(frozen=True)
 class SoundnessViolation:
-    """An individual case where E mismatches while B1 passes on UB-free input."""
     case_id: str
     category: str
     e_outcome: str
@@ -87,10 +69,8 @@ class SoundnessViolation:
             "details": self.details,
         }
 
-
 @dataclass(frozen=True)
 class LocalisationMetrics:
-    """Evaluation metrics for fault localisation across N seeded faults."""
     n: int
     top1_hits: int
     top1_rate: float
@@ -110,10 +90,8 @@ class LocalisationMetrics:
             "fault_ranks": self.fault_ranks,
         }
 
-
 @dataclass(frozen=True)
 class TimingStats:
-    """Timing stats over N>=5 executions with median and spread."""
     median_seconds: float
     min_seconds: float
     max_seconds: float
@@ -129,35 +107,17 @@ class TimingStats:
             "samples": self.samples,
         }
 
-
-# --- Pure calculation functions ---
-
 def compute_agreement_rate(numerator: int, denominator: int) -> float | None:
-    """Compute agreement rate as numerator / denominator, or None if denominator is 0."""
     if denominator <= 0:
         return None
     return numerator / denominator
-
 
 def compute_static_helper_metrics(
     eval_decisions: list[dict[str, Any]],
     labels: list[dict[str, Any]],
     helpers_b1_count: int | None = None,
 ) -> StaticHelperMetrics:
-    """Compute precision, recall, F1, unnecessary helper sites and ratios.
 
-    Definitions:
-    Ground truth:
-      - 'needs_helper' is POSITIVE (helper is required for C++ semantics)
-      - 'native_ok' is NEGATIVE (native operator suffices)
-    E decision:
-      - inserted helper (needs_helper) vs omitted (native_ok)
-    TP: E inserted helper AND label is 'needs_helper'
-    FP: E inserted helper AND label is 'native_ok' (unnecessary helper!)
-    TN: E omitted helper AND label is 'native_ok'
-    FN: E omitted helper AND label is 'needs_helper' (soundness risk!)
-    """
-    # Key labels by (file, line, col)
     label_map: dict[tuple[str, int, int], dict[str, Any]] = {}
     for lbl in labels:
         key = (lbl.get("file", ""), int(lbl.get("line", 0)), int(lbl.get("col", 0)))
@@ -221,15 +181,10 @@ def compute_static_helper_metrics(
         unnecessary_sites=unnecessary_sites,
     )
 
-
 def compute_dynamic_helper_metrics(
     total_executions: int,
     differs_from_native: int,
 ) -> DynamicHelperMetrics:
-    """Compute empirical dynamic unnecessary helper ratio.
-
-    ARCH §J.2: executions where helper result equals native operator ÷ total helper executions.
-    """
     if total_executions <= 0:
         return DynamicHelperMetrics(
             total_executions=0,
@@ -247,12 +202,10 @@ def compute_dynamic_helper_metrics(
         empirically_unnecessary_ratio=round(ratio, 4),
     )
 
-
 def find_soundness_violations(
     results_e: list[dict[str, Any]],
     results_b1: list[dict[str, Any]],
 ) -> list[SoundnessViolation]:
-    """Find all cases where E mismatches but B1 passes on UB-free inputs."""
     b1_by_id: dict[str, dict[str, Any]] = {r["case_id"]: r for r in results_b1}
     violations: list[SoundnessViolation] = []
 
@@ -262,7 +215,6 @@ def find_soundness_violations(
         if not r_b1:
             continue
 
-        # Skip cases that have UB
         if r_e.get("has_ub", False) or r_b1.get("has_ub", False):
             continue
         if r_e.get("outcome") == "UB_EXCLUDED" or r_b1.get("outcome") == "UB_EXCLUDED":
@@ -282,25 +234,19 @@ def find_soundness_violations(
 
     return violations
 
-
 def compute_mrr(ranks: list[int | None]) -> float:
-    """Compute Mean Reciprocal Rank (MRR) over ranks (1-based, None if unranked)."""
     if not ranks:
         return 0.0
     reciprocals = [(1.0 / r) if (r is not None and r > 0) else 0.0 for r in ranks]
     return round(sum(reciprocals) / len(ranks), 4)
 
-
 def compute_hit_rate(ranks: list[int | None], k: int) -> float:
-    """Compute Top-k hit rate over ranks (1-based, None if unranked)."""
     if not ranks or k <= 0:
         return 0.0
     hits = sum(1 for r in ranks if (r is not None and 1 <= r <= k))
     return round(hits / len(ranks), 4)
 
-
 def compute_localisation_metrics(fault_results: list[dict[str, Any]]) -> LocalisationMetrics:
-    """Compute localisation summary metrics (Top-1, Top-3, MRR, N)."""
     n = len(fault_results)
     ranks: list[int | None] = [f.get("rank") for f in fault_results]
 
@@ -321,9 +267,7 @@ def compute_localisation_metrics(fault_results: list[dict[str, Any]]) -> Localis
         fault_ranks=fault_results,
     )
 
-
 def compute_timing_stats(times: list[float]) -> TimingStats:
-    """Compute median, min, max, spread from execution times (N>=5)."""
     if not times:
         return TimingStats(0.0, 0.0, 0.0, 0.0, [])
     med = float(statistics.median(times))

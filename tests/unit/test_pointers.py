@@ -1,5 +1,3 @@
-"""Unit tests for C++ pointer support, aliasing, indirection, and arithmetic in cpp2py."""
-
 import sys
 import subprocess
 import pytest
@@ -11,7 +9,6 @@ from cpp2py.frontend.parser import parse
 from cpp2py.semantics.analyzer import analyze
 from cpp2py.ir.builder import build_ir
 from cpp2py.codegen.python_gen import generate
-
 
 def compile_cpp(code: str) -> tuple[str, DiagnosticSink]:
     src = SourceFile("test.cpp", code)
@@ -29,7 +26,6 @@ def compile_cpp(code: str) -> tuple[str, DiagnosticSink]:
     py_code = generate(mod, gen_sink, config)
     return py_code, sink
 
-
 def run_py(py_code: str, input_str: str = "") -> str:
     res = subprocess.run(
         [sys.executable, "-c", py_code],
@@ -39,7 +35,6 @@ def run_py(py_code: str, input_str: str = "") -> str:
         check=True,
     )
     return res.stdout
-
 
 def test_pointer_declaration_and_deref():
     code = """
@@ -58,7 +53,6 @@ def test_pointer_declaration_and_deref():
     out = run_py(py_code).strip()
     assert out == "42"
 
-
 def test_writing_through_pointer_mutates_original_variable():
     code = """
     #include <iostream>
@@ -75,7 +69,6 @@ def test_writing_through_pointer_mutates_original_variable():
     assert not sink.has_errors()
     out = run_py(py_code).strip()
     assert out == "99"
-
 
 def test_pointer_aliasing():
     code = """
@@ -94,7 +87,6 @@ def test_pointer_aliasing():
     assert not sink.has_errors()
     out = run_py(py_code).strip()
     assert out == "250 250"
-
 
 def test_nullptr_declaration_and_equality():
     code = """
@@ -115,7 +107,6 @@ def test_nullptr_declaration_and_equality():
     out = run_py(py_code).strip()
     assert out == "null"
 
-
 def test_nullptr_dereference_raises_error():
     code = """
     #include <iostream>
@@ -131,7 +122,6 @@ def test_nullptr_dereference_raises_error():
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         run_py(py_code)
     assert "Segmentation fault" in exc_info.value.stderr
-
 
 def test_pointer_parameter_in_function():
     code = """
@@ -154,7 +144,6 @@ def test_pointer_parameter_in_function():
     out = run_py(py_code).strip()
     assert out == "35"
 
-
 def test_pointer_to_array_and_pointer_arithmetic():
     code = """
     #include <iostream>
@@ -174,7 +163,6 @@ def test_pointer_to_array_and_pointer_arithmetic():
     out = run_py(py_code).strip()
     assert out == "99 40 20"
 
-
 def test_pointer_difference():
     code = """
     #include <iostream>
@@ -192,7 +180,6 @@ def test_pointer_difference():
     out = run_py(py_code).strip()
     assert out == "3"
 
-
 def test_pointer_input():
     code = """
     #include <iostream>
@@ -209,7 +196,6 @@ def test_pointer_input():
     assert not sink.has_errors()
     out = run_py(py_code, input_str="777\n").strip()
     assert out == "777"
-
 
 def test_unaddressed_scalars_remain_plain_without_boxing():
     code = """

@@ -1,8 +1,3 @@
-"""Unit tests for cpp2py/reporting/fidelity.py.
-
-Verifies AC7.5, AC7.6, AC7.7, AC7.8.
-"""
-
 from __future__ import annotations
 
 import json
@@ -21,9 +16,7 @@ from cpp2py.testing.comparator import DiffResult, Outcome
 from cpp2py.testing.cxx_runner import CxxCapabilities
 from cpp2py.testing.difftest import DiffSummary
 
-
 def test_translation_fidelity_report_div_needs_helper():
-    """Verify AC7.7: translate --fidelity-report on div_needs_helper.cpp lists helpers inserted & avoided."""
     cpp_path = Path("examples/phase5/div_needs_helper.cpp")
     source_text = cpp_path.read_text(encoding="utf-8")
     config = CompilerConfig()
@@ -42,14 +35,11 @@ def test_translation_fidelity_report_div_needs_helper():
     assert helpers["inserted_count"] >= 1
     assert any("_cpp_div" in h["helper"] or "_cpp_mod" in h["helper"] for h in helpers["inserted"])
 
-    # Plan should match
     assert result.plan is not None
     inserted_in_plan = sum(1 for dec in result.plan.decisions.values() if dec.action.value.lower() == "helper")
     assert helpers["inserted_count"] == inserted_in_plan
 
-
 def test_rejected_program_fidelity_report():
-    """Verify AC7.8: Rejected program lists diagnostics and states no translation produced."""
     cpp_path = Path("examples/phase1/errors/undeclared_var.cpp")
     source_text = cpp_path.read_text(encoding="utf-8")
     config = CompilerConfig()
@@ -65,9 +55,7 @@ def test_rejected_program_fidelity_report():
     assert len(diags) >= 1
     assert any("E3001" in diag["code"] for diag in diags)
 
-
 def test_rejected_program_e4xxx_fidelity_report():
-    """Verify AC7.8: Rejected program with unsupported construct lists E4xxx and no translation."""
     cpp_path = Path("examples/phase1/errors/unsupported_float.cpp")
     source_text = cpp_path.read_text(encoding="utf-8")
     config = CompilerConfig()
@@ -83,9 +71,7 @@ def test_rejected_program_e4xxx_fidelity_report():
     assert len(diags) >= 1
     assert any(diag["code"].startswith("E4") for diag in diags)
 
-
 def test_difftest_fidelity_report_structure_and_disclaimer():
-    """Verify AC7.5 & AC7.6: sections, agreement rate with denominator, and verbatim disclaimer."""
     caps = CxxCapabilities(available=True, compiler="g++", version="10.0")
     results = [
         DiffResult(case_id="case_1", outcome=Outcome.PASS, reason="Outputs match"),

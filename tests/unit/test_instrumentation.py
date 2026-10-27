@@ -1,5 +1,3 @@
-"""Unit tests for evaluation-only helper instrumentation counters (ARCH §J.2)."""
-
 from __future__ import annotations
 
 import pytest
@@ -13,12 +11,9 @@ from cpp2py.compat.helpers import (
 )
 from cpp2py.testing.py_runner import run_python
 
-
 def test_div_instrumentation_counts() -> None:
-    """Verify that _cpp_div_instrumented accurately tracks differs vs equals."""
     reset_instrumentation()
 
-    # 1. Non-negative division: 7 / 2 -> truncates to 3; native 7 // 2 is 3 -> EQUALS
     res1 = _cpp_div_instrumented(7, 2)
     assert res1 == 3
     counts = get_instrumentation_counts()
@@ -27,7 +22,6 @@ def test_div_instrumentation_counts() -> None:
     assert counts["equals"] == 1
     assert counts["differs"] == 0
 
-    # 2. Negative division: -7 / 2 -> C++ is -3; Python // is -4 -> DIFFERS
     res2 = _cpp_div_instrumented(-7, 2)
     assert res2 == -3
     counts = get_instrumentation_counts()
@@ -37,12 +31,9 @@ def test_div_instrumentation_counts() -> None:
     assert counts["differs"] == 1
     assert counts["div_differs"] == 1
 
-
 def test_mod_instrumentation_counts() -> None:
-    """Verify that _cpp_mod_instrumented accurately tracks differs vs equals."""
     reset_instrumentation()
 
-    # 1. Non-negative remainder: 7 % 2 -> 1; native 7 % 2 is 1 -> EQUALS
     res1 = _cpp_mod_instrumented(7, 2)
     assert res1 == 1
     counts = get_instrumentation_counts()
@@ -51,7 +42,6 @@ def test_mod_instrumentation_counts() -> None:
     assert counts["equals"] == 1
     assert counts["differs"] == 0
 
-    # 2. Negative remainder: -7 % 2 -> C++ is -1; Python % is 1 -> DIFFERS
     res2 = _cpp_mod_instrumented(-7, 2)
     assert res2 == -1
     counts = get_instrumentation_counts()
@@ -61,9 +51,7 @@ def test_mod_instrumentation_counts() -> None:
     assert counts["differs"] == 1
     assert counts["mod_differs"] == 1
 
-
 def test_reset_instrumentation() -> None:
-    """Verify that reset_instrumentation clears all counters."""
     reset_instrumentation()
     _cpp_div_instrumented(10, 3)
     assert get_instrumentation_counts()["total"] == 1
@@ -73,9 +61,7 @@ def test_reset_instrumentation() -> None:
     assert counts["differs"] == 0
     assert counts["equals"] == 0
 
-
 def test_instrumented_helper_sources() -> None:
-    """Verify instrumented source strings are retrievable and syntactically valid."""
     div_src = helper_source("_cpp_div", instrumented=True)
     mod_src = helper_source("_cpp_mod", instrumented=True)
     assert "_CPP2PY_INSTR_DIV_TOTAL" in div_src
@@ -84,14 +70,11 @@ def test_instrumented_helper_sources() -> None:
     prelude = get_instrumentation_prelude()
     assert "CPP2PY_INSTR_OUT" in prelude
 
-    # Verify compilation
     compile(div_src, "<test>", "exec")
     compile(mod_src, "<test>", "exec")
     compile(prelude, "<test>", "exec")
 
-
 def test_instrumentation_on_tiny_program(tmp_path) -> None:
-    """Verify instrumented helper execution on a standalone tiny Python script."""
     instr_out = tmp_path / "counts.json"
     script = f"""import os, json
 {get_instrumentation_prelude()}

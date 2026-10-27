@@ -1,16 +1,3 @@
-"""Experiment runners and evaluation orchestrator (ARCH §J.3, §J.4).
-
-Executes comparative evaluation suites (benchmark, generated, all) for B0, B1, E
-and fault-injection localisation evaluation.
-Outputs:
-- manifest.json
-- raw.json
-- metrics.json
-- timing.json
-- tables.md
-- tables.csv
-"""
-
 from __future__ import annotations
 
 import json
@@ -52,9 +39,7 @@ from cpp2py.testing.cxx_runner import CxxBuildCache, compile_cxx, probe_cxx_capa
 from cpp2py.testing.py_runner import run_python
 from cpp2py.testing.testgen.programs import generate_suite
 
-
 def _repo_root() -> Path:
-    """Find repository root."""
     curr = Path(__file__).resolve().parent
     while curr != curr.parent:
         if (curr / "pyproject.toml").exists():
@@ -62,9 +47,7 @@ def _repo_root() -> Path:
         curr = curr.parent
     return Path.cwd()
 
-
 def load_benchmark_cases(benchmarks_dir: str | Path | None = None) -> tuple[list[TestCase], list[dict[str, Any]]]:
-    """Load benchmark test cases and ground-truth labels."""
     if benchmarks_dir is None:
         bdir = _repo_root() / "benchmarks"
     else:
@@ -80,7 +63,6 @@ def load_benchmark_cases(benchmarks_dir: str | Path | None = None) -> tuple[list
     if not progs_dir.exists():
         return cases, labels
 
-    # Build assumed ranges per file
     assumed_by_file: dict[str, dict[str, Any]] = {}
     for lbl in labels:
         f = lbl.get("file", "")
@@ -114,26 +96,22 @@ def load_benchmark_cases(benchmarks_dir: str | Path | None = None) -> tuple[list
 
     return cases, labels
 
-
 def _count_helpers_and_lines(source: str) -> tuple[int, int]:
-    """Count helper function occurrences and total lines in generated Python."""
     if not source:
         return 0, 0
     lines = source.splitlines()
     line_count = len(lines)
-    # Count call sites of helpers in generated code
+
     helper_calls = 0
     for h in ("_cpp_div(", "_cpp_mod(", "_wrap_i32(", "_wrap_i64(", "_check_i32(", "_check_i64("):
         helper_calls += source.count(h)
     return helper_calls, line_count
-
 
 def _extract_plan_decisions(
     cpp_source: str,
     case_id: str,
     config: CompilerConfig,
 ) -> tuple[list[dict[str, Any]], int]:
-    """Compile with cpp2py and extract per-instruction helper decisions with source spans."""
     res = compile_source(cpp_source, f"{case_id}.cpp", config=config)
     decisions: list[dict[str, Any]] = []
     helper_count = 0
@@ -166,7 +144,6 @@ def _extract_plan_decisions(
 
     return decisions, helper_count
 
-
 def run_suite_evaluation(
     suite: str = "benchmark",
     seed: int = 1,
@@ -174,14 +151,12 @@ def run_suite_evaluation(
     out_dir: str | Path | None = None,
     timeout: float = 5.0,
 ) -> dict[str, Any]:
-    """Execute complete comparative evaluation across B0, B1, and E presets."""
     out_path = Path(out_dir) if out_dir else _repo_root() / "out" / "eval"
     out_path.mkdir(parents=True, exist_ok=True)
 
     caps = probe_cxx_capabilities()
     cache = CxxBuildCache()
 
-    # Load corpus
     cases: list[TestCase] = []
     labels: list[dict[str, Any]] = []
 
@@ -196,7 +171,6 @@ def run_suite_evaluation(
 
     total_n = len(cases)
 
-    # 1. Manifest
     manifest = {
         "tool_version": cpp2py.__version__,
         "python_version": sys.version.split()[0],
@@ -214,7 +188,6 @@ def run_suite_evaluation(
     }
     (out_path / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
 
-    # Tracking containers
     raw_results: dict[str, Any] = {}
     translator_stats: dict[str, dict[str, Any]] = {
         "B0": {"runs": [], "helper_sites": 0, "total_lines": 0},
@@ -226,7 +199,6 @@ def run_suite_evaluation(
     dynamic_total = 0
     dynamic_differs = 0
 
-    # Execute translation and tests
     for case in cases:
         case_id = case.case_id
         raw_case: dict[str, Any] = {
@@ -236,7 +208,6 @@ def run_suite_evaluation(
             "results": {},
         }
 
-        # 1. Compile C++ if compiler is available
         cxx_build = None
         if caps.available:
             cxx_build = compile_cxx(
@@ -245,13 +216,12 @@ def run_suite_evaluation(
                 compiler=caps.compiler,
             )
 
-        # 2. Run for each preset B0, B1, E
         for p_name, cfg_factory in (("B0", b0_config), ("B1", b1_config), ("E", e_config)):
             cfg = cfg_factory(assumed_ranges=case.config_overrides.get("assumed_ranges", {}))
             comp_res = compile_source(case.program_source, f"{case_id}.cpp", config=cfg)
 
             if not comp_res.success or comp_res.python_source is None:
-                # Translation rejected or error
+
                 for idx, in_text in enumerate(case.inputs):
                     run_id = f"{case_id}[{idx}]" if len(case.inputs) > 1 else case_id
                     diff_res = compare_results(
@@ -267,7 +237,6 @@ def run_suite_evaluation(
             translator_stats[p_name]["helper_sites"] += h_count
             translator_stats[p_name]["total_lines"] += l_count
 
-            # Track decisions for E
             if p_name == "E" and case.origin == "benchmark":
                 decisions, _ = _extract_plan_decisions(case.program_source, case_id, cfg)
                 all_e_decisions.extend(decisions)
@@ -277,7 +246,6 @@ def run_suite_evaluation(
             for idx, in_text in enumerate(case.inputs):
                 run_id = f"{case_id}[{idx}]" if len(case.inputs) > 1 else case_id
 
-                # If C++ compiler not available, skip differential run cleanly
                 if not caps.available or cxx_build is None or not cxx_build.success:
                     diff_res = compare_results(
                         case_id=run_id,
@@ -288,14 +256,12 @@ def run_suite_evaluation(
                     preset_case_runs.append(diff_res.to_dict())
                     continue
 
-                # Run C++
                 cxx_exec = run_cxx(
-                    binary_path=cxx_build.binary_path,  # type: ignore
+                    binary_path=cxx_build.binary_path,
                     stdin_text=in_text,
                     timeout=timeout,
                 )
 
-                # Run Python
                 py_exec = run_python(
                     source_or_file=py_src,
                     stdin_text=in_text,
@@ -319,14 +285,13 @@ def run_suite_evaluation(
                 "runs": preset_case_runs,
             }
 
-        # 3. Dynamic instrumentation measurement for E
         instr_file = out_path / "_temp_instr.json"
         instr_env = {"CPP2PY_INSTR_OUT": str(instr_file)}
-        # Build instrumented Python source for E
+
         e_cfg = e_config(assumed_ranges=case.config_overrides.get("assumed_ranges", {}))
         e_comp = compile_source(case.program_source, f"{case_id}.cpp", config=e_cfg)
         if e_comp.success and e_comp.python_source:
-            # Inject instrumented helpers
+
             instr_py = get_instrumentation_prelude() + "\n"
             for line in e_comp.python_source.splitlines():
                 if "_cpp_div(a: int, b: int) -> int:" in line:
@@ -366,10 +331,8 @@ def run_suite_evaluation(
 
         raw_results[case_id] = raw_case
 
-    # Save raw.json (deterministic sort_keys)
     (out_path / "raw.json").write_text(json.dumps(raw_results, indent=2, sort_keys=True), encoding="utf-8")
 
-    # 4. Compute Metrics per translator
     translators_metrics: dict[str, Any] = {}
     for p_name in ("B0", "B1", "E"):
         runs = translator_stats[p_name]["runs"]
@@ -380,12 +343,10 @@ def run_suite_evaluation(
         skip_cnt = sum(1 for r in runs if r.get("outcome") == "SKIPPED")
         err_cnt = sum(1 for r in runs if r.get("outcome") in ("CPP_COMPILE_ERROR", "TRANSLATE_REJECTED"))
 
-        # Denominator = total - excluded
         denominator = tot - (ub_cnt + skip_cnt + err_cnt)
         numerator = pass_cnt
         rate = compute_agreement_rate(numerator, denominator)
 
-        # Mismatches by category
         mismatches_by_cat: dict[str, int] = {}
         for r in runs:
             if "MISMATCH" in r.get("outcome", ""):
@@ -414,7 +375,6 @@ def run_suite_evaluation(
             },
         }
 
-    # 5. Static Unnecessary Helpers (against labels.json)
     b1_helper_count = translator_stats["B1"]["helper_sites"]
     static_metrics = compute_static_helper_metrics(
         eval_decisions=all_e_decisions,
@@ -422,19 +382,16 @@ def run_suite_evaluation(
         helpers_b1_count=b1_helper_count,
     )
 
-    # 6. Dynamic Unnecessary Helpers
     dynamic_metrics = compute_dynamic_helper_metrics(
         total_executions=dynamic_total,
         differs_from_native=dynamic_differs,
     )
 
-    # 7. Soundness Violations
     violations = find_soundness_violations(
         results_e=translator_stats["E"]["runs"],
         results_b1=translator_stats["B1"]["runs"],
     )
 
-    # Combined metrics data
     metrics_data = {
         "suite_info": {
             "suite": suite,
@@ -448,17 +405,14 @@ def run_suite_evaluation(
         "soundness_violations": [v.to_dict() for v in violations],
     }
 
-    # Save metrics.json (deterministic sort_keys)
     (out_path / "metrics.json").write_text(json.dumps(metrics_data, indent=2, sort_keys=True), encoding="utf-8")
 
-    # 8. Tables
     md_content = render_comparison_markdown(metrics_data)
     (out_path / "tables.md").write_text(md_content, encoding="utf-8")
 
     csv_content = render_comparison_csv(metrics_data)
     (out_path / "tables.csv").write_text(csv_content, encoding="utf-8")
 
-    # 9. Timing json (median of >= 5 runs, stored ONLY in timing.json)
     timing_data: dict[str, Any] = {"runs_per_translator": 5, "timings": {}}
     for p_name, cfg_factory in (("B0", b0_config), ("B1", b1_config), ("E", e_config)):
         times: list[float] = []
@@ -476,11 +430,9 @@ def run_suite_evaluation(
 
     return metrics_data
 
-
 def run_localisation_suite(
     out_dir: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Execute localisation evaluation over all catalogue faults."""
     out_path = Path(out_dir) if out_dir else _repo_root() / "out" / "eval_loc"
     out_path.mkdir(parents=True, exist_ok=True)
 
@@ -492,18 +444,15 @@ def run_localisation_suite(
     loc_metrics = compute_localisation_metrics(fault_results)
     loc_data = loc_metrics.to_dict()
 
-    # Write localisation_metrics.json
     (out_path / "localisation_metrics.json").write_text(
         json.dumps(loc_data, indent=2, sort_keys=True), encoding="utf-8"
     )
 
-    # Write tables
     md_table = render_localisation_markdown(loc_data)
     (out_path / "localisation_table.md").write_text(md_table, encoding="utf-8")
 
     csv_table = render_localisation_csv(loc_data)
     (out_path / "localisation_table.csv").write_text(csv_table, encoding="utf-8")
 
-    # Print to stdout
     print(md_table)
     return loc_data

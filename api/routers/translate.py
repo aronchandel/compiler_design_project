@@ -1,9 +1,3 @@
-"""Translation router — POST /api/translate.
-
-Invokes the real cpp2py compiler via compile_source().
-Never fabricates output; on error returns structured diagnostics.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -20,16 +14,9 @@ from cpp2py.diagnostics import Severity
 
 router = APIRouter(tags=["translate"])
 
-# Thread pool for blocking compiler work; keeps the event loop free
 _EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="cpp2py-")
 
-# Request size limit: 256 KB of C++ source
 _MAX_SOURCE_BYTES = 256 * 1024
-
-
-# ---------------------------------------------------------------------------
-# Request / Response models
-# ---------------------------------------------------------------------------
 
 class TranslateRequest(BaseModel):
     source_code: str = Field(..., description="C++ source code to translate")
@@ -62,13 +49,11 @@ class TranslateRequest(BaseModel):
             raise ValueError(f"overflow must be one of {sorted(allowed)}")
         return v
 
-
 class DiagnosticItem(BaseModel):
     severity: str
     code: str
     message: str
     location: str | None = None
-
 
 class TranslateResponse(BaseModel):
     success: bool
@@ -77,16 +62,11 @@ class TranslateResponse(BaseModel):
     error_count: int
     warning_count: int
     duration_ms: float
-    # Optional summary fields populated on success
+
     function_count: int | None = None
     line_count_cpp: int | None = None
     line_count_py: int | None = None
     ir_source: str | None = None
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _build_config(req: TranslateRequest) -> CompilerConfig:
     target = TargetModel(overflow_policy=OverflowPolicy(req.overflow))
@@ -96,7 +76,6 @@ def _build_config(req: TranslateRequest) -> CompilerConfig:
         fold_constants=req.fold_constants,
         idiomatic_loops=req.idiomatic_loops,
     )
-
 
 def _diag_to_item(d: Any) -> DiagnosticItem:
     loc: str | None = None
@@ -109,24 +88,11 @@ def _diag_to_item(d: Any) -> DiagnosticItem:
         location=loc,
     )
 
-
 def _run_compile(source_code: str, filename: str, config: CompilerConfig) -> CompilationResult:
-    """Blocking wrapper around compile_source; runs in thread pool."""
     return compile_source(source_code, filename, config)
-
-
-# ---------------------------------------------------------------------------
-# Endpoint
-# ---------------------------------------------------------------------------
 
 @router.post("/translate", response_model=TranslateResponse)
 async def translate(req: TranslateRequest) -> TranslateResponse:
-    """
-    Translate C++ source code to Python using the cpp2py compiler.
-
-    Returns the generated Python source, translation status, and diagnostics.
-    Never returns fabricated output.
-    """
     if not req.source_code.strip():
         raise HTTPException(status_code=422, detail="source_code must not be empty")
 
@@ -143,7 +109,7 @@ async def translate(req: TranslateRequest) -> TranslateResponse:
             config,
         )
     except Exception as exc:
-        # Internal error from the compiler itself – do not expose details
+
         raise HTTPException(
             status_code=500,
             detail="Compiler pipeline raised an unexpected error. See server logs.",

@@ -1,5 +1,3 @@
-"""Deterministic program generator for differential testing."""
-
 from __future__ import annotations
 
 import random
@@ -12,16 +10,14 @@ GENERATOR_VERSION = "1.0"
 
 _NONZERO_DIVISORS = [1, -1, 2, -2, 3, -3, 5, 7, -7, 10, -10]
 
-
 def _gen_arith_expr(
     rng: random.Random,
     vars_available: list[str],
     depth: int = 0,
     max_depth: int = 2,
 ) -> str:
-    """Generate a valid arithmetic expression within depth limits."""
     if depth >= max_depth or (vars_available and rng.random() < 0.4):
-        # Leaf: variable or small constant
+
         if vars_available and rng.random() < 0.6:
             return rng.choice(vars_available)
         val = rng.choice([0, 1, -1, 2, -2, 3, 5, 10, 42, -42, 100])
@@ -30,7 +26,7 @@ def _gen_arith_expr(
     op = rng.choice(["+", "-", "*", "/", "%"])
     left = _gen_arith_expr(rng, vars_available, depth + 1, max_depth)
     if op in ("/", "%"):
-        # Ensure divisor is not zero syntactically
+
         div_val = rng.choice(_NONZERO_DIVISORS)
         right = str(div_val) if div_val >= 0 else f"({div_val})"
     else:
@@ -38,13 +34,11 @@ def _gen_arith_expr(
 
     return f"({left} {op} {right})"
 
-
 def generate_program_case(
     seed: int,
     case_id: str,
     assumed_ranges: dict[str, tuple[int | None, int | None]] | None = None,
 ) -> TestCase:
-    """Generate a single deterministic TestCase with seed."""
     rng = random.Random(seed)
 
     lines: list[str] = [
@@ -58,7 +52,6 @@ def generate_program_case(
     num_vars = rng.randint(2, len(var_names))
     active_vars = var_names[:num_vars]
 
-    # Declare variables (all int, or some long long)
     use_long_long = rng.random() < 0.25
     int_vars = active_vars[:-1] if use_long_long else active_vars
     ll_vars = [active_vars[-1]] if use_long_long else []
@@ -70,14 +63,12 @@ def generate_program_case(
         decl_parts = [f"{v} = {rng.choice([10000000000, -10000000000, 42])}" for v in ll_vars]
         lines.append(f"    long long {', '.join(decl_parts)};")
 
-    # Read 1 or 2 variables from cin
     read_vars: list[str] = []
     if rng.random() < 0.7:
         num_read = rng.randint(1, min(2, len(int_vars)))
         read_vars = int_vars[:num_read]
         lines.append(f"    cin >> {' >> '.join(read_vars)};")
 
-    # Generate 2 to 4 statements: assignments, conditionals, bounded loops
     num_stmts = rng.randint(2, 4)
     for stmt_idx in range(num_stmts):
         stmt_kind = rng.choice(["assign", "assign", "if", "loop"])
@@ -101,7 +92,7 @@ def generate_program_case(
             lines.append("    }")
 
         elif stmt_kind == "loop":
-            # Bounded loop: terminates strictly by construction
+
             bound = rng.randint(2, 5)
             loop_var = f"iter_{stmt_idx}"
             target = rng.choice(int_vars)
@@ -110,7 +101,6 @@ def generate_program_case(
             lines.append(f"        {target} = {target} + {delta};")
             lines.append("    }")
 
-    # Output statements
     for v in active_vars:
         lines.append(f"    cout << {v} << endl;")
 
@@ -120,10 +110,9 @@ def generate_program_case(
 
     source_code = "\n".join(lines)
 
-    # Generate inputs
     inputs: list[str] = []
     if read_vars:
-        # Generate 1 to 3 input variations
+
         for _ in range(rng.randint(1, 3)):
             in_str = generate_input_stream(
                 rng,
@@ -149,13 +138,11 @@ def generate_program_case(
         notes=f"Generated case with seed {seed}, generator v{GENERATOR_VERSION}",
     )
 
-
 def generate_suite(
     count: int = 200,
     base_seed: int = 1,
     assumed_ranges: dict[str, tuple[int | None, int | None]] | None = None,
 ) -> list[TestCase]:
-    """Generate a suite of deterministic test cases."""
     suite: list[TestCase] = []
     for i in range(count):
         seed = base_seed + i

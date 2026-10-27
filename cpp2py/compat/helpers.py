@@ -1,62 +1,35 @@
-"""Real, importable compatibility helpers per ARCH §E.6.
-
-These helpers implement C++ integer semantics in Python:
-- _cpp_div: truncating division
-- _cpp_mod: remainder taking sign of dividend
-- _wrap_i32 / _wrap_i64: modular two's-complement reduction
-- _check_i32 / _check_i64: range verification raising OverflowError
-- _Ptr: C++ pointer indirection and aliasing helper
-
-Also provides evaluation-only instrumented variants (Phase 8) to measure
-unnecessary helper executions dynamically.
-"""
-
 from __future__ import annotations
 
 import os
 from typing import Any
 
-
 def _cpp_div(a: int, b: int) -> int:
-    """C++ integer division truncating toward zero."""
     if b == 0:
         raise ZeroDivisionError("division by zero")
     return -(abs(a) // abs(b)) if (a < 0) ^ (b < 0) else (abs(a) // abs(b))
 
-
 def _cpp_mod(a: int, b: int) -> int:
-    """C++ integer remainder: a - b * _cpp_div(a, b)."""
     if b == 0:
         raise ZeroDivisionError("integer modulo by zero")
     return a - b * _cpp_div(a, b)
 
-
 def _wrap_i32(x: int) -> int:
-    """Reduce x modulo 2^32 into [-2^31, 2^31 - 1]."""
     return ((x + 0x80000000) % 0x100000000) - 0x80000000
 
-
 def _wrap_i64(x: int) -> int:
-    """Reduce x modulo 2^64 into [-2^63, 2^63 - 1]."""
     return ((x + 0x8000000000000000) % 0x10000000000000000) - 0x8000000000000000
 
-
 def _check_i32(x: int) -> int:
-    """Return x or raise OverflowError if x is outside 32-bit signed range."""
     if not (-2147483648 <= x <= 2147483647):
         raise OverflowError("32-bit integer overflow")
     return x
 
-
 def _check_i64(x: int) -> int:
-    """Return x or raise OverflowError if x is outside 64-bit signed range."""
     if not (-9223372036854775808 <= x <= 9223372036854775807):
         raise OverflowError("64-bit integer overflow")
     return x
 
-
 class _Ptr:
-    """Compatibility pointer helper for C++ pointers in Python."""
     __slots__ = ('_target', '_offset')
 
     def __init__(self, target, offset: int = 0):
@@ -103,9 +76,6 @@ class _Ptr:
     def __bool__(self):
         return self._target is not None
 
-
-# --- Phase 8 Evaluation-only Instrumentation ---
-
 _INSTRUMENTATION_COUNTS: dict[str, int] = {
     "total": 0,
     "differs": 0,
@@ -118,9 +88,7 @@ _INSTRUMENTATION_COUNTS: dict[str, int] = {
     "mod_equals": 0,
 }
 
-
 def reset_instrumentation() -> None:
-    """Reset the evaluation instrumentation counters."""
     global _INSTRUMENTATION_COUNTS
     _INSTRUMENTATION_COUNTS = {
         "total": 0,
@@ -134,14 +102,10 @@ def reset_instrumentation() -> None:
         "mod_equals": 0,
     }
 
-
 def get_instrumentation_counts() -> dict[str, int]:
-    """Return a copy of the evaluation instrumentation counters."""
     return dict(_INSTRUMENTATION_COUNTS)
 
-
 def _cpp_div_instrumented(a: int, b: int) -> int:
-    """Instrumented version of _cpp_div tracking unnecessary invocations."""
     global _INSTRUMENTATION_COUNTS
     _INSTRUMENTATION_COUNTS["total"] += 1
     _INSTRUMENTATION_COUNTS["div_total"] += 1
@@ -163,9 +127,7 @@ def _cpp_div_instrumented(a: int, b: int) -> int:
 
     return cpp_res
 
-
 def _cpp_mod_instrumented(a: int, b: int) -> int:
-    """Instrumented version of _cpp_mod tracking unnecessary invocations."""
     global _INSTRUMENTATION_COUNTS
     _INSTRUMENTATION_COUNTS["total"] += 1
     _INSTRUMENTATION_COUNTS["mod_total"] += 1
@@ -186,9 +148,6 @@ def _cpp_mod_instrumented(a: int, b: int) -> int:
         pass
 
     return cpp_res
-
-
-# Standalone Python source strings embedded directly into generated code
 
 _HELPER_SOURCES: dict[str, str] = {
     "_cpp_div": '''def _cpp_div(a: int, b: int) -> int:
@@ -256,7 +215,6 @@ _HELPER_SOURCES: dict[str, str] = {
         return self._target is not None''',
 }
 
-
 _INSTRUMENTED_HELPER_SOURCES: dict[str, str] = {
     "_cpp_div": '''_CPP2PY_INSTR_DIV_TOTAL = 0
 _CPP2PY_INSTR_DIV_DIFFERS = 0
@@ -322,16 +280,12 @@ def _dump_cpp2py_instrumentation():
 atexit.register(_dump_cpp2py_instrumentation)
 '''
 
-
 def helper_source(kind: str, instrumented: bool = False) -> str:
-    """Return Python source code of helper function."""
     if instrumented and kind in _INSTRUMENTED_HELPER_SOURCES:
         return _INSTRUMENTED_HELPER_SOURCES[kind]
     if kind not in _HELPER_SOURCES:
         raise KeyError(f"Unknown helper: {kind}")
     return _HELPER_SOURCES[kind]
 
-
 def get_instrumentation_prelude() -> str:
-    """Return the instrumentation atexit prelude for evaluation runs."""
     return _INSTRUMENTATION_PRELUDE

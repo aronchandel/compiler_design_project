@@ -1,9 +1,3 @@
-"""Fidelity report data model and construction.
-
-Conforms to ARCH §I.4.
-Generates structured fidelity data for translation and differential testing runs.
-"""
-
 from __future__ import annotations
 
 import datetime
@@ -36,10 +30,8 @@ LIMITATIONS_REFERENCE: str = (
     "assumptions S1-S6, policy semantics, and threats to validity."
 )
 
-
 @dataclass
 class FidelityReport:
-    """Complete fidelity report structure."""
     schema_version: str = SCHEMA_VERSION
     run_metadata: dict[str, Any] = field(default_factory=dict)
     translation_summary: dict[str, Any] | None = None
@@ -69,7 +61,6 @@ class FidelityReport:
             "disclaimer": self.disclaimer,
         }
 
-
 def build_translation_fidelity_report(
     source_text: str,
     filename: str,
@@ -77,7 +68,6 @@ def build_translation_fidelity_report(
     result: CompilationResult,
     capabilities: CxxCapabilities | None = None,
 ) -> FidelityReport:
-    """Build a static fidelity report from a translation run."""
     caps = capabilities if capabilities is not None else probe_cxx_capabilities()
     sha256 = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
 
@@ -119,7 +109,6 @@ def build_translation_fidelity_report(
             unsupported_constructs=unsupported,
         )
 
-    # Translation succeeded: gather summary, helpers, risks
     ir = result.ir
     op_counts: dict[str, int] = {}
     op_spans: dict[str, Any] = {}
@@ -207,12 +196,10 @@ def build_translation_fidelity_report(
         unsupported_constructs={"translated": True, "diagnostics": []},
     )
 
-
 def build_difftest_fidelity_report(
     summary: DiffSummary,
     failures_base_dir: str | Path | None = None,
 ) -> FidelityReport:
-    """Build a comprehensive fidelity report from a differential testing run."""
     caps = summary.capabilities
     metadata: dict[str, Any] = {
         "tool_version": cpp2py.__version__,
@@ -254,7 +241,6 @@ def build_difftest_fidelity_report(
                 "reason": r.reason,
             }
 
-            # Attempt to localise if failure artifacts are present
             case_path = None
             if base_fail:
                 cand = base_fail / "failures" / r.case_id

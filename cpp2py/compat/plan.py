@@ -1,5 +1,3 @@
-"""Compatibility decisions and plan data structures per ARCH §E.5 and §E.6."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -10,14 +8,12 @@ from cpp2py.analysis.intervals import Interval
 from cpp2py.analysis.risk import Risk
 from cpp2py.config import CompatMode, OverflowPolicy
 
-
 class CompatAction(Enum):
     NATIVE = "native"
     HELPER = "helper"
 
     def __str__(self) -> str:
         return self.value
-
 
 @dataclass(frozen=True, slots=True)
 class CompatDecision:
@@ -44,7 +40,6 @@ class CompatDecision:
             "operand_ranges": [r.to_dict() for r in self.operand_ranges],
             "result_range": self.result_range.to_dict(),
         }
-
 
 @dataclass
 class CompatPlan:

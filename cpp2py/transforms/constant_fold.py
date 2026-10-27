@@ -1,15 +1,3 @@
-"""Constant folding pass for cpp2py IR.
-
-Conforms to ARCH §D.4, §E.2, and §F.4.
-- Folds binop/unop on constants using TargetModel integer semantics.
-- Division truncates towards zero; remainder has sign of dividend.
-- Never folds division or remainder by zero (emits W6004).
-- Never folds if result exceeds TargetModel range (emits W6004).
-- Substitutes constant temps into users (single-assignment temps only).
-- Never touches cmp, branch, or control flow.
-- No variable constant propagation, no algebraic simplification.
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -27,9 +15,7 @@ from cpp2py.ir.model import (
 if TYPE_CHECKING:
     from cpp2py.transforms.manager import IRRewriter, PassContext
 
-
 class ConstantFoldPass:
-    """Pass that folds constant arithmetic expressions and propagates constant temps."""
 
     name: str = "constant_fold"
 
@@ -38,10 +24,8 @@ class ConstantFoldPass:
         int_min = target.int_min
         int_max = target.int_max
 
-        # Map temp_id -> (Const, defining_op_id)
         const_temps: dict[str, tuple[Const, str]] = {}
 
-        # Pre-seed with existing constant assignments to temps if any
         for instr in func.body:
             if (
                 instr.opcode == Opcode.ASSIGN
@@ -51,14 +35,10 @@ class ConstantFoldPass:
             ):
                 const_temps[instr.dst.temp_id] = (instr.operands[0], instr.op_id)
 
-        # Traverse instructions
-        # Note: func.body may be modified via rw, so iterate over a snapshot of indices or while loop
         idx = 0
         while idx < len(func.body):
             instr = func.body[idx]
 
-            # 1. Substitute constant temps into users
-            # Strictly NEVER touch cmp, branch, label, or jump
             if instr.opcode not in (Opcode.CMP, Opcode.BRANCH, Opcode.LABEL, Opcode.JUMP):
                 for op in list(instr.operands):
                     if isinstance(op, TempRef) and op.temp_id in const_temps:
@@ -72,7 +52,6 @@ class ConstantFoldPass:
                             derived_from=[def_op_id],
                         )
 
-            # 2. Check for constant folding on binops
             if instr.opcode in (Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.MOD):
                 if (
                     len(instr.operands) == 2
@@ -108,7 +87,7 @@ class ConstantFoldPass:
                         res = a * b
 
                     if res is not None:
-                        # Check TargetModel type range
+
                         res_type = instr.dst.type if (instr.dst and hasattr(instr.dst, "type")) else IRType.I32
                         t_min = target.long_long_min if res_type == IRType.I64 else target.int_min
                         t_max = target.long_long_max if res_type == IRType.I64 else target.int_max
@@ -131,7 +110,6 @@ class ConstantFoldPass:
                                 instr.span,
                             )
 
-            # 3. Check for constant folding on unops (NEG)
             elif instr.opcode == Opcode.NEG:
                 if len(instr.operands) == 1 and isinstance(instr.operands[0], Const):
                     a = instr.operands[0].value
@@ -158,7 +136,6 @@ class ConstantFoldPass:
                             instr.span,
                         )
 
-            # 3b. Check for constant folding on casts
             elif instr.opcode == Opcode.CAST:
                 if len(instr.operands) == 1 and isinstance(instr.operands[0], Const):
                     val = instr.operands[0].value
@@ -167,7 +144,7 @@ class ConstantFoldPass:
                         res = val
                         reason = f"cast widening is exact; {val} to i64"
                     else:
-                        # Modular narrowing per TargetModel
+
                         int_bits = target.int_bits
                         res = ((val + (1 << (int_bits - 1))) % (1 << int_bits)) - (1 << (int_bits - 1))
                         reason = f"cast narrowing modular; {val} to i32 = {res}"
@@ -181,7 +158,6 @@ class ConstantFoldPass:
                     rw.replace(func, instr, new_instr, reason=reason)
                     instr = new_instr
 
-            # 4. Record new constant temp assignment
             if (
                 instr.opcode == Opcode.ASSIGN
                 and isinstance(instr.dst, TempRef)

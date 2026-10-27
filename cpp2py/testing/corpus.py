@@ -1,5 +1,3 @@
-"""Test case model and corpus loading for differential testing."""
-
 from __future__ import annotations
 
 import json
@@ -7,15 +5,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 @dataclass
 class TestCase:
-    """A differential test case consisting of a C++ program and input variations."""
     __test__ = False
     case_id: str
     program_source: str
     inputs: list[str] = field(default_factory=lambda: [""])
-    origin: str = "curated"  # "curated" | "generated" | "regression" | "example"
+    origin: str = "curated"
     seed: int | None = None
     config_overrides: dict[str, Any] = field(default_factory=dict)
     notes: str = ""
@@ -32,9 +28,7 @@ class TestCase:
             "num_inputs": len(self.inputs),
         }
 
-
 def _find_repo_root() -> Path:
-    """Locate repository root."""
     current = Path(__file__).resolve().parent
     while current != current.parent:
         if (current / "pyproject.toml").exists():
@@ -42,9 +36,7 @@ def _find_repo_root() -> Path:
         current = current.parent
     return Path.cwd()
 
-
 def load_curated_cases(cases_dir: str | Path | None = None) -> list[TestCase]:
-    """Load curated test cases from tests/differential/cases/."""
     if cases_dir is None:
         cases_path = _find_repo_root() / "tests" / "differential" / "cases"
     else:
@@ -99,9 +91,7 @@ def load_curated_cases(cases_dir: str | Path | None = None) -> list[TestCase]:
 
     return cases
 
-
 def load_example_cases(examples_dir: str | Path | None = None) -> list[TestCase]:
-    """Load every examples/**/*.cpp that has an accompanying .expected file."""
     if examples_dir is None:
         examples_path = _find_repo_root() / "examples"
     else:

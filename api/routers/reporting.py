@@ -1,9 +1,3 @@
-"""Phase 7 fidelity reporting and fault localisation router.
-
-POST /api/report/fidelity   — generate a fidelity report for submitted C++ source
-GET  /api/report/semantic-differences — return the fixed semantic differences list
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -26,11 +20,6 @@ router = APIRouter(tags=["reporting"])
 _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="cpp2py-report-")
 _MAX_SOURCE_BYTES = 256 * 1024
 
-
-# ---------------------------------------------------------------------------
-# Models
-# ---------------------------------------------------------------------------
-
 class FidelityRequest(BaseModel):
     source_code: str = Field(..., description="C++ source code")
     filename: str = Field("input.cpp", description="Logical filename")
@@ -44,51 +33,31 @@ class FidelityRequest(BaseModel):
             raise ValueError(f"source_code exceeds {_MAX_SOURCE_BYTES} bytes")
         return v
 
-
 class SemanticDifferencesResponse(BaseModel):
     phase: str = "Phase 7 — Fidelity Reporting"
     differences: list[str]
     disclaimer: str
     limitations: str
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _build_config(compat: str, overflow: str) -> CompilerConfig:
     target = TargetModel(overflow_policy=OverflowPolicy(overflow))
     return CompilerConfig(target=target, compat_mode=CompatMode(compat))
-
 
 def _generate_fidelity(source_code: str, filename: str, config: CompilerConfig) -> dict[str, Any]:
     result = compile_source(source_code, filename, config)
     report = build_translation_fidelity_report(source_code, filename, config, result)
     return report.to_dict()
 
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
-
 @router.get("/report/semantic-differences", response_model=SemanticDifferencesResponse)
 def semantic_differences() -> SemanticDifferencesResponse:
-    """Return known semantic differences between C++ and generated Python."""
     return SemanticDifferencesResponse(
         differences=FIXED_SEMANTIC_DIFFERENCES,
         disclaimer=DISCLAIMER,
         limitations="See docs/LIMITATIONS.md for the complete specification.",
     )
 
-
 @router.post("/report/fidelity")
 async def fidelity_report(req: FidelityRequest) -> dict[str, Any]:
-    """
-    Generate a Phase 7 fidelity report for the given C++ source.
-
-    Translates the source with the compiler and returns structured fidelity
-    data including helper counts, risks, operation counts, and assumptions.
-    """
     if not req.source_code.strip():
         raise HTTPException(status_code=422, detail="source_code must not be empty")
 

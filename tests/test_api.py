@@ -1,12 +1,3 @@
-"""
-Backend API tests.
-
-Tests health endpoint, translation success/failure, malformed requests,
-edge cases, and Phase 6/7 endpoint availability.
-
-These tests use FastAPI's TestClient (synchronous) and never require g++.
-"""
-
 from __future__ import annotations
 
 import pytest
@@ -16,10 +7,6 @@ from api.main import app
 
 client = TestClient(app, raise_server_exceptions=False)
 
-# ---------------------------------------------------------------------------
-# Minimal C++ programs for testing
-# ---------------------------------------------------------------------------
-
 HELLO_WORLD = """\
 int main() {
     int x = 42;
@@ -27,7 +14,6 @@ int main() {
 }
 """
 
-# A simple supported program that the compiler should accept
 SIMPLE_ARITHMETIC = """\
 int add(int a, int b) {
     return a + b;
@@ -39,7 +25,6 @@ int main() {
 }
 """
 
-# Something that uses unsupported constructs → should produce errors
 UNSUPPORTED_TEMPLATES = """\
 template<typename T>
 T identity(T x) {
@@ -49,11 +34,6 @@ int main() {
     return identity<int>(0);
 }
 """
-
-
-# ===========================================================================
-# Health endpoint
-# ===========================================================================
 
 class TestHealth:
     def test_health_returns_200(self):
@@ -71,11 +51,6 @@ class TestHealth:
     def test_health_uptime_is_non_negative(self):
         r = client.get("/api/health")
         assert r.json()["uptime_seconds"] >= 0
-
-
-# ===========================================================================
-# Translate endpoint — valid requests
-# ===========================================================================
 
 class TestTranslateSuccess:
     def test_translate_hello_world(self):
@@ -122,10 +97,9 @@ class TestTranslateSuccess:
             assert r.status_code == 200, f"Failed for overflow={policy}"
 
     def test_translate_no_fabrication(self):
-        """Ensure non-translatable code does not return fabricated Python."""
         r = client.post("/api/translate", json={"source_code": UNSUPPORTED_TEMPLATES})
         data = r.json()
-        # Either succeeds (if templates supported) or fails honestly
+
         if not data["success"]:
             assert data["python_source"] is None
             assert data["error_count"] > 0
@@ -182,11 +156,6 @@ class TestTranslateSuccess:
         assert data["success"] is True
         assert any(d["code"] == "W6004" for d in data["diagnostics"])
 
-
-# ===========================================================================
-# Translate endpoint — invalid / malformed requests
-# ===========================================================================
-
 class TestTranslateInvalid:
     def test_empty_source_code(self):
         r = client.post("/api/translate", json={"source_code": ""})
@@ -215,7 +184,7 @@ class TestTranslateInvalid:
         assert r.status_code == 422
 
     def test_source_too_large(self):
-        big_source = "// comment\n" * 30_000  # well over 256KB
+        big_source = "// comment\n" * 30_000
         r = client.post("/api/translate", json={"source_code": big_source})
         assert r.status_code == 422
 
@@ -237,11 +206,6 @@ class TestTranslateInvalid:
         assert data["error_count"] > 0
         assert len(data["diagnostics"]) > 0
 
-
-# ===========================================================================
-# Translate endpoint — diagnostic shape
-# ===========================================================================
-
 class TestTranslateDiagnostics:
     def test_diagnostic_has_required_fields(self):
         bad_cpp = "int main( { return 0; }"
@@ -260,11 +224,6 @@ class TestTranslateDiagnostics:
         for diag in data["diagnostics"]:
             assert diag["severity"] in valid_severities
 
-
-# ===========================================================================
-# Differential testing status endpoint
-# ===========================================================================
-
 class TestDifftestStatus:
     def test_status_returns_200(self):
         r = client.get("/api/difftest/status")
@@ -282,11 +241,6 @@ class TestDifftestStatus:
         data = r.json()
         assert len(data["message"]) > 0
 
-
-# ===========================================================================
-# Differential testing run endpoint
-# ===========================================================================
-
 class TestDifftestRun:
     def test_run_returns_200(self):
         r = client.post("/api/difftest/run", json={"suite": "curated", "count": 5})
@@ -295,7 +249,7 @@ class TestDifftestRun:
     def test_run_when_no_cxx_returns_unavailable(self):
         r = client.post("/api/difftest/run", json={"suite": "curated"})
         data = r.json()
-        # If g++ not available, response is structured (not 500)
+
         assert r.status_code == 200
         assert "available" in data
 
@@ -310,11 +264,6 @@ class TestDifftestRun:
     def test_run_count_out_of_range(self):
         r = client.post("/api/difftest/run", json={"suite": "generated", "count": 200})
         assert r.status_code == 422
-
-
-# ===========================================================================
-# Phase 7 — Semantic differences
-# ===========================================================================
 
 class TestSemanticDifferences:
     def test_returns_200(self):
@@ -332,11 +281,6 @@ class TestSemanticDifferences:
         data = r.json()
         assert "disclaimer" in data
         assert len(data["disclaimer"]) > 0
-
-
-# ===========================================================================
-# Phase 7 — Fidelity report
-# ===========================================================================
 
 class TestFidelityReport:
     def test_returns_200_for_valid_source(self):
@@ -364,7 +308,7 @@ class TestFidelityReport:
         r = client.post("/api/report/fidelity", json={"source_code": bad_cpp})
         assert r.status_code == 200
         data = r.json()
-        # Should still return a report, not crash
+
         assert "schema_version" in data
 
     def test_report_includes_semantic_differences(self):

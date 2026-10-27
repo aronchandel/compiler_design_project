@@ -1,15 +1,3 @@
-"""Unit tests for Phase 3 Python code generation.
-
-Covers:
-- AC3.7: Hand-built IR with condition that cannot inline -> while True: fallback,
-         and verification that stdout matches direct condition.
-- AC3.8: Nested-scope shadowing variable renaming (e.g. x vs x_1) and execution equivalence.
-- AC3.9: Recursion depth test (depth <= 20 works, near 1000 raises RecursionError / out of contract).
-- elif folding
-- Compound assignment peepholes (+=, -=, *=, while // and % stay x = x // e)
-- pass for empty blocks
-"""
-
 import sys
 import subprocess
 from pathlib import Path
@@ -34,7 +22,6 @@ from cpp2py.ir.model import (
     IRType,
 )
 
-
 def compile_cpp_to_py(code: str) -> str:
     src = SourceFile("test.cpp", code)
     sink = DiagnosticSink()
@@ -48,13 +35,8 @@ def compile_cpp_to_py(code: str) -> str:
     gen_sink = DiagnosticSink()
     return generate(mod, gen_sink, config)
 
-
 def test_ac3_7_while_true_fallback_and_equivalence(tmp_path):
-    """AC3.7: Hand-built IR where loop condition has a CALL -> emits while True: fallback.
 
-    Asserts while True: with break is emitted, and output equals direct condition.
-    """
-    # 1. Direct condition program in C++
     direct_cpp = """
     #include <iostream>
     using namespace std;
@@ -71,8 +53,6 @@ def test_ac3_7_while_true_fallback_and_equivalence(tmp_path):
     assert "while i < 3:" in direct_py
     assert "while True:" not in direct_py
 
-    # 2. Hand-built IR with a call helper inside the condition: check_cond(i)
-    # def check_cond(val): return val < 3
     helper_func = IRFunction(
         name="check_cond",
         params=(VarRef(symbol_id=1, ir_name="v", type=IRType.I32),),
@@ -104,12 +84,10 @@ def test_ac3_7_while_true_fallback_and_equivalence(tmp_path):
     gen_sink = DiagnosticSink()
     fallback_py = generate(mod, gen_sink, config)
 
-    # Assert fallback is emitted
     assert "while True:" in fallback_py
     assert "if not (t1):" in fallback_py or "if not (check_cond" in fallback_py
     assert "break" in fallback_py
 
-    # Execute both and verify identical stdout
     direct_file = tmp_path / "direct.py"
     direct_file.write_text(direct_py, encoding="utf-8")
     fallback_file = tmp_path / "fallback.py"
@@ -121,9 +99,7 @@ def test_ac3_7_while_true_fallback_and_equivalence(tmp_path):
     assert out_direct == out_fallback
     assert out_direct == "0\n1\n2\n"
 
-
 def test_ac3_8_shadowing_variable_renaming(tmp_path):
-    """AC3.8: Nested-scope variable named like outer is renamed and output matches expected."""
     code = """
     #include <iostream>
     using namespace std;
@@ -144,7 +120,7 @@ def test_ac3_8_shadowing_variable_renaming(tmp_path):
     }
     """
     py_code = compile_cpp_to_py(code)
-    # Check that Python code uses renamed variables
+
     assert "x_1" in py_code
     assert "x_2" in py_code
 
@@ -153,9 +129,7 @@ def test_ac3_8_shadowing_variable_renaming(tmp_path):
     out = subprocess.run([sys.executable, str(py_file)], capture_output=True, text=True, check=True).stdout
     assert out == "10\n20\n30\n20\n10\n"
 
-
 def test_ac3_9_recursion_depth(tmp_path):
-    """AC3.9: Recursion factorial works for <= 20; depth near 1000 is out of contract."""
     code = """
     #include <iostream>
     using namespace std;
@@ -176,7 +150,6 @@ def test_ac3_9_recursion_depth(tmp_path):
     out = subprocess.run([sys.executable, str(py_file)], capture_output=True, text=True, check=True).stdout
     assert out.strip() == "120"
 
-    # Out of contract demonstration: calling depth 1000 causes RecursionError in Python
     deep_code = """
     #include <iostream>
     using namespace std;
@@ -198,7 +171,6 @@ def test_ac3_9_recursion_depth(tmp_path):
     assert proc.returncode != 0
     assert "RecursionError" in proc.stderr
 
-
 def test_elif_folding():
     code = """
     #include <iostream>
@@ -218,7 +190,6 @@ def test_elif_folding():
     py_code = compile_cpp_to_py(code)
     assert "elif x == 2:" in py_code
 
-
 def test_compound_assignment_peepholes():
     code = """
     int main() {
@@ -235,12 +206,11 @@ def test_compound_assignment_peepholes():
     assert "x += 2" in py_code
     assert "x -= 3" in py_code
     assert "x *= 4" in py_code
-    # div and mod must not use /= or %=
+
     assert "/=" not in py_code
     assert "%=" not in py_code
     assert "x = x // 2" in py_code
     assert "x = x % 3" in py_code
-
 
 def test_empty_blocks_emit_pass():
     code = """

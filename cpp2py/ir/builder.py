@@ -1,10 +1,3 @@
-"""AST to IR lowering for Phase 1 / Phase 2 / Phase 3 language constructs (extended for Arrays, Pointers, <climits>).
-
-Lowers declarations, assignments, compound assignments, inc/dec, I/O, control-flow
-(if/else, while, for), functions, calls, and returns to flat three-address IR.
-Reuses existing IR representations per ARCH §D.3.4 (calls for memory/pointer primitives).
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -32,15 +25,11 @@ if TYPE_CHECKING:
     from cpp2py.semantics.symbols import SemanticInfo, Symbol
     from cpp2py.config import CompilerConfig
 
-
 def build_ir(program: ast.Program, info: SemanticInfo, config: CompilerConfig) -> IRModule:
-    """Build an IRModule from the AST and semantic information."""
     builder = IRBuilder(program, info, config)
     return builder.build()
 
-
 class IRBuilder:
-    """Lowers an AST Program into an IRModule."""
 
     def __init__(self, program: ast.Program, info: SemanticInfo, config: CompilerConfig) -> None:
         self._program = program
@@ -79,7 +68,6 @@ class IRBuilder:
         return temp
 
     def _decay_array(self, expr: ast.Expr, operand: Operand) -> Operand:
-        """Decay an array operand into a pointer (_Ptr(arr, 0))."""
         if isinstance(expr, ast.NameExpr):
             sym = self._info.symbols_by_node.get(expr.node_id)
             if sym is not None and isinstance(sym.type, ArrayType):
@@ -165,11 +153,9 @@ class IRBuilder:
         )
         self._current_return_type = ret_type
 
-        # Lower body
         for stmt in func.body.statements:
             self._lower_stmt(stmt)
 
-        # Check if function ends with return
         has_return = (len(self._instructions) > 0 and
                       self._instructions[-1].opcode == Opcode.RETURN)
 
@@ -220,7 +206,6 @@ class IRBuilder:
                 var_type = self._sym_ir_type(sym)
                 var_ref = VarRef(symbol_id=symbol_id, ir_name=ir_name, type=var_type)
 
-                # 1. declare v : type
                 self._instructions.append(Instruction(
                     op_id=self._allocator.next_op_id(),
                     opcode=Opcode.DECLARE,
@@ -229,7 +214,6 @@ class IRBuilder:
                     span=stmt.span,
                 ))
 
-                # 2. Array declaration
                 if decl.array_size is not None:
                     size = sym.type.size if (sym and isinstance(sym.type, ArrayType)) else 1
                     init_ops: list[Operand] = []
@@ -247,7 +231,6 @@ class IRBuilder:
                         span=stmt.span,
                     ))
 
-                # 3. Addressed scalar variable (stored as 1-element list)
                 elif sym is not None and sym.symbol_id in self._info.addressed_symbols:
                     init_val = self._lower_expr(decl.init) if decl.init is not None else Const(0, IRType.I32)
                     self._instructions.append(Instruction(
@@ -259,7 +242,6 @@ class IRBuilder:
                         span=stmt.span,
                     ))
 
-                # 4. Normal scalar or pointer
                 elif decl.init is not None:
                     init_val = self._lower_expr(decl.init)
                     if decl.is_pointer:

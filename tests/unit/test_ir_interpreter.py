@@ -1,8 +1,3 @@
-"""Unit tests for cpp2py/localisation/ir_interpreter.py.
-
-Tests all opcodes, all overflow policies, boundary sign cases, step limits, and traces.
-"""
-
 from __future__ import annotations
 
 import pytest
@@ -29,7 +24,6 @@ from cpp2py.localisation.ir_interpreter import (
     wrap_int,
 )
 
-
 def test_arithmetic_basic():
     cpp_code = """
     int main() {
@@ -45,9 +39,7 @@ def test_arithmetic_basic():
     assert interp_res.stdout == "13 7 30\n"
     assert interp_res.exit_code == 0
 
-
 def test_division_and_mod_signs():
-    """Verify C++ truncating division and remainder sign matching dividend."""
     assert cpp_div(-7, 2) == -3
     assert cpp_div(7, -2) == -3
     assert cpp_div(-7, -2) == 3
@@ -71,7 +63,6 @@ def test_division_and_mod_signs():
     assert interp_res.success
     assert interp_res.stdout == "-3 -1 -3 1 3 -1\n"
 
-
 def test_overflow_policy_wrap():
     cpp_code = """
     int main() {
@@ -84,11 +75,9 @@ def test_overflow_policy_wrap():
     res = compile_source(cpp_code, "test.cpp", CompilerConfig(fold_constants=False))
     assert res.success and res.ir is not None
 
-    # Under wrap: 2147483647 + 1 -> -2147483648
     interp_wrap = interpret_module(res.ir, overflow_policy=OverflowPolicy.WRAP)
     assert interp_wrap.success
     assert interp_wrap.stdout == "-2147483648\n"
-
 
 def test_overflow_policy_trap():
     cpp_code = """
@@ -102,11 +91,9 @@ def test_overflow_policy_trap():
     res = compile_source(cpp_code, "test.cpp", CompilerConfig(fold_constants=False))
     assert res.success and res.ir is not None
 
-    # Under trap: raises OverflowError
     interp_trap = interpret_module(res.ir, overflow_policy=OverflowPolicy.TRAP)
     assert not interp_trap.success
     assert "signed overflow in add" in interp_trap.error
-
 
 def test_overflow_policy_assume_no_overflow():
     cpp_code = """
@@ -125,9 +112,7 @@ def test_overflow_policy_assume_no_overflow():
     assert len(interp_ano.ub_events) >= 1
     assert "signed overflow" in interp_ano.ub_events[0]
 
-
 def test_int_min_division_overflow():
-    """Test INT_MIN / -1 under each policy."""
     cpp_code = """
     int main() {
         int a = -2147483647 - 1;
@@ -139,21 +124,17 @@ def test_int_min_division_overflow():
     res = compile_source(cpp_code, "test.cpp", CompilerConfig(fold_constants=False))
     assert res.success and res.ir is not None
 
-    # Wrap -> -2147483648
     res_wrap = interpret_module(res.ir, overflow_policy=OverflowPolicy.WRAP)
     assert res_wrap.success
     assert res_wrap.stdout == "-2147483648\n"
 
-    # Trap -> failure
     res_trap = interpret_module(res.ir, overflow_policy=OverflowPolicy.TRAP)
     assert not res_trap.success
     assert "signed overflow in division" in res_trap.error
 
-    # Assume_no_overflow -> UB recorded
     res_ano = interpret_module(res.ir, overflow_policy=OverflowPolicy.ASSUME_NO_OVERFLOW)
     assert res_ano.success
     assert any("INT_MIN / -1" in ev for ev in res_ano.ub_events)
-
 
 def test_read_and_print_with_stdin():
     cpp_code = """
@@ -169,7 +150,6 @@ def test_read_and_print_with_stdin():
     interp_res = interpret_module(res.ir, stdin_text="15 27\n")
     assert interp_res.success
     assert interp_res.stdout == "sum = 42\n"
-
 
 def test_control_flow_loop_and_branch():
     cpp_code = """
@@ -188,7 +168,6 @@ def test_control_flow_loop_and_branch():
     assert interp_res.success
     assert interp_res.stdout == "15\n"
 
-
 def test_recursion_factorial():
     cpp_code = """
     int fact(int n) {
@@ -206,9 +185,7 @@ def test_recursion_factorial():
     assert interp_res.success
     assert interp_res.stdout == "120\n"
 
-
 def test_step_limit_termination():
-    """Verify that infinite loop halts with TimeoutError when step limit exceeded."""
     cpp_code = """
     int main() {
         int i = 0;
@@ -224,7 +201,6 @@ def test_step_limit_termination():
     assert not interp_res.success
     assert "Step limit" in interp_res.error
 
-
 def test_trace_recording():
     cpp_code = """
     int main() {
@@ -239,11 +215,10 @@ def test_trace_recording():
     interp_res = interpret_module(res.ir, record_trace=True)
     assert interp_res.success
     assert len(interp_res.trace) > 0
-    # Find the print step
+
     print_entries = [t for t in interp_res.trace if t.opcode == Opcode.PRINT]
     assert len(print_entries) == 1
     assert print_entries[0].output_chunk == "42\n"
-
 
 def test_cast_narrowing():
     cpp_code = """
@@ -260,7 +235,6 @@ def test_cast_narrowing():
     assert interp_res.success
     assert interp_res.stdout == "0\n"
 
-
 @pytest.mark.parametrize(
     "a, b, exp_div, exp_mod",
     [
@@ -275,7 +249,6 @@ def test_cast_narrowing():
     ],
 )
 def test_div_mod_sign_combinations(a: int, b: int, exp_div: int, exp_mod: int) -> None:
-    """Verify ARCH §E.7 all 4 sign combinations for div and mod."""
     fn = IRFunction(
         name="main",
         params=(),
@@ -292,7 +265,6 @@ def test_div_mod_sign_combinations(a: int, b: int, exp_div: int, exp_mod: int) -
     assert res.success
     assert res.stdout == f"{exp_div} {exp_mod}\n"
 
-
 @pytest.mark.parametrize(
     "policy, a, b, exp_val, should_trap, expect_ub",
     [
@@ -305,7 +277,6 @@ def test_div_mod_sign_combinations(a: int, b: int, exp_div: int, exp_mod: int) -
 def test_add_sub_overflow_policy_semantics(
     policy: OverflowPolicy, a: int, b: int, exp_val: int | None, should_trap: bool, expect_ub: bool
 ) -> None:
-    """Verify overflow policy semantics for wrap, trap, and assume_no_overflow."""
     fn = IRFunction(
         name="main",
         params=(),

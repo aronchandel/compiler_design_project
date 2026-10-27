@@ -1,5 +1,3 @@
-"""Unit tests for CFG construction and RPO."""
-
 from cpp2py.source import SourceFile
 from cpp2py.diagnostics import DiagnosticSink
 from cpp2py.frontend.lexer import tokenize
@@ -8,7 +6,6 @@ from cpp2py.semantics.analyzer import analyze
 from cpp2py.config import CompilerConfig
 from cpp2py.ir.builder import build_ir
 from cpp2py.analysis.cfg import CFG
-
 
 def test_straight_line_cfg():
     src = SourceFile("test.cpp", "int main() { int a = 1; int b = 2; return a + b; }")
@@ -21,8 +18,7 @@ def test_straight_line_cfg():
     cfg = CFG(mod.functions[0])
     assert cfg.entry is not None
     assert len(cfg.blocks) >= 1
-    assert len(cfg.entry.successors) == 0  # ends in return
-
+    assert len(cfg.entry.successors) == 0
 
 def test_while_loop_cfg():
     src = SourceFile("test.cpp", """

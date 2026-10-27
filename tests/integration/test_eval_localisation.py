@@ -1,5 +1,3 @@
-"""Integration tests for failure localisation evaluation (AC8.7)."""
-
 from __future__ import annotations
 
 import json
@@ -9,9 +7,7 @@ import pytest
 from cpp2py.evaluation.experiments import run_localisation_suite
 from cpp2py.evaluation.faults import FAULTS
 
-
 def test_eval_localisation_suite(tmp_path: Path) -> None:
-    """AC8.7: eval localisation runs >= 10 faults and reports top-1, top-3, MRR, N, and per-fault table."""
     out_dir = tmp_path / "eval_loc"
     loc_data = run_localisation_suite(out_dir=out_dir)
 

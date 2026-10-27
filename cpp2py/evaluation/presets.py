@@ -1,21 +1,13 @@
-"""Preset configurations for comparative evaluation (ARCH §J.1, §J.3).
-
-Provides B0 (naive), B1 (always-protect), and E (range-guided) compiler configurations
-that are identical in every attribute except `compat_mode`.
-"""
-
 from __future__ import annotations
 
 from typing import Any
 from cpp2py.config import CompilerConfig, CompatMode, TargetModel, OverflowPolicy
-
 
 PRESETS: dict[str, CompatMode] = {
     "B0": CompatMode.NAIVE,
     "B1": CompatMode.ALWAYS,
     "E": CompatMode.RANGE_GUIDED,
 }
-
 
 def get_preset_config(
     preset: str,
@@ -25,10 +17,6 @@ def get_preset_config(
     snapshot_dir: str | None = None,
     transform_log_path: str | None = None,
 ) -> CompilerConfig:
-    """Return a CompilerConfig for the given preset (B0, B1, E).
-
-    Guarantees that all configurations differ ONLY in `compat_mode`.
-    """
     normalized = preset.strip().upper()
     if normalized not in PRESETS:
         raise ValueError(f"Unknown preset {preset!r}; expected one of {list(PRESETS.keys())}")
@@ -62,17 +50,11 @@ def get_preset_config(
         verify_ir_between_passes=True,
     )
 
-
 def b0_config(**kwargs: Any) -> CompilerConfig:
-    """Convenience factory for B0 (naive)."""
     return get_preset_config("B0", **kwargs)
 
-
 def b1_config(**kwargs: Any) -> CompilerConfig:
-    """Convenience factory for B1 (always-protect)."""
     return get_preset_config("B1", **kwargs)
 
-
 def e_config(**kwargs: Any) -> CompilerConfig:
-    """Convenience factory for E (range-guided)."""
     return get_preset_config("E", **kwargs)

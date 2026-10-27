@@ -1,5 +1,3 @@
-"""Unit tests for <climits> header support and standard integer-limit macros."""
-
 import sys
 import subprocess
 import pytest
@@ -11,7 +9,6 @@ from cpp2py.frontend.parser import parse
 from cpp2py.semantics.analyzer import analyze
 from cpp2py.ir.builder import build_ir
 from cpp2py.codegen.python_gen import generate
-
 
 def compile_cpp(code: str, config: CompilerConfig | None = None) -> tuple[str, DiagnosticSink]:
     src = SourceFile("test.cpp", code)
@@ -30,7 +27,6 @@ def compile_cpp(code: str, config: CompilerConfig | None = None) -> tuple[str, D
     py_code = generate(mod, gen_sink, config)
     return py_code, sink
 
-
 def run_py(py_code: str, input_str: str = "") -> str:
     res = subprocess.run(
         [sys.executable, "-c", py_code],
@@ -40,7 +36,6 @@ def run_py(py_code: str, input_str: str = "") -> str:
         check=True,
     )
     return res.stdout
-
 
 def test_climits_header_recognition():
     code = """
@@ -54,13 +49,12 @@ def test_climits_header_recognition():
     """
     py_code, sink = compile_cpp(code)
     assert not sink.has_errors()
-    assert "INT_MAX" not in py_code  # macro must be resolved
+    assert "INT_MAX" not in py_code
     out = run_py(py_code)
     assert str(TargetModel().int_max) in out
 
-
 def test_climits_missing_macro_diagnostic():
-    # Without #include <climits>, INT_MAX is an undeclared identifier
+
     code = """
     #include <iostream>
     using namespace std;
@@ -72,7 +66,6 @@ def test_climits_missing_macro_diagnostic():
     _, sink = compile_cpp(code)
     assert sink.has_errors()
     assert any(d.code == "E3001" for d in sink.diagnostics)
-
 
 def test_all_climits_macros():
     code = """
@@ -123,7 +116,6 @@ def test_all_climits_macros():
     ]
     assert out == expected
 
-
 def test_climits_macro_in_expressions():
     code = """
     #include <climits>
@@ -142,9 +134,8 @@ def test_climits_macro_in_expressions():
     out = run_py(py_code).strip()
     assert out == f"{target.int_max - 100} {target.int_min + 50}"
 
-
 def test_target_model_non_hardcoded_limits():
-    # Verify LP64 vs Win32 long_bits configuration
+
     t32 = TargetModel(long_bits=32)
     assert t32.long_max == 2147483647
     assert t32.long_min == -2147483648
