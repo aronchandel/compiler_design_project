@@ -47,6 +47,7 @@ class IRType(Enum):
     BOOL = "bool"
     VOID = "void"
     STR = "str"
+    PTR = "ptr"
 
     def __str__(self) -> str:
         return self.value
@@ -58,6 +59,7 @@ i64 = IRType.I64
 bool_type = IRType.BOOL
 void_type = IRType.VOID
 str_type = IRType.STR
+ptr_type = IRType.PTR
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,7 +117,7 @@ Operand = Union[Const, VarRef, TempRef, StrConst, LabelRef]
 
 
 class Opcode(Enum):
-    """All opcodes defined in ARCH §D.3.4 except cast (which is P5)."""
+    """All opcodes defined in ARCH §D.3.4 (with extensions for cast)."""
     DECLARE = "declare"
     ASSIGN = "assign"
     ADD = "add"
@@ -146,9 +148,7 @@ class Instruction:
     dst: VarRef | TempRef | None = None
     operands: tuple[Operand, ...] = ()
     span: SourceSpan | None = None
-    origin: tuple[str, ...] = ()
-
-    # Specific metadata for control-flow, print, cmp, call
+    origin: tuple[int, ...] = ()
     label_name: str | None = None
     role: str | None = None
     region_id: str | None = None
@@ -159,26 +159,26 @@ class Instruction:
 
 @dataclass(slots=True)
 class RegionInfo:
-    """Metadata describing a control-flow region."""
-    region_id: str | int
-    kind: str  # "if", "while", "for"
+    """Loop / if region metadata for structured control-flow recovery."""
+    region_id: str
+    kind: str  # "if" | "while" | "for"
     span: SourceSpan | None = None
-    loop_var: str | int | None = None
+    loop_var: int | None = None
     loop_var_declared_in_init: bool = False
 
 
 @dataclass(slots=True)
 class IRFunction:
-    """IR representation of a function."""
+    """Function in the intermediate representation."""
     name: str
     params: tuple[VarRef, ...]
     return_type: IRType
     body: list[Instruction] = field(default_factory=list)
-    regions: dict[str | int, RegionInfo] = field(default_factory=dict)
+    regions: dict[str, RegionInfo] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class IRModule:
-    """Top-level IR container for a compilation unit."""
+    """A collection of IRFunctions representing an entire translation unit."""
     functions: list[IRFunction]
     source_name: str = ""

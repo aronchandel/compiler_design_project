@@ -1,11 +1,11 @@
-"""Semantic analyzer for the cpp2py compiler (Phase 3)."""
+"""Semantic analyzer for the cpp2py compiler (extended for Arrays, Pointers, and <climits>)."""
 
 from __future__ import annotations
 
 from cpp2py.config import CompilerConfig
 from cpp2py.diagnostics import DiagnosticSink
 from cpp2py.frontend import ast_nodes as ast
-from cpp2py.semantics.types import IntType, VoidType, BoolType
+from cpp2py.semantics.types import Type, IntType, VoidType, BoolType, ArrayType, PointerType, NullptrType
 from cpp2py.semantics.symbols import Symbol, SymbolKind, FunctionSymbol, SemanticInfo
 
 
@@ -35,6 +35,10 @@ class _Analyzer:
         self._assigned: set[int] = set()  # set of symbol_ids definitely assigned
         self._next_symbol_id = 0
         self._uses_std = program.uses_std
+        self._climits_constants: dict[str, int] = (
+            config.target.climits_macros() if program.includes_climits else {}
+        )
+        self._info.constants.update(self._climits_constants)
 
     def _alloc_symbol_id(self) -> int:
         sid = self._next_symbol_id
@@ -51,6 +55,16 @@ class _Analyzer:
         for scope in reversed(self._scopes):
             if name in scope:
                 return scope[name]
+        if name in self._climits_constants:
+            val = self._climits_constants[name]
+            bits = 64 if (val < -(1 << 31) or val > (1 << 31) - 1) else 32
+            return Symbol(
+                self._alloc_symbol_id(),
+                name,
+                IntType(bits),
+                SymbolKind.CONSTANT,
+                None,
+            )
         return None
 
     def run(self) -> SemanticInfo | None:
@@ -70,7 +84,7 @@ class _Analyzer:
         # Determine return type
         int_bits = self._config.target.int_bits
         ll_bits = self._config.target.long_long_bits
-        ret_type: IntType | VoidType
+        ret_type: Type
         if func.return_type.name == "int":
             ret_type = IntType(int_bits)
         elif func.return_type.name == "long long":
@@ -87,7 +101,16 @@ class _Analyzer:
                 continue
             seen_param_names.add(p.name)
             p_bits = ll_bits if p.type_spec.name == "long long" else int_bits
-            sym = Symbol(self._alloc_symbol_id(), p.name, IntType(p_bits),
+            base_type = IntType(p_bits)
+
+            p_type: Type
+            if p.is_pointer or p.is_array:
+                # In C++, array parameter int arr[] decays to pointer int*
+                p_type = PointerType(base_type)
+            else:
+                p_type = base_type
+
+            sym = Symbol(self._alloc_symbol_id(), p.name, p_type,
                          SymbolKind.PARAMETER, p.span)
             param_symbols.append(sym)
             self._info.symbols_by_node[p.node_id] = sym
@@ -161,10 +184,42 @@ class _Analyzer:
         elif isinstance(stmt, ast.ReturnStmt):
             self._analyze_return(stmt)
 
+    def _eval_const_expr(self, expr: ast.Expr) -> int | None:
+        """Evaluate compile-time constant expressions (for array sizes)."""
+        if isinstance(expr, ast.IntLiteral):
+            return expr.value
+        elif isinstance(expr, ast.NameExpr):
+            if expr.name in self._info.constants:
+                return self._info.constants[expr.name]
+            return None
+        elif isinstance(expr, ast.UnaryExpr):
+            sub = self._eval_const_expr(expr.operand)
+            if sub is not None:
+                return -sub if expr.op == '-' else sub
+            return None
+        elif isinstance(expr, ast.BinaryExpr):
+            left = self._eval_const_expr(expr.left)
+            right = self._eval_const_expr(expr.right)
+            if left is not None and right is not None:
+                if expr.op == '+':
+                    return left + right
+                elif expr.op == '-':
+                    return left - right
+                elif expr.op == '*':
+                    return left * right
+                elif expr.op == '/' and right != 0:
+                    return left // right
+                elif expr.op == '%' and right != 0:
+                    return left % right
+            return None
+        return None
+
     def _analyze_decl(self, stmt: ast.DeclStmt) -> None:
         int_bits = self._config.target.int_bits
         ll_bits = self._config.target.long_long_bits
         var_bits = ll_bits if stmt.type_spec.name == "long long" else int_bits
+        base_type = IntType(var_bits)
+
         for decl in stmt.declarators:
             name = decl.name
 
@@ -179,60 +234,145 @@ class _Analyzer:
                 self._sink.error("E3002", f"redeclaration of '{name}'", decl.span)
                 continue
 
-            sym = Symbol(self._alloc_symbol_id(), name, IntType(var_bits),
-                         SymbolKind.VARIABLE, decl.span)
-            current_scope[name] = sym
-            self._info.symbols_by_node[decl.node_id] = sym
+            # 1. Pointer declaration: int *p;
+            if decl.is_pointer:
+                ptr_type = PointerType(base_type)
+                sym = Symbol(self._alloc_symbol_id(), name, ptr_type,
+                             SymbolKind.VARIABLE, decl.span)
+                current_scope[name] = sym
+                self._info.symbols_by_node[decl.node_id] = sym
 
-            if decl.init is not None:
-                init_type = self._analyze_expr(decl.init)
-                if isinstance(init_type, VoidType):
-                    self._sink.error("E3004", f"cannot initialize variable '{name}' with void expression", decl.span)
-                self._assigned.add(sym.symbol_id)
+                if decl.init is not None:
+                    init_type = self._analyze_expr(decl.init)
+                    if isinstance(init_type, VoidType):
+                        self._sink.error("E3004", f"cannot initialize pointer '{name}' with void expression", decl.span)
+                    elif not isinstance(init_type, (PointerType, NullptrType, ArrayType)):
+                        self._sink.error("E3004", f"cannot initialize pointer '{name}' with integer expression", decl.span)
+                    self._assigned.add(sym.symbol_id)
+
+            # 2. Array declaration: int arr[3]; or int arr[3] = {1, 2, 3};
+            elif decl.array_size is not None:
+                size = self._eval_const_expr(decl.array_size)
+                if size is None or size <= 0:
+                    self._sink.error("E3003", f"array size must be a positive constant integer", decl.array_size.span)
+                    size = 1
+
+                arr_type = ArrayType(base_type, size)
+                sym = Symbol(self._alloc_symbol_id(), name, arr_type,
+                             SymbolKind.VARIABLE, decl.span)
+                current_scope[name] = sym
+                self._info.symbols_by_node[decl.node_id] = sym
+                self._assigned.add(sym.symbol_id)  # arrays are considered allocated
+
+                if decl.init is not None:
+                    if isinstance(decl.init, ast.InitializerList):
+                        if len(decl.init.elements) > size:
+                            self._sink.error("E3003", f"too many initializers for array '{name}' of size {size}", decl.init.span)
+                        for elem in decl.init.elements:
+                            elem_t = self._analyze_expr(elem)
+                            if not isinstance(elem_t, IntType):
+                                self._sink.error("E3004", f"array initializer must be integer, got '{elem_t}'", elem.span)
+                    else:
+                        self._sink.error("E3003", f"array '{name}' must be initialized with an initializer list", decl.init.span)
+
+            # 3. Scalar declaration: int x; or int x = 5;
+            else:
+                sym = Symbol(self._alloc_symbol_id(), name, base_type,
+                             SymbolKind.VARIABLE, decl.span)
+                current_scope[name] = sym
+                self._info.symbols_by_node[decl.node_id] = sym
+
+                if decl.init is not None:
+                    init_type = self._analyze_expr(decl.init)
+                    if isinstance(init_type, VoidType):
+                        self._sink.error("E3004", f"cannot initialize variable '{name}' with void expression", decl.span)
+                    elif isinstance(init_type, (PointerType, NullptrType, ArrayType)):
+                        self._sink.error("E3004", f"cannot initialize scalar variable '{name}' with pointer/array", decl.span)
+                    self._assigned.add(sym.symbol_id)
 
     def _analyze_assign(self, stmt: ast.AssignStmt) -> None:
-        name = stmt.target.name
-        sym = self._lookup_var(name)
+        target = stmt.target
 
-        if sym is None:
-            self._sink.error("E3001", f"undeclared identifier '{name}'", stmt.target.span)
-            return
+        # 1. NameExpr target: x = expr;
+        if isinstance(target, ast.NameExpr):
+            name = target.name
+            sym = self._lookup_var(name)
 
-        if sym.kind not in (SymbolKind.VARIABLE, SymbolKind.PARAMETER):
-            self._sink.error("E3005", f"'{name}' is not an assignable variable", stmt.target.span)
-            return
+            if sym is None:
+                self._sink.error("E3001", f"undeclared identifier '{name}'", target.span)
+                return
 
-        self._info.symbols_by_node[stmt.target.node_id] = sym
+            if sym.kind == SymbolKind.CONSTANT:
+                self._sink.error("E3005", f"cannot assign to constant '{name}'", target.span)
+                return
 
-        # For compound assignment (+=, -=, etc.), target must ALREADY be assigned
-        if stmt.op != '=':
-            if sym.symbol_id not in self._assigned:
-                self._sink.error("E3003", f"variable '{name}' may be used before being assigned", stmt.target.span)
+            if sym.kind not in (SymbolKind.VARIABLE, SymbolKind.PARAMETER):
+                self._sink.error("E3005", f"'{name}' is not an assignable variable", target.span)
+                return
 
-        val_type = self._analyze_expr(stmt.value)
-        if isinstance(val_type, VoidType):
-            self._sink.error("E3004", f"cannot assign void expression to '{name}'", stmt.span)
+            self._info.symbols_by_node[target.node_id] = sym
 
-        self._assigned.add(sym.symbol_id)
+            # For compound assignment, target must ALREADY be assigned
+            if stmt.op != '=':
+                if sym.symbol_id not in self._assigned:
+                    self._sink.error("E3003", f"variable '{name}' may be used before being assigned", target.span)
+
+            val_type = self._analyze_expr(stmt.value)
+            if isinstance(val_type, VoidType):
+                self._sink.error("E3004", f"cannot assign void expression to '{name}'", stmt.span)
+
+            # Type checking between target and value
+            if isinstance(sym.type, PointerType):
+                if not isinstance(val_type, (PointerType, NullptrType, ArrayType)):
+                    self._sink.error("E3004", f"cannot assign integer to pointer '{name}'", stmt.span)
+            elif isinstance(sym.type, ArrayType):
+                self._sink.error("E3005", f"cannot assign to entire array '{name}'", stmt.span)
+            elif isinstance(sym.type, IntType):
+                if isinstance(val_type, (PointerType, NullptrType, ArrayType)):
+                    self._sink.error("E3004", f"cannot assign pointer/array to integer '{name}'", stmt.span)
+
+            self._assigned.add(sym.symbol_id)
+
+        # 2. IndexExpr target: arr[i] = expr;
+        elif isinstance(target, ast.IndexExpr):
+            elem_t = self._analyze_expr(target)
+            val_type = self._analyze_expr(stmt.value)
+            if isinstance(val_type, VoidType):
+                self._sink.error("E3004", "cannot assign void expression to array element", stmt.span)
+            elif isinstance(elem_t, IntType) and isinstance(val_type, (PointerType, NullptrType)):
+                self._sink.error("E3004", "cannot assign pointer to integer array element", stmt.span)
+
+        # 3. DerefExpr target: *p = expr;
+        elif isinstance(target, ast.DerefExpr):
+            pointee_t = self._analyze_expr(target)
+            val_type = self._analyze_expr(stmt.value)
+            if isinstance(val_type, VoidType):
+                self._sink.error("E3004", "cannot assign void expression through pointer", stmt.span)
+            elif isinstance(pointee_t, IntType) and isinstance(val_type, (PointerType, NullptrType)):
+                self._sink.error("E3004", "cannot assign pointer through integer pointer", stmt.span)
 
     def _analyze_incdec(self, stmt: ast.IncDecStmt) -> None:
-        name = stmt.target.name
-        sym = self._lookup_var(name)
+        target = stmt.target
+        if isinstance(target, ast.NameExpr):
+            name = target.name
+            sym = self._lookup_var(name)
 
-        if sym is None:
-            self._sink.error("E3001", f"undeclared identifier '{name}'", stmt.target.span)
-            return
+            if sym is None:
+                self._sink.error("E3001", f"undeclared identifier '{name}'", target.span)
+                return
 
-        if sym.kind not in (SymbolKind.VARIABLE, SymbolKind.PARAMETER):
-            self._sink.error("E3005", f"'{name}' is not an assignable variable", stmt.target.span)
-            return
+            if sym.kind not in (SymbolKind.VARIABLE, SymbolKind.PARAMETER):
+                self._sink.error("E3005", f"'{name}' is not an assignable variable", target.span)
+                return
 
-        self._info.symbols_by_node[stmt.target.node_id] = sym
+            self._info.symbols_by_node[target.node_id] = sym
 
-        if sym.symbol_id not in self._assigned:
-            self._sink.error("E3003", f"variable '{name}' may be used before being assigned", stmt.target.span)
+            if sym.symbol_id not in self._assigned:
+                self._sink.error("E3003", f"variable '{name}' may be used before being assigned", target.span)
 
-        self._assigned.add(sym.symbol_id)
+            self._assigned.add(sym.symbol_id)
+        else:
+            self._analyze_expr(target)
 
     def _analyze_if(self, stmt: ast.IfStmt) -> None:
         self._analyze_condition(stmt.cond)
@@ -247,11 +387,8 @@ class _Analyzer:
             self._assigned = set(saved_assigned)
             self._analyze_stmt(stmt.else_body)
             else_assigned = set(self._assigned)
-
-            # Intersection: definitely assigned only if assigned on BOTH branches
             self._assigned = then_assigned & else_assigned
         else:
-            # If no else branch, then assignments in then_body cannot be assumed
             self._assigned = saved_assigned
 
     def _analyze_while(self, stmt: ast.WhileStmt) -> None:
@@ -259,12 +396,9 @@ class _Analyzer:
 
         saved_assigned = set(self._assigned)
         self._analyze_stmt(stmt.body)
-
-        # Assignments inside while loop body do not count after the loop
         self._assigned = saved_assigned
 
     def _analyze_for(self, stmt: ast.ForStmt) -> None:
-        # for_init counts for definite assignment and scoping
         self._enter_scope()
 
         if stmt.init is not None:
@@ -272,14 +406,12 @@ class _Analyzer:
 
         self._analyze_condition(stmt.cond)
 
-        # Body and update run conditionally
         saved_assigned = set(self._assigned)
 
         self._analyze_stmt(stmt.body)
         if stmt.update is not None:
             self._analyze_stmt(stmt.update)
 
-        # Assignments in body/update do NOT count after loop, but init DOES
         self._assigned = saved_assigned
         self._exit_scope()
 
@@ -302,19 +434,22 @@ class _Analyzer:
                              stmt.span)
 
         for target in stmt.targets:
-            name = target.name
-            sym = self._lookup_var(name)
+            if isinstance(target, ast.NameExpr):
+                name = target.name
+                sym = self._lookup_var(name)
 
-            if sym is None:
-                self._sink.error("E3001", f"undeclared identifier '{name}'", target.span)
-                continue
+                if sym is None:
+                    self._sink.error("E3001", f"undeclared identifier '{name}'", target.span)
+                    continue
 
-            if sym.kind not in (SymbolKind.VARIABLE, SymbolKind.PARAMETER):
-                self._sink.error("E3005", f"'{name}' is not a variable", target.span)
-                continue
+                if sym.kind not in (SymbolKind.VARIABLE, SymbolKind.PARAMETER):
+                    self._sink.error("E3005", f"'{name}' is not a variable", target.span)
+                    continue
 
-            self._info.symbols_by_node[target.node_id] = sym
-            self._assigned.add(sym.symbol_id)
+                self._info.symbols_by_node[target.node_id] = sym
+                self._assigned.add(sym.symbol_id)
+            else:
+                self._analyze_expr(target)
 
     def _analyze_output(self, stmt: ast.OutputStmt) -> None:
         if not stmt.qualified and not self._uses_std:
@@ -351,7 +486,7 @@ class _Analyzer:
                 if isinstance(val_type, VoidType):
                     self._sink.error("E3004", f"cannot return void expression from function '{cur_fn.name}'", stmt.span)
 
-    def _analyze_call_expr(self, expr: ast.CallExpr, as_statement: bool = False) -> IntType | VoidType:
+    def _analyze_call_expr(self, expr: ast.CallExpr, as_statement: bool = False) -> Type:
         callee = expr.callee
         if callee not in self._functions:
             self._sink.error("E3001", f"undeclared identifier '{callee}'", expr.span)
@@ -365,7 +500,7 @@ class _Analyzer:
                              f"wrong argument count for '{callee}': expected {len(fn.params)}, got {len(expr.args)}",
                              expr.span)
 
-        for arg in expr.args:
+        for i, arg in enumerate(expr.args):
             arg_type = self._analyze_expr(arg)
             if isinstance(arg_type, VoidType):
                 self._sink.error("E3004", f"cannot pass void expression as argument to '{callee}'", arg.span)
@@ -376,12 +511,17 @@ class _Analyzer:
         self._info.type_by_node[expr.node_id] = fn.return_type
         return fn.return_type
 
-    def _analyze_expr(self, expr: ast.Expr) -> IntType | VoidType | BoolType:
+    def _analyze_expr(self, expr: ast.Expr) -> Type:
         if isinstance(expr, ast.IntLiteral):
-            if expr.value <= self._config.target.int_max:
+            if expr.value <= self._config.target.int_max and expr.value >= self._config.target.int_min:
                 t = IntType(self._config.target.int_bits)
             else:
                 t = IntType(self._config.target.long_long_bits)
+            self._info.type_by_node[expr.node_id] = t
+            return t
+
+        elif isinstance(expr, ast.NullptrLiteral):
+            t = NullptrType()
             self._info.type_by_node[expr.node_id] = t
             return t
 
@@ -417,6 +557,58 @@ class _Analyzer:
             self._info.type_by_node[expr.node_id] = t
             return t
 
+        elif isinstance(expr, ast.AddressOfExpr):
+            op = expr.operand
+            if isinstance(op, ast.NameExpr):
+                sym = self._lookup_var(op.name)
+                if sym is not None:
+                    self._info.symbols_by_node[op.node_id] = sym
+                    self._info.addressed_symbols.add(sym.symbol_id)
+                    elem_t = sym.type.element_type if isinstance(sym.type, ArrayType) else sym.type
+                    t = PointerType(elem_t or IntType(32))
+                else:
+                    self._sink.error("E3001", f"undeclared identifier '{op.name}'", op.span)
+                    t = PointerType(IntType(32))
+            elif isinstance(op, ast.IndexExpr):
+                elem_t = self._analyze_expr(op)
+                t = PointerType(elem_t)
+            elif isinstance(op, ast.DerefExpr):
+                deref_t = self._analyze_expr(op)
+                t = PointerType(deref_t)
+            else:
+                self._sink.error("E3003", "lvalue required as unary '&' operand", expr.span)
+                t = PointerType(IntType(32))
+            self._info.type_by_node[expr.node_id] = t
+            return t
+
+        elif isinstance(expr, ast.DerefExpr):
+            op_t = self._analyze_expr(expr.operand)
+            if isinstance(op_t, PointerType):
+                t = op_t.pointee_type
+            elif isinstance(op_t, ArrayType):
+                t = op_t.element_type
+            else:
+                self._sink.error("E3003", f"cannot dereference non-pointer type '{op_t}'", expr.span)
+                t = IntType(self._config.target.int_bits)
+            self._info.type_by_node[expr.node_id] = t
+            return t
+
+        elif isinstance(expr, ast.IndexExpr):
+            arr_t = self._analyze_expr(expr.array)
+            idx_t = self._analyze_expr(expr.index)
+            if not isinstance(idx_t, IntType):
+                self._sink.error("E3004", f"array index must be an integer, got '{idx_t}'", expr.index.span)
+
+            if isinstance(arr_t, ArrayType):
+                t = arr_t.element_type
+            elif isinstance(arr_t, PointerType):
+                t = arr_t.pointee_type
+            else:
+                self._sink.error("E3003", f"subscripted value is neither array nor pointer (type is '{arr_t}')", expr.span)
+                t = IntType(self._config.target.int_bits)
+            self._info.type_by_node[expr.node_id] = t
+            return t
+
         elif isinstance(expr, ast.UnaryExpr):
             op_t = self._analyze_expr(expr.operand)
             if isinstance(op_t, VoidType):
@@ -426,7 +618,6 @@ class _Analyzer:
             return t
 
         elif isinstance(expr, ast.BinaryExpr):
-            # Check relational operator used as value -> E3008
             if expr.op in ('<', '<=', '>', '>=', '==', '!='):
                 self._sink.error("E3008",
                                  f"relational expression '{expr.op}' used as a value",
@@ -436,6 +627,23 @@ class _Analyzer:
             right_t = self._analyze_expr(expr.right)
             if isinstance(left_t, VoidType) or isinstance(right_t, VoidType):
                 self._sink.error("E3004", f"operator '{expr.op}' cannot be applied to void operands", expr.span)
+
+            # Pointer arithmetic: ptr + int, int + ptr, ptr - int
+            if expr.op in ('+', '-'):
+                if isinstance(left_t, (PointerType, ArrayType)) and isinstance(right_t, IntType):
+                    elem = left_t.pointee_type if isinstance(left_t, PointerType) else left_t.element_type
+                    t = PointerType(elem)
+                    self._info.type_by_node[expr.node_id] = t
+                    return t
+                elif expr.op == '+' and isinstance(left_t, IntType) and isinstance(right_t, (PointerType, ArrayType)):
+                    elem = right_t.pointee_type if isinstance(right_t, PointerType) else right_t.element_type
+                    t = PointerType(elem)
+                    self._info.type_by_node[expr.node_id] = t
+                    return t
+                elif expr.op == '-' and isinstance(left_t, (PointerType, ArrayType)) and isinstance(right_t, (PointerType, ArrayType)):
+                    t = IntType(self._config.target.int_bits)
+                    self._info.type_by_node[expr.node_id] = t
+                    return t
 
             # Usual arithmetic promotions: if either is long long, result is long long
             ll_bits = self._config.target.long_long_bits

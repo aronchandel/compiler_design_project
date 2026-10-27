@@ -125,12 +125,31 @@ class IRVerifier:
 
                 if left_type == IRType.BOOL or right_type == IRType.BOOL:
                     self._sink.error("E5001", "bool value used in arithmetic binop", instr.span)
-                if left_type != right_type:
-                    self._sink.error("E5001", f"operand type mismatch in {opcode.value}: {left_type} != {right_type}", instr.span)
 
                 dst_type = self._get_type(instr.dst, temp_types, var_types)
-                if dst_type != left_type:
-                    self._sink.error("E5001", f"result type mismatch in {opcode.value}: {dst_type} != {left_type}", instr.span)
+
+                if opcode in (Opcode.ADD, Opcode.SUB) and (left_type == IRType.PTR or right_type == IRType.PTR):
+                    if opcode == Opcode.ADD:
+                        if (left_type == IRType.PTR and right_type in (IRType.I32, IRType.I64)) or \
+                           (right_type == IRType.PTR and left_type in (IRType.I32, IRType.I64)):
+                            if dst_type != IRType.PTR:
+                                self._sink.error("E5001", f"result type mismatch in {opcode.value}: expected ptr, got {dst_type}", instr.span)
+                        else:
+                            self._sink.error("E5001", f"operand type mismatch in {opcode.value}: {left_type} != {right_type}", instr.span)
+                    elif opcode == Opcode.SUB:
+                        if left_type == IRType.PTR and right_type in (IRType.I32, IRType.I64):
+                            if dst_type != IRType.PTR:
+                                self._sink.error("E5001", f"result type mismatch in {opcode.value}: expected ptr, got {dst_type}", instr.span)
+                        elif left_type == IRType.PTR and right_type == IRType.PTR:
+                            if dst_type not in (IRType.I32, IRType.I64):
+                                self._sink.error("E5001", f"result type mismatch in ptr subtraction: expected int, got {dst_type}", instr.span)
+                        else:
+                            self._sink.error("E5001", f"operand type mismatch in {opcode.value}: {left_type} != {right_type}", instr.span)
+                else:
+                    if left_type != right_type:
+                        self._sink.error("E5001", f"operand type mismatch in {opcode.value}: {left_type} != {right_type}", instr.span)
+                    if dst_type != left_type:
+                        self._sink.error("E5001", f"result type mismatch in {opcode.value}: {dst_type} != {left_type}", instr.span)
 
             elif opcode == Opcode.NEG:
                 operand = instr.operands[0] if instr.operands else None
@@ -195,7 +214,7 @@ class IRVerifier:
                         self._sink.error("E5001", f"return type mismatch: expected {func.return_type}, got {ret_type}", instr.span)
                 else:
                     if func.return_type != IRType.VOID:
-                        self._sink.error("E5001", f"non-void function must return a value, got void return", instr.span)
+                        self._sink.error("E5001", "non-void function must return a value, got void return", instr.span)
 
             elif opcode == Opcode.CAST:
                 src = instr.operands[0] if instr.operands else None

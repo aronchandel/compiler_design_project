@@ -49,8 +49,35 @@ def _render(expr: ast.Expr, name_fn: callable, parent_prec: int, is_right: bool)
     if isinstance(expr, ast.IntLiteral):
         return str(expr.value)
 
+    elif isinstance(expr, ast.NullptrLiteral):
+        return "_Ptr(None, 0)"
+
     elif isinstance(expr, ast.NameExpr):
         return name_fn(expr.name)
+
+    elif isinstance(expr, ast.IndexExpr):
+        arr_str = _render(expr.array, name_fn, parent_prec=3, is_right=False)
+        idx_str = _render(expr.index, name_fn, parent_prec=-1, is_right=False)
+        return f"{arr_str}[{idx_str}]"
+
+    elif isinstance(expr, ast.DerefExpr):
+        ptr_str = _render(expr.operand, name_fn, parent_prec=3, is_right=False)
+        return f"{ptr_str}[0]"
+
+    elif isinstance(expr, ast.AddressOfExpr):
+        if isinstance(expr.operand, ast.NameExpr):
+            var_name = name_fn(expr.operand.name)
+            return f"_Ptr({var_name}, 0)"
+        elif isinstance(expr.operand, ast.IndexExpr):
+            arr_str = _render(expr.operand.array, name_fn, parent_prec=3, is_right=False)
+            idx_str = _render(expr.operand.index, name_fn, parent_prec=-1, is_right=False)
+            return f"_Ptr({arr_str}, {idx_str})"
+        elif isinstance(expr.operand, ast.DerefExpr):
+            # &(*p) is p
+            return _render(expr.operand.operand, name_fn, parent_prec, is_right)
+        else:
+            inner_str = _render(expr.operand, name_fn, parent_prec=-1, is_right=False)
+            return f"_Ptr({inner_str}, 0)"
 
     elif isinstance(expr, ast.UnaryExpr):
         if expr.op == '+':
@@ -61,7 +88,7 @@ def _render(expr: ast.Expr, name_fn: callable, parent_prec: int, is_right: bool)
         operand_str = _render(expr.operand, name_fn, parent_prec=-1, is_right=False)
 
         # Parenthesize operand when it is not a literal or a name
-        needs_parens = not isinstance(expr.operand, (ast.IntLiteral, ast.NameExpr))
+        needs_parens = not isinstance(expr.operand, (ast.IntLiteral, ast.NameExpr, ast.IndexExpr, ast.DerefExpr))
 
         if needs_parens:
             result = f"-({operand_str})"
@@ -75,8 +102,8 @@ def _render(expr: ast.Expr, name_fn: callable, parent_prec: int, is_right: bool)
         return result
 
     elif isinstance(expr, ast.BinaryExpr):
-        prec = _PREC[expr.op]
-        py_op = _OP_MAP[expr.op]
+        prec = _PREC.get(expr.op, 1)
+        py_op = _OP_MAP.get(expr.op, expr.op)
 
         left_str = _render(expr.left, name_fn, parent_prec=prec, is_right=False)
         # Right operand: parenthesize when it has the same precedence (left-associativity)

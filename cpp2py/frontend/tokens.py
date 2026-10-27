@@ -26,6 +26,7 @@ class TokenKind(Enum):
     ELSE = auto()         # 'else'
     WHILE = auto()        # 'while'
     FOR = auto()          # 'for'
+    NULLPTR = auto()      # 'nullptr'
 
     # Unsupported keywords (detected to produce E4001)
     DO = auto()
@@ -63,8 +64,11 @@ class TokenKind(Enum):
     RPAREN = auto()       # )
     LBRACE = auto()       # {
     RBRACE = auto()       # }
+    LBRACKET = auto()     # [
+    RBRACKET = auto()     # ]
     SEMI = auto()         # ;
     COMMA = auto()        # ,
+    AMP = auto()          # &
     LSHIFT = auto()       # <<
     RSHIFT = auto()       # >>
     SCOPE = auto()        # ::
@@ -92,6 +96,7 @@ class TokenKind(Enum):
 
     # Special
     INCLUDE_IOSTREAM = auto()  # the whole '#include <iostream>' directive
+    INCLUDE_CLIMITS = auto()   # the whole '#include <climits>' directive
     EOF = auto()
 
 
@@ -101,11 +106,12 @@ KEYWORDS: dict[str, TokenKind] = {
     'return': TokenKind.RETURN,
     'using': TokenKind.USING,
     'namespace': TokenKind.NAMESPACE,
-    # Unsupported keywords -> E4001
     'if': TokenKind.IF,
     'else': TokenKind.ELSE,
     'while': TokenKind.WHILE,
     'for': TokenKind.FOR,
+    'nullptr': TokenKind.NULLPTR,
+    # Unsupported keywords -> E4001
     'do': TokenKind.DO,
     'switch': TokenKind.SWITCH,
     'break': TokenKind.BREAK,

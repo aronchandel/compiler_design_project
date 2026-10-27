@@ -90,6 +90,16 @@ class IRToPythonGenerator:
 
         # Collect helpers needed
         helpers_needed: set[str] = set()
+        for func in self._module.functions:
+            for instr in func.body:
+                if instr.opcode == Opcode.CALL and instr.func_name in ("_addr_of", "_get_deref", "_set_deref"):
+                    helpers_needed.add("_Ptr")
+                if instr.dst and getattr(instr.dst, "type", None) == IRType.PTR:
+                    helpers_needed.add("_Ptr")
+                for op in instr.operands:
+                    if getattr(op, "type", None) == IRType.PTR:
+                        helpers_needed.add("_Ptr")
+
         if self._plan is not None:
             for func in self._module.functions:
                 for instr in func.body:
@@ -229,6 +239,11 @@ class IRToPythonGenerator:
                 u_idx = temp_use_idx[t_id]
                 def_instr = self._temp_defs[t_id]
 
+                if def_instr.opcode == Opcode.READ or (
+                    def_instr.opcode == Opcode.CALL and def_instr.func_name in ("_set_index", "_set_deref", "_array_init")
+                ):
+                    continue
+
                 can_inline = True
                 for k in range(d_idx + 1, u_idx):
                     between_instr = body[k]
@@ -240,7 +255,7 @@ class IRToPythonGenerator:
                         can_inline = False
                         break
                     if between_instr.opcode == Opcode.CALL and def_instr.opcode == Opcode.CALL:
-                        # Do not inline across another function call
+                        # Do not inline across another user function call
                         can_inline = False
                         break
 
@@ -441,9 +456,9 @@ class IRToPythonGenerator:
         if not cond_instrs:
             return True
 
-        # If any instruction in cond_instrs is a CALL, do NOT inline (enables fallback for calls)
+        # If any instruction in cond_instrs is a user CALL, do NOT inline
         for instr in cond_instrs:
-            if instr.opcode == Opcode.CALL:
+            if instr.opcode == Opcode.CALL and not (instr.func_name or "").startswith("_"):
                 return False
 
         # All temps defined in cond_instrs (except the final cond_op) must be inlined
@@ -631,8 +646,6 @@ class IRToPythonGenerator:
             return
 
         # Check if else_instrs is exactly one if-region (elif folding)
-        first_real = real_instrs[0]
-        # Also could have condition temps preceding branch
         branch_instr = None
         for ins in real_instrs:
             if ins.opcode == Opcode.BRANCH and str(ins.operands[1]).startswith("if_then_"):
@@ -730,13 +743,42 @@ class IRToPythonGenerator:
             lines.append(f"{indent}{dst_name} = {val_str}")
 
         elif opcode == Opcode.CALL:
-            callee = self._mangler.mangle(instr.func_name or "")
-            args_str = ", ".join(self._render_operand_expr(op) for op in instr.operands)
-            if instr.dst is not None:
+            callee = instr.func_name or ""
+            if callee == "_array_init":
                 dst_name = self._mangle_target(instr.dst)
-                lines.append(f"{indent}{dst_name} = {callee}({args_str})")
+                elem_strs = [self._render_operand_expr(op) for op in instr.operands]
+                lines.append(f"{indent}{dst_name} = [{', '.join(elem_strs)}]")
+            elif callee == "_get_index":
+                dst_name = self._mangle_target(instr.dst)
+                arr_str = self._render_operand_expr(instr.operands[0])
+                idx_str = self._render_operand_expr(instr.operands[1])
+                lines.append(f"{indent}{dst_name} = {arr_str}[{idx_str}]")
+            elif callee == "_set_index":
+                arr_str = self._render_operand_expr(instr.operands[0])
+                idx_str = self._render_operand_expr(instr.operands[1])
+                val_str = self._render_operand_expr(instr.operands[2])
+                lines.append(f"{indent}{arr_str}[{idx_str}] = {val_str}")
+            elif callee == "_addr_of":
+                dst_name = self._mangle_target(instr.dst)
+                target_str = self._render_operand_expr(instr.operands[0])
+                offset_str = self._render_operand_expr(instr.operands[1]) if len(instr.operands) > 1 else "0"
+                lines.append(f"{indent}{dst_name} = _Ptr({target_str}, {offset_str})")
+            elif callee == "_get_deref":
+                dst_name = self._mangle_target(instr.dst)
+                ptr_str = self._render_operand_expr(instr.operands[0])
+                lines.append(f"{indent}{dst_name} = {ptr_str}[0]")
+            elif callee == "_set_deref":
+                ptr_str = self._render_operand_expr(instr.operands[0])
+                val_str = self._render_operand_expr(instr.operands[1])
+                lines.append(f"{indent}{ptr_str}[0] = {val_str}")
             else:
-                lines.append(f"{indent}{callee}({args_str})")
+                m_callee = self._mangler.mangle(callee)
+                args_str = ", ".join(self._render_operand_expr(op) for op in instr.operands)
+                if instr.dst is not None:
+                    dst_name = self._mangle_target(instr.dst)
+                    lines.append(f"{indent}{dst_name} = {m_callee}({args_str})")
+                else:
+                    lines.append(f"{indent}{m_callee}({args_str})")
 
         elif opcode == Opcode.READ:
             target_name = self._mangle_target(instr.dst or instr.operands[0])
@@ -794,6 +836,8 @@ class IRToPythonGenerator:
         dummy_span = SourceSpan(file="", start=Pos(1, 1, 0), end=Pos(1, 1, 0))
 
         if isinstance(operand, Const):
+            if operand.type == IRType.PTR and operand.value == 0:
+                return ast.CallExpr("_Ptr", (ast.NullptrLiteral(dummy_span), ast.IntLiteral(0, dummy_span)), dummy_span)
             return ast.IntLiteral(operand.value, dummy_span)
 
         elif isinstance(operand, VarRef):
@@ -883,6 +927,17 @@ class IRToPythonGenerator:
 
         elif opcode == Opcode.CALL:
             callee = instr.func_name or ""
+            if callee == "_get_index":
+                arr = self._build_ast_expr(instr.operands[0])
+                idx = self._build_ast_expr(instr.operands[1])
+                return ast.IndexExpr(arr, idx, dummy_span)
+            elif callee == "_get_deref":
+                ptr = self._build_ast_expr(instr.operands[0])
+                return ast.IndexExpr(ptr, ast.IntLiteral(0, dummy_span), dummy_span)
+            elif callee == "_addr_of":
+                target = self._build_ast_expr(instr.operands[0])
+                offset = self._build_ast_expr(instr.operands[1]) if len(instr.operands) > 1 else ast.IntLiteral(0, dummy_span)
+                return ast.CallExpr("_Ptr", (target, offset), dummy_span)
             args = tuple(self._build_ast_expr(op) for op in instr.operands)
             return ast.CallExpr(callee, args, dummy_span)
 

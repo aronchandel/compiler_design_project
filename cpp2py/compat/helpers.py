@@ -5,6 +5,7 @@ These helpers implement C++ integer semantics in Python:
 - _cpp_mod: remainder taking sign of dividend
 - _wrap_i32 / _wrap_i64: modular two's-complement reduction
 - _check_i32 / _check_i64: range verification raising OverflowError
+- _Ptr: C++ pointer indirection and aliasing helper
 
 Also provides evaluation-only instrumented variants (Phase 8) to measure
 unnecessary helper executions dynamically.
@@ -54,6 +55,55 @@ def _check_i64(x: int) -> int:
     return x
 
 
+class _Ptr:
+    """Compatibility pointer helper for C++ pointers in Python."""
+    __slots__ = ('_target', '_offset')
+
+    def __init__(self, target, offset: int = 0):
+        if isinstance(target, _Ptr):
+            self._target = target._target
+            self._offset = target._offset + offset
+        else:
+            self._target = target
+            self._offset = offset
+
+    def __getitem__(self, idx: int):
+        if self._target is None:
+            raise RuntimeError("Segmentation fault: dereferencing nullptr")
+        return self._target[self._offset + idx]
+
+    def __setitem__(self, idx: int, value):
+        if self._target is None:
+            raise RuntimeError("Segmentation fault: dereferencing nullptr")
+        self._target[self._offset + idx] = value
+
+    def __add__(self, delta: int):
+        return _Ptr(self._target, self._offset + delta)
+
+    def __radd__(self, delta: int):
+        return _Ptr(self._target, self._offset + delta)
+
+    def __sub__(self, other):
+        if isinstance(other, _Ptr):
+            if self._target is not other._target:
+                raise RuntimeError("Pointer subtraction across different objects")
+            return self._offset - other._offset
+        return _Ptr(self._target, self._offset - other)
+
+    def __eq__(self, other):
+        if other is None:
+            return self._target is None
+        if not isinstance(other, _Ptr):
+            return False
+        return self._target is other._target and self._offset == other._offset
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __bool__(self):
+        return self._target is not None
+
+
 # --- Phase 8 Evaluation-only Instrumentation ---
 
 _INSTRUMENTATION_COUNTS: dict[str, int] = {
@@ -86,59 +136,64 @@ def reset_instrumentation() -> None:
 
 
 def get_instrumentation_counts() -> dict[str, int]:
-    """Get a copy of the evaluation instrumentation counters."""
+    """Return a copy of the evaluation instrumentation counters."""
     return dict(_INSTRUMENTATION_COUNTS)
 
 
 def _cpp_div_instrumented(a: int, b: int) -> int:
-    """Evaluation-only instrumented truncating division."""
-    if b == 0:
-        raise ZeroDivisionError("division by zero")
-    res = -(abs(a) // abs(b)) if (a < 0) ^ (b < 0) else (abs(a) // abs(b))
-    try:
-        native = a // b
-        differs = (res != native)
-    except ZeroDivisionError:
-        differs = False
-
+    """Instrumented version of _cpp_div tracking unnecessary invocations."""
+    global _INSTRUMENTATION_COUNTS
     _INSTRUMENTATION_COUNTS["total"] += 1
     _INSTRUMENTATION_COUNTS["div_total"] += 1
-    if differs:
-        _INSTRUMENTATION_COUNTS["differs"] += 1
-        _INSTRUMENTATION_COUNTS["div_differs"] += 1
-    else:
-        _INSTRUMENTATION_COUNTS["equals"] += 1
-        _INSTRUMENTATION_COUNTS["div_equals"] += 1
-    return res
+
+    if b == 0:
+        raise ZeroDivisionError("division by zero")
+
+    cpp_res = -(abs(a) // abs(b)) if (a < 0) ^ (b < 0) else (abs(a) // abs(b))
+    try:
+        py_res = a // b
+        if cpp_res != py_res:
+            _INSTRUMENTATION_COUNTS["differs"] += 1
+            _INSTRUMENTATION_COUNTS["div_differs"] += 1
+        else:
+            _INSTRUMENTATION_COUNTS["equals"] += 1
+            _INSTRUMENTATION_COUNTS["div_equals"] += 1
+    except ZeroDivisionError:
+        pass
+
+    return cpp_res
 
 
 def _cpp_mod_instrumented(a: int, b: int) -> int:
-    """Evaluation-only instrumented remainder."""
-    if b == 0:
-        raise ZeroDivisionError("integer modulo by zero")
-    div_res = _cpp_div(a, b)
-    res = a - b * div_res
-    try:
-        native = a % b
-        differs = (res != native)
-    except ZeroDivisionError:
-        differs = False
-
+    """Instrumented version of _cpp_mod tracking unnecessary invocations."""
+    global _INSTRUMENTATION_COUNTS
     _INSTRUMENTATION_COUNTS["total"] += 1
     _INSTRUMENTATION_COUNTS["mod_total"] += 1
-    if differs:
-        _INSTRUMENTATION_COUNTS["differs"] += 1
-        _INSTRUMENTATION_COUNTS["mod_differs"] += 1
-    else:
-        _INSTRUMENTATION_COUNTS["equals"] += 1
-        _INSTRUMENTATION_COUNTS["mod_equals"] += 1
-    return res
 
+    if b == 0:
+        raise ZeroDivisionError("integer modulo by zero")
+
+    cpp_res = a - b * _cpp_div(a, b)
+    try:
+        py_res = a % b
+        if cpp_res != py_res:
+            _INSTRUMENTATION_COUNTS["differs"] += 1
+            _INSTRUMENTATION_COUNTS["mod_differs"] += 1
+        else:
+            _INSTRUMENTATION_COUNTS["equals"] += 1
+            _INSTRUMENTATION_COUNTS["mod_equals"] += 1
+    except ZeroDivisionError:
+        pass
+
+    return cpp_res
+
+
+# Standalone Python source strings embedded directly into generated code
 
 _HELPER_SOURCES: dict[str, str] = {
     "_cpp_div": '''def _cpp_div(a: int, b: int) -> int:
     if b == 0:
-        raise ZeroDivisionError("division by zero")
+        raise ZeroDivisionError("integer division by zero")
     return -(abs(a) // abs(b)) if (a < 0) ^ (b < 0) else (abs(a) // abs(b))''',
 
     "_cpp_mod": '''def _cpp_mod(a: int, b: int) -> int:
@@ -161,6 +216,44 @@ _HELPER_SOURCES: dict[str, str] = {
     if not (-9223372036854775808 <= x <= 9223372036854775807):
         raise OverflowError("64-bit integer overflow")
     return x''',
+
+    "_Ptr": '''class _Ptr:
+    __slots__ = ('_target', '_offset')
+    def __init__(self, target, offset: int = 0):
+        if isinstance(target, _Ptr):
+            self._target = target._target
+            self._offset = target._offset + offset
+        else:
+            self._target = target
+            self._offset = offset
+    def __getitem__(self, idx: int):
+        if self._target is None:
+            raise RuntimeError("Segmentation fault: dereferencing nullptr")
+        return self._target[self._offset + idx]
+    def __setitem__(self, idx: int, value):
+        if self._target is None:
+            raise RuntimeError("Segmentation fault: dereferencing nullptr")
+        self._target[self._offset + idx] = value
+    def __add__(self, delta: int):
+        return _Ptr(self._target, self._offset + delta)
+    def __radd__(self, delta: int):
+        return _Ptr(self._target, self._offset + delta)
+    def __sub__(self, other):
+        if isinstance(other, _Ptr):
+            if self._target is not other._target:
+                raise RuntimeError("Pointer subtraction across different objects")
+            return self._offset - other._offset
+        return _Ptr(self._target, self._offset - other)
+    def __eq__(self, other):
+        if other is None:
+            return self._target is None
+        if not isinstance(other, _Ptr):
+            return False
+        return self._target is other._target and self._offset == other._offset
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    def __bool__(self):
+        return self._target is not None''',
 }
 
 

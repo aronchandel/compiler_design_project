@@ -124,7 +124,7 @@ class _Lexer:
             while self._pos < len(self._text) and self._text[self._pos] in ' \t':
                 self._pos += 1
 
-            # Check for <iostream>
+            # Check for <iostream> or <climits>
             if self._pos < len(self._text) and self._text[self._pos] == '<':
                 angle_start = self._pos
                 self._pos += 1
@@ -136,6 +136,10 @@ class _Lexer:
                     if header == '<iostream>':
                         span = self._source.span(start, self._pos)
                         self._tokens.append(Token(TokenKind.INCLUDE_IOSTREAM, '#include <iostream>', span))
+                        return
+                    elif header == '<climits>':
+                        span = self._source.span(start, self._pos)
+                        self._tokens.append(Token(TokenKind.INCLUDE_CLIMITS, '#include <climits>', span))
                         return
                     else:
                         span = self._source.span(start, self._pos)
@@ -149,9 +153,8 @@ class _Lexer:
                     self._pos += 1
                 if self._pos < len(self._text) and self._text[self._pos] == '"':
                     self._pos += 1
-                header_text = self._text[word_start:self._pos]
                 span = self._source.span(start, self._pos)
-                self._sink.error("E4003", f"unsupported header", span)
+                self._sink.error("E4003", "unsupported header", span)
                 return
 
             # Malformed include - skip to end of line
@@ -286,8 +289,11 @@ class _Lexer:
             ')': TokenKind.RPAREN,
             '{': TokenKind.LBRACE,
             '}': TokenKind.RBRACE,
+            '[': TokenKind.LBRACKET,
+            ']': TokenKind.RBRACKET,
             ';': TokenKind.SEMI,
             ',': TokenKind.COMMA,
+            '&': TokenKind.AMP,
             '<': TokenKind.LT,
             '>': TokenKind.GT,
             '!': TokenKind.BANG,

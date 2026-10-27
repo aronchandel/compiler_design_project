@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 
 from cpp2py.source import SourceSpan
-from cpp2py.semantics.types import IntType, VoidType, BoolType
+from cpp2py.semantics.types import Type, IntType, VoidType, BoolType
 
 
 class SymbolKind(Enum):
@@ -14,6 +14,7 @@ class SymbolKind(Enum):
     PARAMETER = auto()
     FUNCTION = auto()
     BUILTIN_IO = auto()  # cin, cout, endl
+    CONSTANT = auto()    # <climits> constants
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +22,7 @@ class Symbol:
     """A declared symbol."""
     symbol_id: int
     name: str
-    type: IntType | VoidType | BoolType | None
+    type: Type | None
     kind: SymbolKind
     decl_span: SourceSpan | None
 
@@ -30,7 +31,7 @@ class Symbol:
 class FunctionSymbol:
     """A function signature."""
     name: str
-    return_type: IntType | VoidType
+    return_type: Type
     params: tuple[Symbol, ...]
     decl_span: SourceSpan
 
@@ -39,5 +40,7 @@ class FunctionSymbol:
 class SemanticInfo:
     """Side table for semantic analysis results, keyed by AST node_id."""
     symbols_by_node: dict[int, Symbol] = field(default_factory=dict)
-    type_by_node: dict[int, IntType | VoidType | BoolType] = field(default_factory=dict)
+    type_by_node: dict[int, Type] = field(default_factory=dict)
     functions: dict[str, FunctionSymbol] = field(default_factory=dict)
+    addressed_symbols: set[int] = field(default_factory=set)
+    constants: dict[str, int] = field(default_factory=dict)

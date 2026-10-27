@@ -45,21 +45,22 @@ def _dump_stmt(stmt: ast.Stmt, lines: list[str], prefix: str, child_prefix: str)
             is_last = (i == len(stmt.declarators) - 1)
             connector = "\u2514\u2500 " if is_last else "\u251c\u2500 "
             next_prefix = child_prefix + ("   " if is_last else "\u2502  ")
+            decl_name = f"*{decl.name}" if decl.is_pointer else decl.name
+            if decl.array_size is not None:
+                decl_name += "[]"
+            lines.append(f"{child_prefix}{connector}Declarator {decl_name}")
             if decl.init is not None:
-                lines.append(f"{child_prefix}{connector}Declarator {decl.name}")
                 _dump_expr(decl.init, lines, next_prefix + "\u2514\u2500 ", next_prefix + "   ")
-            else:
-                lines.append(f"{child_prefix}{connector}Declarator {decl.name}")
 
     elif isinstance(stmt, ast.AssignStmt):
         lines.append(f"{prefix}AssignStmt {stmt.op}")
-        lines.append(f"{child_prefix}\u251c\u2500 NameExpr {stmt.target.name}")
+        _dump_expr(stmt.target, lines, child_prefix + "\u251c\u2500 ", child_prefix + "\u2502  ")
         _dump_expr(stmt.value, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
 
     elif isinstance(stmt, ast.IncDecStmt):
         kind = "Prefix" if stmt.is_prefix else "Postfix"
         lines.append(f"{prefix}IncDecStmt {stmt.op} {kind}")
-        lines.append(f"{child_prefix}\u2514\u2500 NameExpr {stmt.target.name}")
+        _dump_expr(stmt.target, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
 
     elif isinstance(stmt, ast.IfStmt):
         lines.append(f"{prefix}IfStmt")
@@ -93,7 +94,7 @@ def _dump_stmt(stmt: ast.Stmt, lines: list[str], prefix: str, child_prefix: str)
         for i, target in enumerate(stmt.targets):
             is_last = (i == len(stmt.targets) - 1)
             connector = "\u2514\u2500 " if is_last else "\u251c\u2500 "
-            lines.append(f"{child_prefix}{connector}NameExpr {target.name}")
+            _dump_expr(target, lines, child_prefix + connector, child_prefix + ("   " if is_last else "\u2502  "))
 
     elif isinstance(stmt, ast.OutputStmt):
         lines.append(f"{prefix}OutputStmt")
@@ -122,9 +123,12 @@ def _dump_condition(cond: ast.Condition, lines: list[str], prefix: str, child_pr
     _dump_expr(cond.right, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
 
 
-def _dump_expr(expr: ast.Expr, lines: list[str], prefix: str, child_prefix: str) -> None:
+def _dump_expr(expr: ast.Expr | ast.InitializerList, lines: list[str], prefix: str, child_prefix: str) -> None:
     if isinstance(expr, ast.IntLiteral):
         lines.append(f"{prefix}IntLiteral {expr.value}")
+
+    elif isinstance(expr, ast.NullptrLiteral):
+        lines.append(f"{prefix}NullptrLiteral")
 
     elif isinstance(expr, ast.NameExpr):
         lines.append(f"{prefix}NameExpr {expr.name}")
@@ -132,6 +136,26 @@ def _dump_expr(expr: ast.Expr, lines: list[str], prefix: str, child_prefix: str)
     elif isinstance(expr, ast.UnaryExpr):
         lines.append(f"{prefix}UnaryExpr {expr.op}")
         _dump_expr(expr.operand, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
+
+    elif isinstance(expr, ast.AddressOfExpr):
+        lines.append(f"{prefix}AddressOfExpr &")
+        _dump_expr(expr.operand, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
+
+    elif isinstance(expr, ast.DerefExpr):
+        lines.append(f"{prefix}DerefExpr *")
+        _dump_expr(expr.operand, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
+
+    elif isinstance(expr, ast.IndexExpr):
+        lines.append(f"{prefix}IndexExpr []")
+        _dump_expr(expr.array, lines, child_prefix + "\u251c\u2500 ", child_prefix + "\u2502  ")
+        _dump_expr(expr.index, lines, child_prefix + "\u2514\u2500 ", child_prefix + "   ")
+
+    elif isinstance(expr, ast.InitializerList):
+        lines.append(f"{prefix}InitializerList")
+        for i, elem in enumerate(expr.elements):
+            is_last = (i == len(expr.elements) - 1)
+            connector = "\u2514\u2500 " if is_last else "\u251c\u2500 "
+            _dump_expr(elem, lines, child_prefix + connector, child_prefix + ("   " if is_last else "\u2502  "))
 
     elif isinstance(expr, ast.BinaryExpr):
         lines.append(f"{prefix}BinaryExpr {expr.op}")
