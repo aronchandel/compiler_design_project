@@ -71,11 +71,6 @@
 <span>Translate to Python</span>
 <span class="bg-on-primary-container text-primary font-code-sm text-code-sm px-1.5 py-0.2 rounded opacity-90">Ctrl+Enter</span>
 </button>
-<button class="flex items-center gap-space-sm px-space-md py-1.5 bg-tertiary text-on-tertiary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98]" id="runBtn" onclick="runTranspile()">
-<span class="material-symbols-outlined text-[16px]">terminal</span>
-<span>Run Program</span>
-<span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.2 rounded opacity-90">Shift+Enter</span>
-</button>
 </div>
 </div>
 
@@ -233,6 +228,25 @@
 
 <span class="text-primary-fixed-dim">if</span> __name__ == <span class="text-tertiary-fixed">"__main__"</span>:
     <span class="text-secondary-fixed">main</span>()</div>
+</div>
+<div class="h-10 bg-surface-container-low px-space-md flex items-center justify-between border-t border-outline-variant select-none">
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md rounded border border-outline-variant/60 transition-colors" onclick="copyPython()">
+<span class="material-symbols-outlined text-[15px] text-secondary">content_copy</span>
+<span>Copy Python Code</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md rounded border border-outline-variant/60 transition-colors">
+<span class="material-symbols-outlined text-[15px] text-outline">download</span>
+<span>Export .py</span>
+</button>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-space-xs px-space-md py-1 bg-tertiary text-on-tertiary font-headline-sm text-headline-sm rounded shadow-sm hover:opacity-90 active:scale-[0.98] transition-all" onclick="runTranspile()">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span>Run Program</span>
+<span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.2 rounded opacity-75">Shift+Enter</span>
+</button>
+</div>
 </div>
 </div>
 </div>

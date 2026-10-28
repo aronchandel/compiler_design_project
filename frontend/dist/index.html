@@ -280,16 +280,7 @@
             </select>
           </div>
 
-          <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
-            <span class="material-symbols-outlined text-secondary" style="font-size:15px">shield</span>
-            <span class="text-label-sm font-label-sm text-outline">Overflow:</span>
-            <select id="overflowSelect" class="bg-transparent text-label-sm font-label-sm text-on-surface outline-none cursor-pointer">
-              <option value="assume_no_overflow">Assume No Overflow</option>
-              <option value="wrap">Wrap</option>
-              <option value="trap">Trap</option>
-            </select>
-          </div>
-          
+
           <label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Enable/disable constant folding optimization pass">
             <input type="checkbox" id="foldConstantsCheck" checked class="accent-primary cursor-pointer"/>
             <span class="text-label-sm font-label-sm text-on-surface">Fold Constants</span>
@@ -305,11 +296,6 @@
             <span class="material-symbols-outlined" style="font-size:16px" id="transpileIcon">play_arrow</span>
             <span id="transpileLabel">Translate to Python</span>
             <span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.5 rounded opacity-70">Ctrl+Enter</span>
-          </button>
-          <button class="flex items-center gap-space-sm px-space-md py-1.5 bg-tertiary hover:opacity-90 text-on-tertiary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50" id="runBtn" onclick="runProgram()" title="Run generated Python with stdin (Shift+Enter)">
-            <span class="material-symbols-outlined" style="font-size:16px" id="runIcon">terminal</span>
-            <span id="runLabel">Run Program</span>
-            <span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.5 rounded opacity-70">Shift+Enter</span>
           </button>
         </div>
       </div>
@@ -391,6 +377,27 @@
                 <div class="line-nums py-2" id="pyLineNums">1</div>
                 <pre class="python-output flex-1" id="pyOutput"></pre>
               </div>
+            </div>
+          </div>
+
+          <!-- Bottom bar of Python window: Run and Copy buttons -->
+          <div class="h-10 bg-surface-container-low px-space-md flex items-center justify-between border-t border-outline-variant select-none">
+            <div class="flex items-center gap-space-sm">
+              <button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md rounded border border-outline-variant/60 transition-colors" onclick="copyPython()" id="copyPyBtnFooter" title="Copy generated Python code to clipboard">
+                <span class="material-symbols-outlined text-[15px] text-secondary" id="copyPyIcon">content_copy</span>
+                <span id="copyPyLabel">Copy Python Code</span>
+              </button>
+              <button class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md rounded border border-outline-variant/60 transition-colors" onclick="downloadPython()" id="downloadPyBtnFooter" title="Export Python file (.py)">
+                <span class="material-symbols-outlined text-[15px] text-outline">download</span>
+                <span>Export .py</span>
+              </button>
+            </div>
+            <div class="flex items-center gap-space-sm">
+              <button class="flex items-center gap-space-xs px-space-md py-1 bg-tertiary hover:opacity-90 text-on-tertiary font-headline-sm text-headline-sm rounded shadow-sm transition-all active:scale-[0.98] disabled:opacity-50" id="runBtn" onclick="runProgram()" title="Run generated Python with stdin (Shift+Enter)">
+                <span class="material-symbols-outlined text-[16px]" id="runIcon">terminal</span>
+                <span id="runLabel">Run Program</span>
+                <span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.2 rounded opacity-75">Shift+Enter</span>
+              </button>
             </div>
           </div>
         </div>
@@ -902,6 +909,25 @@ function copyCpp() {
 function copyPython() {
   if (lastPythonSource) {
     navigator.clipboard?.writeText(lastPythonSource);
+    const label = $('copyPyLabel');
+    const icon = $('copyPyIcon');
+    if (label) {
+      const origText = label.textContent;
+      label.textContent = 'Copied!';
+      if (icon) icon.textContent = 'check';
+      setTimeout(() => {
+        label.textContent = origText;
+        if (icon) icon.textContent = 'content_copy';
+      }, 1500);
+    }
+    flashButton('copyPyBtnFooter');
+  } else {
+    const label = $('copyPyLabel');
+    if (label) {
+      const origText = label.textContent;
+      label.textContent = 'Translate first!';
+      setTimeout(() => { label.textContent = origText; }, 1500);
+    }
   }
 }
 
