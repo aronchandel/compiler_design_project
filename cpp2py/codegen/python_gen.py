@@ -210,7 +210,7 @@ class IRToPythonGenerator:
                 def_instr = self._temp_defs[t_id]
 
                 if def_instr.opcode == Opcode.READ or (
-                    def_instr.opcode == Opcode.CALL and def_instr.func_name in ("_set_index", "_set_deref", "_array_init")
+                    def_instr.opcode == Opcode.CALL and def_instr.func_name in ("_set_index", "_set_deref", "_array_init", "_array_sized_init")
                 ):
                     continue
 
@@ -685,6 +685,10 @@ class IRToPythonGenerator:
                 dst_name = self._mangle_target(instr.dst)
                 elem_strs = [self._render_operand_expr(op) for op in instr.operands]
                 lines.append(f"{indent}{dst_name} = [{', '.join(elem_strs)}]")
+            elif callee == "_array_sized_init":
+                dst_name = self._mangle_target(instr.dst)
+                size_str = self._render_operand_expr(instr.operands[0])
+                lines.append(f"{indent}{dst_name} = [0] * ({size_str})")
             elif callee == "_get_index":
                 dst_name = self._mangle_target(instr.dst)
                 arr_str = self._render_operand_expr(instr.operands[0])

@@ -171,3 +171,149 @@ def test_excess_initializers_rejected():
     _, sink = compile_cpp(code)
     assert sink.has_errors()
     assert any(d.code == "E3003" for d in sink.diagnostics)
+
+def test_runtime_sized_array_basic():
+    code = """
+    #include <iostream>
+    using namespace std;
+    int main() {
+        int n;
+        cin >> n;
+        int arr[n];
+        arr[0] = 10;
+        arr[n - 1] = 99;
+        cout << arr[0] << " " << arr[n - 1] << endl;
+        return 0;
+    }
+    """
+    py_code, sink = compile_cpp(code)
+    assert not sink.has_errors()
+    out = run_py(py_code, input_str="5\n").strip()
+    assert out == "10 99"
+
+def test_runtime_sized_array_input_and_traversal():
+    code = """
+    #include <iostream>
+    using namespace std;
+    int main() {
+        int n;
+        cin >> n;
+        int arr[n];
+        for (int i = 0; i < n; ++i) {
+            cin >> arr[i];
+        }
+        int sum = 0;
+        for (int i = 0; i < n; ++i) {
+            sum += arr[i];
+        }
+        cout << sum << endl;
+        return 0;
+    }
+    """
+    py_code, sink = compile_cpp(code)
+    assert not sink.has_errors()
+    out = run_py(py_code, input_str="4\n10 20 30 40\n").strip()
+    assert out == "100"
+
+def test_runtime_sized_array_bubble_sort_mutation():
+    code = """
+    #include <iostream>
+    using namespace std;
+
+    void bubble_sort(int arr[], int n) {
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    int main() {
+        int n;
+        cin >> n;
+        int arr[n];
+        for (int i = 0; i < n; i++) {
+            cin >> arr[i];
+        }
+        bubble_sort(arr, n);
+        for (int i = 0; i < n; i++) {
+            cout << arr[i] << " ";
+        }
+        return 0;
+    }
+    """
+    py_code, sink = compile_cpp(code)
+    assert not sink.has_errors()
+    out = run_py(py_code, input_str="5\n64 34 25 12 22\n").strip()
+    assert out == "12 22 25 34 64"
+
+def test_runtime_sized_array_expression_size():
+    code = """
+    #include <iostream>
+    using namespace std;
+    int main() {
+        int n;
+        cin >> n;
+        int arr[n * 2 + 1];
+        arr[0] = 7;
+        arr[n * 2] = 42;
+        cout << arr[0] << " " << arr[n * 2] << endl;
+        return 0;
+    }
+    """
+    py_code, sink = compile_cpp(code)
+    assert not sink.has_errors()
+    out = run_py(py_code, input_str="3\n").strip()
+    assert out == "7 42"
+
+def test_runtime_sized_array_initializer_rejected():
+    code = """
+    #include <iostream>
+    using namespace std;
+    int main() {
+        int n = 4;
+        int arr[n] = {1, 2, 3};
+        return 0;
+    }
+    """
+    _, sink = compile_cpp(code)
+    assert sink.has_errors()
+    assert any(d.code == "E3003" for d in sink.diagnostics)
+
+def test_array_constant_zero_or_negative_rejected():
+    code_zero = """
+    int main() {
+        int arr[0];
+        return 0;
+    }
+    """
+    _, sink = compile_cpp(code_zero)
+    assert sink.has_errors()
+    assert any(d.code == "E3003" for d in sink.diagnostics)
+
+    code_neg = """
+    int main() {
+        int arr[-5];
+        return 0;
+    }
+    """
+    _, sink2 = compile_cpp(code_neg)
+    assert sink2.has_errors()
+    assert any(d.code == "E3003" for d in sink2.diagnostics)
+
+def test_array_non_integer_size_rejected():
+    code = """
+    void helper() {}
+    int main() {
+        int arr[helper()];
+        return 0;
+    }
+    """
+    _, sink = compile_cpp(code)
+    assert sink.has_errors()
+    assert any(d.code == "E3004" for d in sink.diagnostics)
+

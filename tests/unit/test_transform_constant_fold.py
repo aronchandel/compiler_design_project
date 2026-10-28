@@ -336,3 +336,56 @@ def test_constant_fold_never_touches_cmp_branch_control_flow():
     run_fold(func)
     assert func.body[0].opcode == Opcode.CMP
     assert func.body[1].opcode == Opcode.BRANCH
+
+def test_constant_folding_pipeline_case_a_and_b():
+    from cpp2py.compiler import compile_source
+    from cpp2py.config import CompilerConfig
+    code = """#include <iostream>
+int main() {
+    int x = 3 * 4 + 2;
+    std::cout << x;
+    return 0;
+}"""
+    # Enabled
+    res_on = compile_source(code, "test.cpp", CompilerConfig(fold_constants=True))
+    assert res_on.success is True
+    assert "x = 14" in res_on.python_source
+    assert res_on.transform_log is not None
+    assert any(r.pass_name == "constant_fold" for r in res_on.transform_log.records)
+
+    # Disabled
+    res_off = compile_source(code, "test.cpp", CompilerConfig(fold_constants=False))
+    assert res_off.success is True
+    assert "x = 3 * 4 + 2" in res_off.python_source
+    assert res_off.transform_log is None
+
+def test_constant_folding_pipeline_case_c_nonconstant():
+    from cpp2py.compiler import compile_source
+    from cpp2py.config import CompilerConfig
+    code = """#include <iostream>
+int main() {
+    int a;
+    std::cin >> a;
+    int x = a * 4 + 2;
+    std::cout << x;
+    return 0;
+}"""
+    res = compile_source(code, "test.cpp", CompilerConfig(fold_constants=True))
+    assert res.success is True
+    assert "a * 4 + 2" in res.python_source
+
+def test_constant_folding_pipeline_case_d_overflow():
+    from cpp2py.compiler import compile_source
+    from cpp2py.config import CompilerConfig, TargetModel, OverflowPolicy
+    code = """#include <iostream>
+int main() {
+    int x = 2147483647 + 1;
+    std::cout << x;
+    return 0;
+}"""
+    target = TargetModel(overflow_policy=OverflowPolicy.WRAP)
+    res = compile_source(code, "test.cpp", CompilerConfig(target=target, fold_constants=True))
+    assert res.success is True
+    assert any(d.code == "W6004" for d in res.diagnostics)
+    assert "_wrap_i32" in res.python_source
+

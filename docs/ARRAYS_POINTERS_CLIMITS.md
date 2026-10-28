@@ -28,18 +28,21 @@ This document describes the design, semantics, internal representations, and ope
 
 ### Supported Subset
 - **Declaration with constant size:** `int arr[N];`
-- **Initializers:** `int arr[3] = {10, 20, 30};`
+- **Declaration with runtime size:** `int arr[n];` or `int arr[expr];` (translated as a dynamically allocated list `[0] * (expr)` with zero-initialization).
+- **Initializers for constant-sized arrays:** `int arr[3] = {10, 20, 30};`
 - **Partial initialization:** `int arr[4] = {1, 2};` (remaining elements are zero-initialized per C++ standard).
 - **Default initialization:** `int arr[N];` initializes elements to `0`.
 - **Element access & modification:** `arr[i] = val;` and reading `arr[i]` in expressions.
 - **Compound assignments & inc/dec:** `arr[i] += 5;`, `arr[i]++;`, `--arr[i];`
 - **Standard loops:** Array traversal in `for` and `while` loops.
-- **Function parameters:** Functions accepting arrays (e.g. `void f(int arr[], int n)` or `void f(int *arr, int n)`). Mutations inside the function modify the caller's array elements in-place.
+- **Function parameters:** Functions accepting arrays (e.g. `void f(int arr[], int n)` or `void f(int *arr, int n)`). Mutations inside the function modify the caller's array elements in-place via pointer decay `_Ptr(arr, 0)`.
 - **Stream I/O:** Reading into array elements via `cin >> arr[i];` and printing via `cout << arr[i];`.
 
 ### Deliberately Unsupported & Diagnostics
 - **Multidimensional arrays:** `int matrix[3][3];` is rejected with diagnostic `E4001` (`multidimensional arrays are unsupported`).
-- **Dynamic or variable-length arrays:** Array sizes must be constant integer expressions; negative or non-constant sizes produce `E3003`.
+- **Invalid constant array sizes:** Constant array sizes <= 0 produce diagnostic `E3003` (`array size must be a positive constant integer`).
+- **Non-integer array sizes:** Array sizes with non-integer types produce diagnostic `E3004` (`array size must be an integer`).
+- **Initializers on runtime-sized arrays:** Initializer lists on variable-length arrays produce diagnostic `E3003`.
 - **Excess initializers:** Providing more initializers than declared array capacity produces `E3003`.
 
 ---

@@ -54,6 +54,11 @@
 <option class="bg-surface-container-high">LLVM IR Low-Level Direct Synthesis</option>
 </select>
 </div>
+
+<label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Enable/disable constant folding">
+<input type="checkbox" id="foldConstantsCheck" checked class="accent-primary cursor-pointer"/>
+<span class="text-label-sm font-label-sm text-on-surface">Fold Constants</span>
+</label>
 </div>
 
 <div class="flex items-center gap-space-md">
@@ -65,6 +70,11 @@
 <span class="material-symbols-outlined text-[16px]">play_arrow</span>
 <span>Translate to Python</span>
 <span class="bg-on-primary-container text-primary font-code-sm text-code-sm px-1.5 py-0.2 rounded opacity-90">Ctrl+Enter</span>
+</button>
+<button class="flex items-center gap-space-sm px-space-md py-1.5 bg-tertiary text-on-tertiary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98]" id="runBtn" onclick="runTranspile()">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span>Run Program</span>
+<span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.2 rounded opacity-90">Shift+Enter</span>
 </button>
 </div>
 </div>

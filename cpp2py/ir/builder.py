@@ -215,21 +215,32 @@ class IRBuilder:
                 ))
 
                 if decl.array_size is not None:
-                    size = sym.type.size if (sym and isinstance(sym.type, ArrayType)) else 1
-                    init_ops: list[Operand] = []
-                    if decl.init is not None and isinstance(decl.init, ast.InitializerList):
-                        for elem in decl.init.elements:
-                            init_ops.append(self._lower_expr(elem))
-                    while len(init_ops) < size:
-                        init_ops.append(Const(0, IRType.I32))
-                    self._instructions.append(Instruction(
-                        op_id=self._allocator.next_op_id(),
-                        opcode=Opcode.CALL,
-                        dst=var_ref,
-                        operands=tuple(init_ops),
-                        func_name="_array_init",
-                        span=stmt.span,
-                    ))
+                    if sym and isinstance(sym.type, ArrayType) and sym.type.size is not None:
+                        size = sym.type.size
+                        init_ops: list[Operand] = []
+                        if decl.init is not None and isinstance(decl.init, ast.InitializerList):
+                            for elem in decl.init.elements:
+                                init_ops.append(self._lower_expr(elem))
+                        while len(init_ops) < size:
+                            init_ops.append(Const(0, IRType.I32))
+                        self._instructions.append(Instruction(
+                            op_id=self._allocator.next_op_id(),
+                            opcode=Opcode.CALL,
+                            dst=var_ref,
+                            operands=tuple(init_ops),
+                            func_name="_array_init",
+                            span=stmt.span,
+                        ))
+                    else:
+                        size_op = self._lower_expr(decl.array_size)
+                        self._instructions.append(Instruction(
+                            op_id=self._allocator.next_op_id(),
+                            opcode=Opcode.CALL,
+                            dst=var_ref,
+                            operands=(size_op,),
+                            func_name="_array_sized_init",
+                            span=stmt.span,
+                        ))
 
                 elif sym is not None and sym.symbol_id in self._info.addressed_symbols:
                     init_val = self._lower_expr(decl.init) if decl.init is not None else Const(0, IRType.I32)
@@ -700,7 +711,7 @@ class IRBuilder:
                             op_id=self._allocator.next_op_id(),
                             opcode=Opcode.READ,
                             dst=temp,
-                            operands=(temp,),
+                            operands=(),
                             span=stmt.span,
                         ))
                         self._instructions.append(Instruction(
@@ -727,7 +738,7 @@ class IRBuilder:
                         op_id=self._allocator.next_op_id(),
                         opcode=Opcode.READ,
                         dst=temp,
-                        operands=(temp,),
+                        operands=(),
                         span=stmt.span,
                     ))
                     self._instructions.append(Instruction(
@@ -745,7 +756,7 @@ class IRBuilder:
                         op_id=self._allocator.next_op_id(),
                         opcode=Opcode.READ,
                         dst=temp,
-                        operands=(temp,),
+                        operands=(),
                         span=stmt.span,
                     ))
                     self._instructions.append(Instruction(

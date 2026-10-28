@@ -279,6 +279,16 @@
               <option value="always">Always Protect</option>
             </select>
           </div>
+
+          <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
+            <span class="material-symbols-outlined text-secondary" style="font-size:15px">shield</span>
+            <span class="text-label-sm font-label-sm text-outline">Overflow:</span>
+            <select id="overflowSelect" class="bg-transparent text-label-sm font-label-sm text-on-surface outline-none cursor-pointer">
+              <option value="assume_no_overflow">Assume No Overflow</option>
+              <option value="wrap">Wrap</option>
+              <option value="trap">Trap</option>
+            </select>
+          </div>
           
           <label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Enable/disable constant folding optimization pass">
             <input type="checkbox" id="foldConstantsCheck" checked class="accent-primary cursor-pointer"/>
@@ -291,16 +301,21 @@
             <span class="w-1.5 h-1.5 rounded-full bg-outline animate-pulse" id="backendDot"></span>
             <span class="font-code-sm text-code-sm" id="backendStatusLabel">Connecting</span>
           </div>
-          <button class="flex items-center gap-space-sm px-space-md py-1.5 bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50" id="transpileBtn" onclick="runTranspile()">
+          <button class="flex items-center gap-space-sm px-space-md py-1.5 bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50" id="transpileBtn" onclick="runTranspile()" title="Translate C++ to Python (Ctrl+Enter)">
             <span class="material-symbols-outlined" style="font-size:16px" id="transpileIcon">play_arrow</span>
             <span id="transpileLabel">Translate to Python</span>
             <span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.5 rounded opacity-70">Ctrl+Enter</span>
+          </button>
+          <button class="flex items-center gap-space-sm px-space-md py-1.5 bg-tertiary hover:opacity-90 text-on-tertiary font-headline-sm text-headline-sm rounded shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50" id="runBtn" onclick="runProgram()" title="Run generated Python with stdin (Shift+Enter)">
+            <span class="material-symbols-outlined" style="font-size:16px" id="runIcon">terminal</span>
+            <span id="runLabel">Run Program</span>
+            <span class="bg-black/20 text-white font-code-sm text-code-sm px-1.5 py-0.5 rounded opacity-70">Shift+Enter</span>
           </button>
         </div>
       </div>
 
       
-      <div class="flex w-full bg-surface-container-lowest" style="height: calc(100vh - 275px); min-height: 400px;">
+      <div class="flex w-full bg-surface-container-lowest" style="height: calc(100vh - 325px); min-height: 350px;">
 
         
         <div class="flex-1 flex flex-col min-w-0">
@@ -382,11 +397,15 @@
       </div>
 
       
-      <div class="bg-surface-container-low flex flex-col border-t border-outline-variant" style="height:220px">
+      <div class="bg-surface-container-low flex flex-col border-t border-outline-variant" style="height:270px">
         
         <div class="h-8 bg-surface-container px-space-md flex items-center justify-between border-b border-outline-variant">
           <div class="flex items-center gap-0 h-full">
-            <button class="tab-btn tab-active px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="overview" onclick="selectTab('overview')">
+            <button class="tab-btn tab-active px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="io" onclick="selectTab('io')">
+              <span class="material-symbols-outlined text-secondary" style="font-size:15px">terminal</span>
+              <span>Program I/O</span>
+            </button>
+            <button class="tab-btn tab-inactive px-space-md h-full flex items-center gap-space-xs text-headline-sm font-headline-sm transition-colors" data-tab="overview" onclick="selectTab('overview')">
               <span class="material-symbols-outlined" style="font-size:15px">analytics</span>
               <span>Overview</span>
             </button>
@@ -400,7 +419,7 @@
               <span>IR Dump</span>
             </button>
           </div>
-          <div class="flex items-center gap-space-sm">
+          <div class="flex items-center gap-space-sm pr-space-md">
             <span class="font-code-sm text-code-sm" id="statusLabel"></span>
           </div>
         </div>
@@ -408,7 +427,64 @@
         
         <div class="flex-1 overflow-y-auto">
           
-          <div id="panel-overview" class="p-space-md">
+          <div id="panel-io" class="p-space-md h-full flex flex-col gap-space-xs">
+            <div class="flex items-center justify-between pb-1">
+              <div class="flex items-center gap-space-md text-label-sm font-label-sm text-outline">
+                <span>Enter input below, then click <strong class="text-on-surface">Run Program</strong></span>
+              </div>
+              <div class="flex items-center gap-space-sm" id="execMeta">
+                <span class="font-code-sm text-code-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant hidden" id="execExitCode">Exit 0</span>
+                <span class="font-code-sm text-code-sm px-2 py-0.5 rounded bg-surface-container text-tertiary hidden" id="execDuration">0ms</span>
+                <button class="px-2 py-0.5 bg-surface-container hover:bg-surface-container-high text-on-surface text-label-sm font-label-sm rounded flex items-center gap-1 transition-colors" onclick="clearIO()" title="Clear Stdin & Output">
+                  <span class="material-symbols-outlined" style="font-size:13px">clear_all</span> Clear I/O
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md flex-1 min-h-[190px]">
+              <!-- Program Input (stdin) -->
+              <div class="flex flex-col bg-surface-container rounded-lg p-space-sm border border-outline-variant/60">
+                <div class="flex items-center justify-between mb-1">
+                  <label for="stdinInput" class="text-label-sm font-label-sm text-secondary font-semibold flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:15px">input</span>
+                    <span>Program Input (stdin)</span>
+                  </label>
+                  <span class="text-label-sm font-label-sm text-outline" id="stdinBytes">0 chars</span>
+                </div>
+                <textarea id="stdinInput" class="w-full flex-1 bg-surface-container-lowest text-on-surface font-code-sm text-code-sm p-2 rounded border border-outline-variant/40 outline-none resize-none focus:border-secondary transition-colors" placeholder="Enter input values for cin (multiple lines, space or newline-separated values)&#10;Example:&#10;5&#10;64 34 25 12 22" spellcheck="false" oninput="updateStdinCount()"></textarea>
+              </div>
+
+              <!-- Program Output (stdout & runtime errors) -->
+              <div class="flex flex-col bg-surface-container rounded-lg p-space-sm border border-outline-variant/60">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-label-sm font-label-sm text-tertiary font-semibold flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:15px">terminal</span>
+                    <span>Program Output (stdout)</span>
+                  </span>
+                  <div class="flex items-center gap-space-xs">
+                    <button class="px-1.5 py-0.5 hover:bg-surface-container-high text-outline hover:text-on-surface rounded text-label-sm font-label-sm flex items-center gap-1 transition-colors" onclick="copyStdout()" title="Copy stdout">
+                      <span class="material-symbols-outlined" style="font-size:13px">content_copy</span> Copy
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="flex-1 overflow-auto bg-surface-container-lowest rounded border border-outline-variant/40 p-2 flex flex-col gap-2">
+                  <pre id="stdoutText" class="font-code-sm text-code-sm text-on-surface whitespace-pre-wrap flex-1 select-text">Click 'Run Program' above to execute translated Python with stdin.</pre>
+
+                  <!-- Runtime Error Area (clearly distinguished from stdout) -->
+                  <div id="stderrBox" class="bg-error-container/30 border border-error/50 rounded p-2 text-error font-code-sm text-code-sm hidden">
+                    <div class="flex items-center gap-1 font-bold text-error mb-1">
+                      <span class="material-symbols-outlined text-[16px]">error</span>
+                      <span>Runtime Error / Execution Failure</span>
+                    </div>
+                    <pre id="stderrText" class="whitespace-pre-wrap text-error select-text"></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="panel-overview" class="p-space-md hidden">
             <div class="grid grid-cols-2 md:grid-cols-5 gap-space-md" id="metricsGrid">
               <div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-1">
                 <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Status</span>
@@ -690,7 +766,10 @@ int main() {
   },
   sorting: {
     name: 'bubble_sort.cpp',
-    code: `void bubble_sort(int arr[], int n) {
+    code: `#include <iostream>
+using namespace std;
+
+void bubble_sort(int arr[], int n) {
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - i - 1; j++) {
             if (arr[j] > arr[j + 1]) {
@@ -703,10 +782,19 @@ int main() {
 }
 
 int main() {
-    int arr[5] = {64, 34, 25, 12, 22};
-    bubble_sort(arr, 5);
+    int n;
+    cin >> n;
+    int arr[n];
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+    bubble_sort(arr, n);
+    for (int i = 0; i < n; i++) {
+        cout << arr[i] << " ";
+    }
     return 0;
-}`
+}`,
+    stdin: "5\n64 34 25 12 22\n"
   }
 };
 
@@ -764,6 +852,10 @@ document.querySelectorAll('.example-btn').forEach(btn => {
     const ex = EXAMPLES[key];
     if (!ex) return;
     $('cppEditor').value = ex.code;
+    if ($('stdinInput')) {
+      $('stdinInput').value = ex.stdin || '';
+      updateStdinCount();
+    }
     $('currentExampleLabel').textContent = ex.name;
     $('cppFilename').textContent = ex.name;
     updateLineNums();
@@ -832,7 +924,7 @@ function flashButton(id) {
 // Tab system
 // ---------------------------------------------------------------------------
 function selectTab(tab) {
-  ['overview', 'diagnostics', 'ir'].forEach(t => {
+  ['io', 'overview', 'diagnostics', 'ir'].forEach(t => {
     const btn = document.querySelector(`[data-tab="${t}"]`);
     const panel = $(`panel-${t}`);
     if (!btn || !panel) return;
@@ -849,8 +941,127 @@ function selectTab(tab) {
 // ---------------------------------------------------------------------------
 // Reset output panel
 // ---------------------------------------------------------------------------
+let lastCompiledCppSource = null;
+
+function updateStdinCount() {
+  const val = $('stdinInput') ? $('stdinInput').value : '';
+  const lines = val ? val.split('\n').length : 0;
+  if ($('stdinBytes')) {
+    $('stdinBytes').textContent = `${val.length} chars · ${lines} line${lines === 1 ? '' : 's'}`;
+  }
+}
+
+function copyStdout() {
+  const text = $('stdoutText') ? $('stdoutText').textContent : '';
+  if (text) {
+    navigator.clipboard?.writeText(text);
+  }
+}
+
+function clearIO() {
+  if ($('stdinInput')) $('stdinInput').value = '';
+  updateStdinCount();
+  if ($('stdoutText')) $('stdoutText').textContent = "Click 'Run Program' above to execute translated Python with stdin.";
+  hideId('stderrBox');
+  if ($('stderrText')) $('stderrText').textContent = '';
+  hideId('execExitCode');
+  hideId('execDuration');
+}
+
+async function runProgram() {
+  const source = $('cppEditor').value;
+  if (!source.trim()) return;
+
+  // If C++ has not been translated yet or source was edited, translate first
+  if (!lastPythonSource || lastCompiledCppSource !== source) {
+    const ok = await runTranspile();
+    if (!ok || !lastPythonSource) {
+      selectTab('diagnostics');
+      return;
+    }
+  }
+
+  // Switch to Program I/O panel
+  selectTab('io');
+
+  const btn = $('runBtn');
+  btn.disabled = true;
+  $('runIcon').textContent = 'refresh';
+  $('runIcon').classList.add('animate-spin');
+  $('runLabel').textContent = 'Running…';
+
+  $('stdoutText').textContent = 'Executing subprocess with input…';
+  hideId('stderrBox');
+  $('stderrText').textContent = '';
+  hideId('execExitCode');
+  hideId('execDuration');
+
+  const stdinVal = $('stdinInput') ? $('stdinInput').value : '';
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/execute`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        python_source: lastPythonSource,
+        stdin: stdinVal,
+        timeout: 5.0,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+
+    // Display standard output
+    $('stdoutText').textContent = data.stdout || (data.exit_code === 0 ? '(Program finished with no stdout)' : '');
+
+    // Display stderr / runtime errors separately
+    if (data.stderr && data.stderr.trim()) {
+      $('stderrText').textContent = data.stderr;
+      showId('stderrBox');
+    } else {
+      hideId('stderrBox');
+    }
+
+    // Display exit code and duration
+    $('execExitCode').textContent = `Exit ${data.exit_code}`;
+    $('execExitCode').className = `font-code-sm text-code-sm px-2 py-0.5 rounded ${data.exit_code === 0 ? 'bg-tertiary/20 text-tertiary' : 'bg-error/20 text-error'}`;
+    showId('execExitCode');
+
+    $('execDuration').textContent = `${data.duration_ms}ms`;
+    showId('execDuration');
+
+    if (data.timed_out) {
+      $('statusLabel').textContent = 'EXECUTION TIMED OUT (killed)';
+      $('statusLabel').className = 'font-code-sm text-code-sm text-error';
+    } else if (data.exit_code === 0) {
+      $('statusLabel').textContent = `EXECUTION SUCCEEDED  Exit 0 · ${data.duration_ms}ms`;
+      $('statusLabel').className = 'font-code-sm text-code-sm text-tertiary';
+    } else {
+      $('statusLabel').textContent = `EXECUTION FAILED  Exit ${data.exit_code}`;
+      $('statusLabel').className = 'font-code-sm text-code-sm text-error';
+    }
+  } catch (err) {
+    $('stdoutText').textContent = '';
+    $('stderrText').textContent = `Execution error: ${err.message}`;
+    showId('stderrBox');
+    $('statusLabel').textContent = 'Execution Request Error';
+    $('statusLabel').className = 'font-code-sm text-code-sm text-error';
+  } finally {
+    btn.disabled = false;
+    $('runIcon').textContent = 'terminal';
+    $('runIcon').classList.remove('animate-spin');
+    $('runLabel').textContent = 'Run Program';
+  }
+}
+
 function resetOutput() {
   lastPythonSource = null;
+  lastCompiledCppSource = null;
   showId('pyEmpty'); hideId('pyLoading'); hideId('pyError'); hideId('pySuccess');
   hideId('copyPyBtn'); hideId('downloadPyBtn');
   $('pyLineCount').textContent = '';
@@ -867,6 +1078,11 @@ function resetOutput() {
   $('irDump').textContent = 'No IR available. Translate first.';
   $('durationBadge').style.display = 'none !important';
   $('durationBadge').style.cssText = 'display:none!important';
+  $('stdoutText').textContent = "Click 'Run Program' above to execute translated Python with stdin.";
+  hideId('stderrBox');
+  $('stderrText').textContent = '';
+  hideId('execExitCode');
+  hideId('execDuration');
 }
 
 // ---------------------------------------------------------------------------
@@ -877,6 +1093,7 @@ async function runTranspile() {
   if (!source.trim()) return;
 
   const compat = $('compatSelect').value;
+  const overflow = $('overflowSelect') ? $('overflowSelect').value : 'assume_no_overflow';
   const foldConstants = $('foldConstantsCheck') ? $('foldConstantsCheck').checked : true;
   const filename = $('cppFilename').textContent || 'input.cpp';
 
@@ -901,6 +1118,7 @@ async function runTranspile() {
         source_code: source,
         filename: filename,
         compat: compat,
+        overflow: overflow,
         fold_constants: foldConstants,
       }),
     });
@@ -916,7 +1134,7 @@ async function runTranspile() {
     $('statusLabel').textContent = 'Connection Error';
     $('statusLabel').className = 'font-code-sm text-code-sm text-error';
     resetBtn();
-    return;
+    return false;
   }
 
   resetBtn();
@@ -1005,6 +1223,9 @@ async function runTranspile() {
 
   // Diagnostics panel
   renderDiagnostics(data.diagnostics || []);
+
+  lastCompiledCppSource = data.success ? source : null;
+  return Boolean(data.success);
 }
 
 function resetBtn() {
@@ -1303,6 +1524,12 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     const pg = document.querySelector('.page.active');
     if (pg && pg.id === 'page-playground') runTranspile();
+  } else if (e.shiftKey && e.key === 'Enter') {
+    const pg = document.querySelector('.page.active');
+    if (pg && pg.id === 'page-playground') {
+      e.preventDefault();
+      runProgram();
+    }
   }
 });
 

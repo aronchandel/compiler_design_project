@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import cpp2py
-from api.routers import translate, difftest, reporting, health
+from api.routers import translate, difftest, reporting, health, execute
 
 _FRONTEND_ORIGIN = os.environ.get(
     "FRONTEND_ORIGIN", "http://localhost:5173"
@@ -49,6 +49,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api")
 app.include_router(translate.router, prefix="/api")
+app.include_router(execute.router, prefix="/api")
 app.include_router(difftest.router, prefix="/api")
 app.include_router(reporting.router, prefix="/api")
 

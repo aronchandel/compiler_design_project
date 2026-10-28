@@ -23,10 +23,10 @@ class BoolType:
 @dataclass(frozen=True, slots=True)
 class ArrayType:
     element_type: Type
-    size: int
+    size: int | None = None
 
     def __str__(self) -> str:
-        return f"{self.element_type}[{self.size}]"
+        return f"{self.element_type}[{self.size if self.size is not None else ''}]"
 
 @dataclass(frozen=True, slots=True)
 class PointerType:

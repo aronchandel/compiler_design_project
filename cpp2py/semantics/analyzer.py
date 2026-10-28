@@ -234,12 +234,24 @@ class _Analyzer:
                     self._assigned.add(sym.symbol_id)
 
             elif decl.array_size is not None:
-                size = self._eval_const_expr(decl.array_size)
-                if size is None or size <= 0:
-                    self._sink.error("E3003", f"array size must be a positive constant integer", decl.array_size.span)
+                size_type = self._analyze_expr(decl.array_size)
+                if not isinstance(size_type, IntType):
+                    self._sink.error("E3004", f"array size must be an integer, got '{size_type}'", decl.array_size.span)
                     size = 1
+                    arr_type = ArrayType(base_type, size)
+                else:
+                    const_size = self._eval_const_expr(decl.array_size)
+                    if const_size is not None:
+                        if const_size <= 0:
+                            self._sink.error("E3003", "array size must be a positive constant integer", decl.array_size.span)
+                            size = 1
+                        else:
+                            size = const_size
+                        arr_type = ArrayType(base_type, size)
+                    else:
+                        size = None
+                        arr_type = ArrayType(base_type, None)
 
-                arr_type = ArrayType(base_type, size)
                 sym = Symbol(self._alloc_symbol_id(), name, arr_type,
                              SymbolKind.VARIABLE, decl.span)
                 current_scope[name] = sym
@@ -247,7 +259,9 @@ class _Analyzer:
                 self._assigned.add(sym.symbol_id)
 
                 if decl.init is not None:
-                    if isinstance(decl.init, ast.InitializerList):
+                    if size is None:
+                        self._sink.error("E3003", f"variable-sized array '{name}' cannot have an initializer", decl.init.span)
+                    elif isinstance(decl.init, ast.InitializerList):
                         if len(decl.init.elements) > size:
                             self._sink.error("E3003", f"too many initializers for array '{name}' of size {size}", decl.init.span)
                         for elem in decl.init.elements:

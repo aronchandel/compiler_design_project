@@ -111,6 +111,86 @@ class TestTranslateSuccess:
             assert data["function_count"] is not None
             assert data["function_count"] >= 1
 
+    def test_translate_case_a_constant_arithmetic(self):
+        code = """#include <iostream>
+int main() {
+    int x = 3 * 4 + 2;
+    std::cout << x;
+    return 0;
+}"""
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert "x = 14" in data["python_source"]
+        # Also run it through execute endpoint
+        run_res = client.post("/api/execute", json={"python_source": data["python_source"]})
+        assert run_res.status_code == 200
+        assert run_res.json()["stdout"].strip() == "14"
+
+    def test_translate_case_b_enabled_vs_disabled(self):
+        code = """#include <iostream>
+int main() {
+    int x = 3 * 4 + 2;
+    std::cout << x;
+    return 0;
+}"""
+        r_on = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        r_off = client.post("/api/translate", json={"source_code": code, "fold_constants": False})
+        assert r_on.status_code == 200 and r_off.status_code == 200
+        data_on = r_on.json()
+        data_off = r_off.json()
+        assert data_on["success"] is True and data_off["success"] is True
+
+        # Enabled performs IR transformation and emits folded constant
+        assert "x = 14" in data_on["python_source"]
+        assert "assign 14" in data_on["ir_source"]
+
+        # Disabled preserves operations in both IR and Python
+        assert "x = 3 * 4 + 2" in data_off["python_source"]
+        assert "mul 3, 4" in data_off["ir_source"]
+        assert "add" in data_off["ir_source"]
+
+    def test_translate_case_c_nonconstant_expression(self):
+        code = """#include <iostream>
+int main() {
+    int a;
+    std::cin >> a;
+    int x = a * 4 + 2;
+    std::cout << x;
+    return 0;
+}"""
+        r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        # Runtime-dependent expression must NOT be replaced with a constant
+        assert "a * 4 + 2" in data["python_source"]
+        # Run with runtime input 5: 5 * 4 + 2 = 22
+        run_res = client.post("/api/execute", json={"python_source": data["python_source"], "stdin": "5\n"})
+        assert run_res.status_code == 200
+        assert run_res.json()["stdout"].strip() == "22"
+
+    def test_translate_case_d_overflow_sensitive(self):
+        code = """#include <iostream>
+int main() {
+    int x = 2147483647 + 1;
+    std::cout << x;
+    return 0;
+}"""
+        r = client.post("/api/translate", json={"source_code": code, "overflow": "wrap", "fold_constants": True})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        # Warning emitted because folding skipped on overflow
+        assert any(d["code"] == "W6004" for d in data["diagnostics"])
+        # Preserves wrap compatibility helper
+        assert "_wrap_i32" in data["python_source"]
+        # Runtime execution produces wrapped two's-complement value
+        run_res = client.post("/api/execute", json={"python_source": data["python_source"]})
+        assert run_res.status_code == 200
+        assert run_res.json()["stdout"].strip() == "-2147483648"
+
     def test_translate_constant_folding_enabled(self):
         code = "int main() { int x = 2 + 3; return x; }"
         r = client.post("/api/translate", json={"source_code": code, "fold_constants": True})
@@ -316,3 +396,130 @@ class TestFidelityReport:
         data = r.json()
         assert "potential_semantic_differences" in data
         assert isinstance(data["potential_semantic_differences"], list)
+
+
+class TestExecuteEndpoint:
+    def test_execute_basic_python(self):
+        py_code = "print('Hello, world!')"
+        r = client.post("/api/execute", json={"python_source": py_code})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert data["exit_code"] == 0
+        assert data["stdout"].strip() == "Hello, world!"
+        assert data["stderr"] == ""
+        assert data["duration_ms"] >= 0
+        assert data["timed_out"] is False
+
+    def test_execute_with_stdin_multiline_and_spaces(self):
+        py_code = """import sys
+tokens = sys.stdin.read().split()
+nums = [int(t) for t in tokens]
+print("SUM:", sum(nums))
+"""
+        stdin_content = "10 20\n30   40\n50\n"
+        r = client.post("/api/execute", json={"python_source": py_code, "stdin": stdin_content})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert data["stdout"].strip() == "SUM: 150"
+
+    def test_execute_cpp_source_translation_and_run(self):
+        cpp_code = """#include <iostream>
+int main() {
+    int x;
+    std::cin >> x;
+    std::cout << x * 2;
+    return 0;
+}"""
+        r = client.post("/api/execute", json={"source_code": cpp_code, "stdin": "21\n"})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert data["exit_code"] == 0
+        assert data["stdout"].strip() == "42"
+
+    def test_execute_cpp_bubble_sort_runtime_array(self):
+        code = """#include <iostream>
+using namespace std;
+
+void bubble_sort(int arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                int temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+int main() {
+    int n;
+    cin >> n;
+    int arr[n];
+    for (int i = 0; i < n; i++) {
+        cin >> arr[i];
+    }
+    bubble_sort(arr, n);
+    for (int i = 0; i < n; i++) {
+        cout << arr[i] << " ";
+    }
+    return 0;
+}"""
+        r = client.post("/api/execute", json={"source_code": code, "stdin": "5\n64 34 25 12 22\n"})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+        assert data["exit_code"] == 0
+        assert data["stdout"].strip() == "12 22 25 34 64"
+
+    def test_execute_runtime_error_nonzero_exit(self):
+        py_code = """import sys
+print("Starting")
+x = 10 // 0
+"""
+        r = client.post("/api/execute", json={"python_source": py_code})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is False
+        assert data["exit_code"] != 0
+        assert "ZeroDivisionError" in data["stderr"]
+        assert "Starting" in data["stdout"]
+
+    def test_execute_timeout_handling(self):
+        py_code = """import time
+time.sleep(2)
+print("Finished")
+"""
+        r = client.post("/api/execute", json={"python_source": py_code, "timeout": 0.2})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is False
+        assert data["timed_out"] is True
+        assert data["exit_code"] == -1
+        assert "timed out" in data["stderr"].lower()
+
+    def test_execute_compilation_failure(self):
+        bad_cpp = "int main( { return 0; }"
+        r = client.post("/api/execute", json={"source_code": bad_cpp})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is False
+        assert data["exit_code"] == 2
+        assert "Compilation failed" in data["stderr"]
+
+    def test_execute_missing_payload(self):
+        r = client.post("/api/execute", json={})
+        assert r.status_code == 422
+
+    def test_execute_syntax_error_in_python(self):
+        py_code = "def broken_func("
+        r = client.post("/api/execute", json={"python_source": py_code})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is False
+        assert data["exit_code"] == 1
+        assert "SyntaxError" in data["stderr"]
+
