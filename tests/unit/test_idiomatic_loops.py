@@ -120,3 +120,99 @@ def test_disqualified_loops_emit_while_and_preserve_output(cpp_code):
     assert res.success, [d.message for d in res.diagnostics]
     assert "for i in range" not in res.python_source
     assert "while " in res.python_source
+
+
+def test_bubble_sort_idiomatic_code_generation():
+    code = """
+    #include <iostream>
+    using namespace std;
+
+    int main() {
+        int n;
+        cin >> n;
+        int arr[n];
+        for (int i = 0; i < n; i++) {
+            cin >> arr[i];
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            cout << arr[i] << " ";
+        }
+        return 0;
+    }
+    """
+    cfg_on = CompilerConfig(idiomatic_loops=True)
+    res_on = compile_source(code, "test.cpp", cfg_on)
+    assert res_on.success, [d.message for d in res_on.diagnostics]
+    py_src = res_on.python_source
+
+    # Check for idiomatic constructs
+    assert "for i in range(0, n):" in py_src
+    assert "for j in range(0, n - i - 1):" in py_src
+    assert "if arr[j] > arr[j + 1]:" in py_src
+    assert "arr[i] = int(next(_tokens))" in py_src
+    assert 'if __name__ == "__main__":' in py_src
+
+    # Verify no _Ptr helper class is emitted
+    assert "class _Ptr:" not in py_src
+
+    # Verify execution output
+    stdin = "5\n42 17 99 8 23\n"
+    out_on = run_py_snippet(py_src, stdin).strip()
+    assert out_on == "8 17 23 42 99"
+
+    # Verify fallback to while loops with identical output
+    cfg_off = CompilerConfig(idiomatic_loops=False)
+    res_off = compile_source(code, "test.cpp", cfg_off)
+    assert res_off.success
+    assert "while i < n:" in res_off.python_source
+    assert "while j < n - i - 1:" in res_off.python_source
+    out_off = run_py_snippet(res_off.python_source, stdin).strip()
+    assert out_off == out_on
+
+
+def test_no_ptr_helper_for_array_indexing():
+    code = """
+    #include <iostream>
+    using namespace std;
+    int main() {
+        int a[3];
+        a[0] = 10;
+        a[1] = 20;
+        a[2] = a[0] + a[1];
+        cout << a[2] << endl;
+        return 0;
+    }
+    """
+    res = compile_source(code, "test.cpp")
+    assert res.success
+    assert "class _Ptr:" not in res.python_source
+    out = run_py_snippet(res.python_source).strip()
+    assert out == "30"
+
+
+def test_ptr_helper_retained_for_actual_pointers():
+    code = """
+    #include <iostream>
+    using namespace std;
+    int main() {
+        int x = 42;
+        int* p = &x;
+        cout << *p << endl;
+        return 0;
+    }
+    """
+    res = compile_source(code, "test.cpp")
+    assert res.success
+    assert "class _Ptr:" in res.python_source
+    out = run_py_snippet(res.python_source).strip()
+    assert out == "42"
+

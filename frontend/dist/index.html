@@ -280,10 +280,24 @@
             </select>
           </div>
 
-
+          <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
+            <span class="material-symbols-outlined text-secondary" style="font-size:15px">shield</span>
+            <span class="text-label-sm font-label-sm text-outline">Overflow:</span>
+            <select id="overflowSelect" class="bg-transparent text-label-sm font-label-sm text-on-surface outline-none cursor-pointer">
+              <option value="assume_no_overflow">Assume No Overflow</option>
+              <option value="wrap">Wrap</option>
+              <option value="trap">Trap</option>
+            </select>
+          </div>
+          
           <label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Enable/disable constant folding optimization pass">
             <input type="checkbox" id="foldConstantsCheck" checked class="accent-primary cursor-pointer"/>
             <span class="text-label-sm font-label-sm text-on-surface">Fold Constants</span>
+          </label>
+
+          <label class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded cursor-pointer select-none" title="Emit idiomatic for-in-range loops where qualifying">
+            <input type="checkbox" id="idiomaticLoopsCheck" checked class="accent-primary cursor-pointer"/>
+            <span class="text-label-sm font-label-sm text-on-surface">Idiomatic Loops</span>
           </label>
         </div>
         
@@ -1121,6 +1135,7 @@ async function runTranspile() {
   const compat = $('compatSelect').value;
   const overflow = $('overflowSelect') ? $('overflowSelect').value : 'assume_no_overflow';
   const foldConstants = $('foldConstantsCheck') ? $('foldConstantsCheck').checked : true;
+  const idiomaticLoops = $('idiomaticLoopsCheck') ? $('idiomaticLoopsCheck').checked : true;
   const filename = $('cppFilename').textContent || 'input.cpp';
 
   // UI: loading
@@ -1146,6 +1161,7 @@ async function runTranspile() {
         compat: compat,
         overflow: overflow,
         fold_constants: foldConstants,
+        idiomatic_loops: idiomaticLoops,
       }),
     });
     if (!resp.ok) {

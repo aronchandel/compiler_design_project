@@ -24,7 +24,7 @@ class TranslateRequest(BaseModel):
     compat: str = Field("range_guided", description="Compatibility mode: naive | always | range_guided")
     overflow: str = Field("assume_no_overflow", description="Overflow policy: assume_no_overflow | wrap | trap")
     fold_constants: bool = Field(True, description="Enable constant folding")
-    idiomatic_loops: bool = Field(False, description="Emit idiomatic Python for-loops where possible")
+    idiomatic_loops: bool = Field(True, description="Emit idiomatic Python for-loops where possible")
 
     @field_validator("source_code")
     @classmethod

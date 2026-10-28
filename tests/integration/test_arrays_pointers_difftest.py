@@ -20,7 +20,7 @@ cxx_skip = pytest.mark.skipif(
     reason=f"g++ compiler not available/functional: {capabilities.reason}",
 )
 
-def run_diff_test(cxx_code: str, input_data: str = "") -> None:
+def run_diff_test(cxx_code: str, input_data: str = "", idiomatic_loops: bool = False) -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         cxx_file = tmp_path / "main.cpp"
@@ -46,7 +46,7 @@ def run_diff_test(cxx_code: str, input_data: str = "") -> None:
         ast_tree = parse(tokens, sink)
         assert not sink.has_errors(), f"Parse errors: {[d.message for d in sink.diagnostics]}"
 
-        config = CompilerConfig()
+        config = CompilerConfig(idiomatic_loops=idiomatic_loops)
         info = analyze(ast_tree, config, sink)
         assert not sink.has_errors(), f"Semantic errors: {[d.message for d in sink.diagnostics]}"
 
@@ -195,3 +195,40 @@ def test_difftest_runtime_sized_array_bubble_sort():
     }
     """
     run_diff_test(code, input_data="5\n64 34 25 12 22\n")
+
+
+@pytest.mark.requires_cxx
+@cxx_skip
+def test_difftest_idiomatic_bubble_sort_both_modes():
+    code = """
+    #include <iostream>
+    using namespace std;
+
+    int main() {
+        int n;
+        cin >> n;
+        int arr[n];
+        for (int i = 0; i < n; i++) {
+            cin >> arr[i];
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            cout << arr[i] << " ";
+        }
+        return 0;
+    }
+    """
+    stdin = "6\n9 3 7 1 8 2\n"
+    # Test idiomatic loops mode
+    run_diff_test(code, input_data=stdin, idiomatic_loops=True)
+    # Test conservative while loops mode
+    run_diff_test(code, input_data=stdin, idiomatic_loops=False)
+

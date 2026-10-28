@@ -75,10 +75,8 @@ class IRToPythonGenerator:
             for instr in func.body:
                 if instr.opcode == Opcode.CALL and instr.func_name in ("_addr_of", "_get_deref", "_set_deref"):
                     helpers_needed.add("_Ptr")
-                if instr.dst and getattr(instr.dst, "type", None) == IRType.PTR:
-                    helpers_needed.add("_Ptr")
                 for op in instr.operands:
-                    if getattr(op, "type", None) == IRType.PTR:
+                    if isinstance(op, Const) and op.type == IRType.PTR:
                         helpers_needed.add("_Ptr")
 
         if self._plan is not None:
@@ -209,8 +207,19 @@ class IRToPythonGenerator:
                 u_idx = temp_use_idx[t_id]
                 def_instr = self._temp_defs[t_id]
 
-                if def_instr.opcode == Opcode.READ or (
-                    def_instr.opcode == Opcode.CALL and def_instr.func_name in ("_set_index", "_set_deref", "_array_init", "_array_sized_init")
+                if def_instr.opcode == Opcode.READ:
+                    if u_idx != d_idx + 1:
+                        continue
+                    use_instr = body[u_idx]
+                    if not (
+                        use_instr.opcode == Opcode.CALL
+                        and use_instr.func_name in ("_set_index", "_set_deref")
+                        and len(use_instr.operands) >= 2
+                        and use_instr.operands[-1] == def_instr.dst
+                    ):
+                        continue
+                elif def_instr.opcode == Opcode.CALL and def_instr.func_name in (
+                    "_set_index", "_set_deref", "_array_init", "_array_sized_init"
                 ):
                     continue
 
@@ -224,10 +233,15 @@ class IRToPythonGenerator:
                     if between_temp_id not in self._inlined_temps and between_temp_id != t_id:
                         can_inline = False
                         break
-                    if between_instr.opcode == Opcode.CALL and def_instr.opcode == Opcode.CALL:
-
-                        can_inline = False
-                        break
+                    if between_instr.opcode == Opcode.CALL:
+                        is_def_pure = (
+                            def_instr.opcode == Opcode.CALL
+                            and def_instr.func_name in ("_get_index", "_get_deref", "_addr_of")
+                        )
+                        is_between_pure = (between_instr.func_name in ("_get_index", "_get_deref", "_addr_of"))
+                        if not (is_def_pure and is_between_pure):
+                            can_inline = False
+                            break
 
                 if can_inline:
                     self._inlined_temps.add(t_id)
@@ -528,19 +542,46 @@ class IRToPythonGenerator:
             return None
 
         bound_op = op2
-        if isinstance(bound_op, Const):
-            pass
-        elif isinstance(bound_op, VarRef):
-            bound_sym = bound_op.symbol_id
-            for ins in real_body_instrs:
-                if ins.dst and isinstance(ins.dst, VarRef) and ins.dst.symbol_id == bound_sym:
+
+        def _get_referenced_vars(op: Operand) -> set[int] | None:
+            if isinstance(op, Const):
+                return set()
+            elif isinstance(op, VarRef):
+                return {op.symbol_id}
+            elif isinstance(op, TempRef):
+                d_ins = self._temp_defs.get(op.temp_id)
+                if d_ins is None:
                     return None
-                if ins.opcode == Opcode.READ:
-                    for rop in ins.operands:
-                        if isinstance(rop, VarRef) and rop.symbol_id == bound_sym:
+                if d_ins.opcode in (Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.MOD, Opcode.NEG, Opcode.CAST):
+                    res: set[int] = set()
+                    for operand in d_ins.operands:
+                        sub = _get_referenced_vars(operand)
+                        if sub is None:
                             return None
-        else:
+                        res.update(sub)
+                    return res
+                elif d_ins.opcode == Opcode.CALL and d_ins.func_name in ("_get_index", "_get_deref"):
+                    res = set()
+                    for operand in d_ins.operands:
+                        sub = _get_referenced_vars(operand)
+                        if sub is None:
+                            return None
+                        res.update(sub)
+                    return res
+                return None
             return None
+
+        bound_vars = _get_referenced_vars(bound_op)
+        if bound_vars is None or loop_var_sym in bound_vars:
+            return None
+
+        for ins in real_body_instrs:
+            if ins.dst and isinstance(ins.dst, VarRef) and ins.dst.symbol_id in bound_vars:
+                return None
+            if ins.opcode == Opcode.READ:
+                for rop in ins.operands:
+                    if isinstance(rop, VarRef) and rop.symbol_id in bound_vars:
+                        return None
 
         if is_increasing:
             if cmp_op not in ("lt", "le"):
@@ -765,7 +806,7 @@ class IRToPythonGenerator:
         return self._mangler.mangle(str(target))
 
     def _mangle_name(self, name: str) -> str:
-        if name in _HELPER_SOURCES:
+        if name in _HELPER_SOURCES or name in ("int", "next", "_tokens"):
             return name
         return self._mangler.mangle(name)
 
@@ -884,6 +925,9 @@ class IRToPythonGenerator:
 
         elif opcode == Opcode.ASSIGN:
             return self._build_ast_expr(instr.operands[0])
+
+        elif opcode == Opcode.READ:
+            return ast.CallExpr("int", (ast.CallExpr("next", (ast.NameExpr("_tokens", dummy_span),), dummy_span),), dummy_span)
 
         raise NotImplementedError(f"Cannot build AST expr for opcode: {opcode}")
 
